@@ -1,0 +1,73 @@
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
+import { fetchDashboardData, ApiError } from "@/lib/api";
+import { REFRESH_INTERVAL_MS } from "@/lib/constants";
+import type { DashboardData } from "@/types/dashboard";
+
+interface UseDashboardDataReturn {
+  data: DashboardData | null;
+  isLoading: boolean;
+  error: string | null;
+  lastUpdated: Date | null;
+  refetch: () => void;
+}
+
+/**
+ * Custom hook for fetching and auto-refreshing dashboard data.
+ * Handles loading states, errors, and race conditions via AbortController.
+ */
+export function useDashboardData(): UseDashboardDataReturn {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const fetchData = useCallback(async () => {
+    // Cancel any in-flight request
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const result = await fetchDashboardData(controller.signal);
+      if (!controller.signal.aborted) {
+        setData(result);
+        setLastUpdated(new Date());
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : "An unexpected error occurred";
+      if (!controller.signal.aborted) {
+        setError(message);
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setIsLoading(false);
+      }
+    }
+  }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchData();
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, [fetchData]);
+
+  // Auto-refresh interval
+  useEffect(() => {
+    const interval = setInterval(fetchData, REFRESH_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [fetchData]);
+
+  return { data, isLoading, error, lastUpdated, refetch: fetchData };
+}
