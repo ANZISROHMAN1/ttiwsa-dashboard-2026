@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -49,6 +49,29 @@ export function DipisahView({
   ttiTickets,
   ffgTickets,
 }: DipisahViewProps) {
+  const tablesRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadPNG = async () => {
+    if (!tablesRef.current) return;
+    try {
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(tablesRef.current, {
+        quality: 1.0,
+        pixelRatio: 2,
+        backgroundColor: document.documentElement.classList.contains('dark') ? '#1e293b' : '#ffffff'
+      });
+      
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      const dateStr = new Date().toISOString().split("T")[0];
+      link.download = `kpi-tables-${dateStr}.png`;
+      link.click();
+    } catch (err: any) {
+      console.error("Failed to download image", err);
+      alert(`Gagal mengunduh gambar: ${err.message || "Unknown error"}`);
+    }
+  };
+
   // --- 1. KPI Achievement Chart Data ---
   const kpiLabels = [
     "TTI INDIHOME",
@@ -204,12 +227,27 @@ export function DipisahView({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* 2x2 Tables Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <MiniRankingTable title="Overall Achievement" dataKey="achievement" data={rankingSA} />
-        <MiniRankingTable title="TTI 3x24 Indihome" dataKey="ttiIH" data={rankingSA} />
-        <MiniRankingTable title="TTR FFG Indihome" dataKey="ffgIH" data={rankingSA} />
-        <MiniRankingTable title="FFG Indihome (Garansi)" dataKey="garansiIH" data={rankingSA} />
+      {/* Download Action & 2x2 Tables Section */}
+      <div>
+        <div className="flex justify-end mb-3">
+          <button
+            onClick={handleDownloadPNG}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm shadow-emerald-500/20"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+            </svg>
+            Download PNG
+          </button>
+        </div>
+        
+        {/* We wrap the grid in a ref to capture it. Padding ensures shadows and borders are not clipped. */}
+        <div ref={tablesRef} className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2 -m-2 bg-background">
+          <MiniRankingTable title="Overall Achievement" dataKey="achievement" data={rankingSA} />
+          <MiniRankingTable title="TTI 3x24 Indihome" dataKey="ttiIH" data={rankingSA} />
+          <MiniRankingTable title="TTR FFG Indihome" dataKey="ffgIH" data={rankingSA} />
+          <MiniRankingTable title="FFG Indihome (Garansi)" dataKey="garansiIH" data={rankingSA} />
+        </div>
       </div>
 
       {/* 2x2 Charts Section */}
