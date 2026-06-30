@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import type { FFGTicket } from "@/types/dashboard";
 import { Search } from "lucide-react";
+import { createPortal } from "react-dom";
 
 interface FfgDetailTableProps {
   tickets: FFGTicket[];
@@ -13,6 +14,21 @@ interface FfgDetailTableProps {
 export function FfgDetailTable({ tickets }: FfgDetailTableProps) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [showOnlyNeedUpdate, setShowOnlyNeedUpdate] = useState(false);
+  const [previewEvidence, setPreviewEvidence] = useState<string | null>(null);
+
+  // Helper to convert GDrive links to preview iframe URL
+  const getDrivePreviewUrl = (url: string) => {
+    let id = "";
+    const matchD = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (matchD) id = matchD[1];
+    else {
+      const matchId = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (matchId) id = matchId[1];
+    }
+    if (id) return `https://drive.google.com/file/d/${id}/preview`;
+    return url;
+  };
 
   // Filtering
   const filteredTickets = useMemo(() => {
@@ -24,11 +40,12 @@ export function FfgDetailTable({ tickets }: FfgDetailTableProps) {
         t.SC?.toUpperCase().includes(search.toUpperCase()) ||
         t.SYMTOM?.toUpperCase().includes(search.toUpperCase());
 
-      const matchStatus = status === "" || t.STATUS === status;
+      const matchesStatus = !status || t.STATUS === status;
+      const matchesNeedUpdate = !showOnlyNeedUpdate || t.NULL_GDOC;
 
-      return matchSearch && matchStatus;
+      return matchSearch && matchesStatus && matchesNeedUpdate;
     });
-  }, [tickets, search, status]);
+  }, [tickets, search, status, showOnlyNeedUpdate]);
 
   // Analysis computations
   const { topSto, topSymptom, nullGdocRank, total } = useMemo(() => {
@@ -86,7 +103,7 @@ export function FfgDetailTable({ tickets }: FfgDetailTableProps) {
             <input
               type="text"
               className="form-input pl-10 w-full"
-              placeholder="Search SA / STO / SC / Symptom..."
+              placeholder="Search SA / STO / SC / Reason..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -102,9 +119,18 @@ export function FfgDetailTable({ tickets }: FfgDetailTableProps) {
               <option value="TTR-NOTC">TTR-NOTC</option>
             </select>
           </div>
-          <div className="flex items-center">
-            <Badge variant="warning" className="px-4 py-2 text-sm font-semibold rounded-lg shadow-sm">
-              Total Ticket: <span className="ml-1 font-mono">{total}</span>
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-foreground bg-[var(--surface-hover)] px-3 py-2 rounded-lg border border-[var(--border)] transition-colors hover:bg-[var(--border)]">
+              <input
+                type="checkbox"
+                checked={showOnlyNeedUpdate}
+                onChange={(e) => setShowOnlyNeedUpdate(e.target.checked)}
+                className="w-4 h-4 text-amber-500 bg-background border-[var(--border)] rounded focus:ring-amber-500"
+              />
+              Need Update Reason
+            </label>
+            <Badge variant="info" className="px-4 py-2 text-sm font-semibold rounded-lg shadow-sm">
+              Showing: <span className="ml-1 font-mono">{filteredTickets.length}</span>
             </Badge>
           </div>
         </div>
@@ -171,7 +197,7 @@ export function FfgDetailTable({ tickets }: FfgDetailTableProps) {
                   <td className="px-5 py-3 min-w-[200px]">
                     {t.NULL_GDOC ? (
                       <Link
-                        href="/submit"
+                        href={`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent('FFG atau TTR FFG NOT COMPLY')}`}
                         className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition-colors"
                       >
                         UPDATE REASON
@@ -181,7 +207,25 @@ export function FfgDetailTable({ tickets }: FfgDetailTableProps) {
                     )}
                   </td>
                   <td className="px-5 py-3 min-w-[200px] text-foreground-muted">{t.REASON}</td>
-                  <td className="px-5 py-3 min-w-[150px] text-foreground-muted truncate max-w-[200px]">{t.EVIDENT}</td>
+                  <td className="px-5 py-3 min-w-[150px]">
+                    {t.EVIDENT?.startsWith("http") ? (
+                      <button
+                        onClick={() => setPreviewEvidence(t.EVIDENT)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20 transition-colors"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                          <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        Lihat foto
+                      </button>
+                    ) : (
+                      <span className="text-foreground-muted truncate block max-w-[200px]">
+                        {t.EVIDENT}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-5 py-3 whitespace-nowrap font-mono">{t.DURASI}</td>
                 </tr>
               ))}
@@ -196,6 +240,35 @@ export function FfgDetailTable({ tickets }: FfgDetailTableProps) {
           </table>
         </div>
       </div>
+
+      {/* Evidence Preview Modal */}
+      {previewEvidence && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={() => setPreviewEvidence(null)}>
+          <div 
+            className="relative bg-[var(--surface)] rounded-xl shadow-2xl p-4 w-full max-w-4xl h-[85vh] flex flex-col border border-[var(--border)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-foreground text-lg">Evidence Preview</h3>
+              <button 
+                onClick={() => setPreviewEvidence(null)}
+                className="p-2 hover:bg-[var(--surface-hover)] rounded-lg text-foreground-muted hover:text-foreground transition-colors"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <iframe 
+              src={getDrivePreviewUrl(previewEvidence)} 
+              className="w-full flex-1 rounded-lg border border-[var(--border)] bg-white"
+              allow="autoplay"
+            />
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

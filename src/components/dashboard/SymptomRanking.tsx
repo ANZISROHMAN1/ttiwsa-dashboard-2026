@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { DataTable } from "@/components/ui/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { aggregateSymptomsBySA, getUniqueServiceAreas, formatPercent } from "@/lib/utils";
 import { KPI_SIM_LABELS } from "@/lib/constants";
 import type { Ticket, KPISimulation } from "@/types/dashboard";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, ChevronRight, ArrowLeft, Search } from "lucide-react";
+import Link from "next/link";
+import { createPortal } from "react-dom";
 
 interface KpiAnalysisProps {
   tickets: Ticket[];
@@ -19,22 +20,66 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor }: KpiAnalysis
   const [selectedSA, setSelectedSA] = useState<string>("BRANCH BOGOR");
   const [selectedKpiCard, setSelectedKpiCard] = useState<string | null>(null);
 
-  const filteredTickets = useMemo(() => {
-    if (!selectedKpiCard) return tickets;
-    return tickets.filter((t) => {
-      const isTTI = selectedKpiCard.includes("TTI");
-      if (isTTI) return t.STATUS.startsWith("TTI-");
-      return t.STATUS.startsWith("TTR-");
-    });
-  }, [tickets, selectedKpiCard]);
+  // Drill-down state: which symptom is currently "opened"
+  const [selectedSymptom, setSelectedSymptom] = useState<string | null>(null);
+  // Search within drill-down detail view
+  const [detailSearch, setDetailSearch] = useState("");
+  const [detailStatus, setDetailStatus] = useState("");
+  const [showOnlyNeedUpdate, setShowOnlyNeedUpdate] = useState(false);
+  // Global search for the main view
+  const [globalSearch, setGlobalSearch] = useState("");
+  const [globalShowOnlyNeedUpdate, setGlobalShowOnlyNeedUpdate] = useState(false);
+  // Evidence preview modal
+  const [previewEvidence, setPreviewEvidence] = useState<string | null>(null);
 
-  const symptomsBySA = useMemo(() => aggregateSymptomsBySA(filteredTickets), [filteredTickets]);
+  // Helper to convert GDrive links to preview iframe URL
+  const getDrivePreviewUrl = (url: string) => {
+    let id = "";
+    const matchD = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (matchD) id = matchD[1];
+    else {
+      const matchId = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (matchId) id = matchId[1];
+    }
+    if (id) return `https://drive.google.com/file/d/${id}/preview`;
+    return url;
+  };
+
+  const filteredTickets = useMemo(() => {
+    let base = tickets;
+    
+    if (selectedKpiCard) {
+      base = base.filter((t) => {
+        const isTTI = selectedKpiCard.includes("TTI");
+        if (isTTI) return t.STATUS.startsWith("TTI-");
+        return t.STATUS.startsWith("TTR-");
+      });
+    }
+
+    if (globalSearch) {
+      const q = globalSearch.toUpperCase();
+      base = base.filter(
+        (t) =>
+          t.SA?.toUpperCase().includes(q) ||
+          t.STO?.toUpperCase().includes(q) ||
+          t.SC?.toUpperCase().includes(q) ||
+          t.SYMTOM?.toUpperCase().includes(q) ||
+          t.REASON?.toUpperCase().includes(q)
+      );
+    }
+
+    if (globalShowOnlyNeedUpdate) {
+      base = base.filter((t) => t.NULL_GDOC);
+    }
+
+    return base;
+  }, [tickets, selectedKpiCard, globalSearch, globalShowOnlyNeedUpdate]);
+
+  const symptomsBySA = useMemo(() => aggregateSymptomsBySA(filteredTickets, globalShowOnlyNeedUpdate), [filteredTickets, globalShowOnlyNeedUpdate]);
 
   // Find symptom data for the selected SA (or aggregate all if Branch Bogor)
   const selectedSymptomData = useMemo(() => {
     if (selectedSA === "BRANCH BOGOR") {
-      // Aggregate everything (since we exclude nothing for simplicity unless specified)
-      // Or we can just sum up the counts from symptomsBySA
       const aggregated = new Map<string, { symptom: string; total: number; comp: number; nonc: number }>();
       let totalTickets = 0;
       let totalComp = 0;
@@ -84,29 +129,382 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor }: KpiAnalysis
     return kpiSimulation.filter((s) => s.sa === selectedSA);
   }, [selectedSA, kpiSimulation, branchBogor]);
 
+  // --- Drill-down: get raw tickets for the selected symptom ---
+  const drillDownTickets = useMemo(() => {
+    if (!selectedSymptom) return [];
+
+    let base = filteredTickets;
+
+    // Also filter by SA if not "BRANCH BOGOR"
+    if (selectedSA !== "BRANCH BOGOR") {
+      base = base.filter((t) => t.SA === selectedSA);
+    }
+
+    // Filter by symptom
+    if (selectedSymptom === "UPDATE REASON") {
+      base = base.filter((t) => t.NULL_GDOC || t.SYMTOM === "NULL GDOC" || t.SYMTOM === "UPDATE REASON");
+    } else {
+      base = base.filter((t) => t.SYMTOM === selectedSymptom);
+    }
+
+    // Apply search and status filters
+    if (detailSearch) {
+      const q = detailSearch.toUpperCase();
+      base = base.filter(
+        (t) =>
+          t.SA?.toUpperCase().includes(q) ||
+          t.STO?.toUpperCase().includes(q) ||
+          t.SC?.toUpperCase().includes(q) ||
+          t.SYMTOM?.toUpperCase().includes(q) ||
+          t.REASON?.toUpperCase().includes(q)
+      );
+    }
+    if (detailStatus) {
+      base = base.filter((t) => t.STATUS === detailStatus);
+    }
+    if (showOnlyNeedUpdate) {
+      base = base.filter((t) => t.NULL_GDOC);
+    }
+
+    return base;
+  }, [selectedSymptom, filteredTickets, selectedSA, detailSearch, detailStatus, showOnlyNeedUpdate]);
+
+  // Drill-down analysis
+  const drillDownAnalysis = useMemo(() => {
+    if (!selectedSymptom) return null;
+    
+    // Use unfiltered (no search/status) tickets for analysis
+    let base = filteredTickets;
+    if (selectedSA !== "BRANCH BOGOR") {
+      base = base.filter((t) => t.SA === selectedSA);
+    }
+    
+    if (selectedSymptom === "UPDATE REASON") {
+      base = base.filter((t) => t.NULL_GDOC || t.SYMTOM === "NULL GDOC" || t.SYMTOM === "UPDATE REASON");
+    } else {
+      base = base.filter((t) => t.SYMTOM === selectedSymptom);
+    }
+
+    const stoCount: Record<string, number> = {};
+    const nullGdocPerSA: Record<string, number> = {};
+
+    base.forEach((t) => {
+      const sto = t.STO || "UNKNOWN";
+      stoCount[sto] = (stoCount[sto] || 0) + 1;
+      if (t.NULL_GDOC) {
+        const sa = t.SA || "UNKNOWN";
+        nullGdocPerSA[sa] = (nullGdocPerSA[sa] || 0) + 1;
+      }
+    });
+
+    const sortedStos = Object.entries(stoCount).sort((a, b) => b[1] - a[1]);
+    const sortedNullGdocs = Object.entries(nullGdocPerSA).sort((a, b) => b[1] - a[1]);
+
+    return {
+      total: base.length,
+      comp: base.filter((t) => t.STATUS.includes("-COMP")).length,
+      nonc: base.filter((t) => t.STATUS.includes("-NOTC")).length,
+      topSto: sortedStos[0] || ["-", 0],
+      nullGdocRank: sortedNullGdocs,
+    };
+  }, [selectedSymptom, filteredTickets, selectedSA]);
+
+  // Handle clicking a symptom row
+  const handleSymptomClick = (symptom: string) => {
+    setSelectedSymptom(symptom);
+    setDetailSearch("");
+    setDetailStatus("");
+  };
+
+  // Handle going back
+  const handleBack = () => {
+    setSelectedSymptom(null);
+    setDetailSearch("");
+    setDetailStatus("");
+    setShowOnlyNeedUpdate(false);
+  };
+
+  // ====== DRILL-DOWN VIEW (detail tickets for a specific symptom) ======
+  if (selectedSymptom && drillDownAnalysis) {
+    // Determine available statuses for the filter
+    const statusOptions = new Set(drillDownTickets.map((t) => t.STATUS));
+
+    return (
+      <div className="space-y-5 animate-fade-in">
+        {/* Breadcrumb */}
+        <div className="glass-card p-4">
+          <div className="flex items-center gap-2 text-sm flex-wrap">
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-1.5 text-accent-blue hover:text-blue-400 transition-colors font-medium"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </button>
+            <span className="text-foreground-muted">|</span>
+            <button
+              onClick={handleBack}
+              className="text-accent-blue hover:text-blue-400 transition-colors font-medium"
+            >
+              KPI Analysis
+            </button>
+            <ChevronRight className="w-4 h-4 text-foreground-muted" />
+            {selectedSA !== "BRANCH BOGOR" && (
+              <>
+                <button
+                  onClick={handleBack}
+                  className="text-accent-blue hover:text-blue-400 transition-colors font-medium"
+                >
+                  {selectedSA}
+                </button>
+                <ChevronRight className="w-4 h-4 text-foreground-muted" />
+              </>
+            )}
+            <span className="text-foreground font-semibold truncate">{selectedSymptom}</span>
+          </div>
+        </div>
+
+        {/* Summary Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="glass-card-sm p-4 text-center">
+            <div className="text-2xl font-bold text-foreground">{drillDownAnalysis.total}</div>
+            <div className="text-xs text-foreground-muted mt-1">Total Tickets</div>
+          </div>
+          <div className="glass-card-sm p-4 text-center">
+            <div className="text-2xl font-bold text-emerald-400">{drillDownAnalysis.comp}</div>
+            <div className="text-xs text-foreground-muted mt-1">COMP</div>
+          </div>
+          <div className="glass-card-sm p-4 text-center">
+            <div className="text-2xl font-bold text-rose-400">{drillDownAnalysis.nonc}</div>
+            <div className="text-xs text-foreground-muted mt-1">NOTC</div>
+          </div>
+          <div className="glass-card-sm p-4 text-center">
+            <div className="text-2xl font-bold text-foreground">{drillDownAnalysis.topSto[0]}</div>
+            <div className="text-xs text-foreground-muted mt-1">Top STO</div>
+          </div>
+        </div>
+
+        {/* Analysis Box */}
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-5 text-sm text-foreground">
+          <p className="font-bold text-accent-blue text-lg mb-2">
+            Analisa: {selectedSymptom}
+          </p>
+          <p className="mb-3">
+            Total ticket dengan symptom <strong>{selectedSymptom}</strong> saat ini sebanyak{" "}
+            <strong>{drillDownAnalysis.total}</strong> ticket.{" "}
+            STO dengan jumlah ticket tertinggi adalah{" "}
+            <strong>{drillDownAnalysis.topSto[0]}</strong> ({drillDownAnalysis.topSto[1]} ticket).
+          </p>
+
+          {drillDownAnalysis.nullGdocRank.length > 0 && (
+            <>
+              <hr className="border-blue-500/20 my-4" />
+              <p className="font-bold text-amber-500 mb-2">BELUM UPDATE REASON PER SA</p>
+              <ul className="list-disc pl-5 mb-4 space-y-1 text-foreground-muted">
+                {drillDownAnalysis.nullGdocRank.map(([sa, count]) => (
+                  <li key={sa}>
+                    <strong className="text-foreground">{sa}</strong> : {count} ticket
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+
+        {/* Filters */}
+        <div className="glass-card p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted" />
+              <input
+                type="text"
+                className="form-input pl-10 w-full"
+                placeholder="Search SA / STO / SC / Reason..."
+                value={detailSearch}
+                onChange={(e) => setDetailSearch(e.target.value)}
+              />
+            </div>
+            <div className="md:w-48">
+              <select
+                className="form-select w-full"
+                value={detailStatus}
+                onChange={(e) => setDetailStatus(e.target.value)}
+              >
+                <option value="">ALL STATUS</option>
+                <option value="TTI-COMP">TTI-COMP</option>
+                <option value="TTI-NOTC">TTI-NOTC</option>
+                <option value="TTR-COMP">TTR-COMP</option>
+                <option value="TTR-NOTC">TTR-NOTC</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-foreground bg-[var(--surface-hover)] px-3 py-2 rounded-lg border border-[var(--border)] transition-colors hover:bg-[var(--border)]">
+                <input
+                  type="checkbox"
+                  checked={showOnlyNeedUpdate}
+                  onChange={(e) => setShowOnlyNeedUpdate(e.target.checked)}
+                  className="w-4 h-4 text-amber-500 bg-background border-[var(--border)] rounded focus:ring-amber-500"
+                />
+                Need Update Reason
+              </label>
+              <Badge variant="info" className="px-4 py-2 text-sm font-semibold rounded-lg shadow-sm">
+                Showing: <span className="ml-1 font-mono">{drillDownTickets.length}</span>
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        {/* Detail Ticket Table */}
+        <div className="glass-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[900px]">
+              <thead>
+                <tr className="bg-[var(--surface-hover)] border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted">
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">SA</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">STO</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">SC</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">STATUS</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">SYMTOM</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">REASON</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">EVIDENT</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">DURASI</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)] text-sm">
+                {drillDownTickets.map((t, idx) => (
+                  <tr key={idx} className="hover:bg-[var(--surface-hover)] transition-colors">
+                    <td className="px-5 py-3 whitespace-nowrap">{t.SA}</td>
+                    <td className="px-5 py-3 whitespace-nowrap">{t.STO}</td>
+                    <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.SC}</td>
+                    <td className="px-5 py-3 whitespace-nowrap">
+                      <Badge variant={t.STATUS.includes("-COMP") ? "default" : "danger"}>
+                        {t.STATUS}
+                      </Badge>
+                    </td>
+                    <td className="px-5 py-3 min-w-[200px]">
+                      {t.NULL_GDOC ? (
+                        <Link
+                          href={`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}`}
+                          className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition-colors"
+                        >
+                          UPDATE REASON
+                        </Link>
+                      ) : (
+                        t.SYMTOM
+                      )}
+                    </td>
+                    <td className="px-5 py-3 min-w-[200px] text-foreground-muted">{t.REASON}</td>
+                    <td className="px-5 py-3 min-w-[150px]">
+                      {t.EVIDENT?.startsWith("http") ? (
+                        <button
+                          onClick={() => setPreviewEvidence(t.EVIDENT)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20 transition-colors"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                          </svg>
+                          Lihat foto
+                        </button>
+                      ) : (
+                        <span className="text-foreground-muted truncate block max-w-[200px]">
+                          {t.EVIDENT}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 whitespace-nowrap font-mono">{t.DURASI}</td>
+                  </tr>
+                ))}
+                {drillDownTickets.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-5 py-12 text-center text-foreground-muted">
+                      Tidak ada ticket yang sesuai dengan filter.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Evidence Preview Modal */}
+        {previewEvidence && typeof document !== "undefined" && createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={() => setPreviewEvidence(null)}>
+            <div 
+              className="relative bg-[var(--surface)] rounded-xl shadow-2xl p-4 w-full max-w-4xl h-[85vh] flex flex-col border border-[var(--border)]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-foreground text-lg">Evidence Preview</h3>
+                <button 
+                  onClick={() => setPreviewEvidence(null)}
+                  className="p-2 hover:bg-[var(--surface-hover)] rounded-lg text-foreground-muted hover:text-foreground transition-colors"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+              <iframe 
+                src={getDrivePreviewUrl(previewEvidence)} 
+                className="w-full flex-1 rounded-lg border border-[var(--border)] bg-white"
+                allow="autoplay"
+              />
+            </div>
+          </div>,
+          document.body
+        )}
+      </div>
+    );
+  }
+
+  // ====== MAIN VIEW (KPI cards + symptom list) ======
   return (
     <div className="space-y-6 animate-fade-in">
       {/* View Controls */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 glass-card p-4">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 glass-card p-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">KPI Analysis & Symptoms</h2>
           <p className="text-sm text-foreground-muted">
-            Analyze achievement gaps and view related symptom drivers by area.
+            Analyze achievement gaps and click a symptom to drill down into ticket details.
           </p>
         </div>
-        <select
-          id="sa-filter"
-          className="form-input form-select max-w-[220px] text-sm"
-          value={selectedSA}
-          onChange={(e) => setSelectedSA(e.target.value)}
-        >
-          <option value="BRANCH BOGOR">BRANCH BOGOR</option>
-          {uniqueSAs.map((sa) => (
-            <option key={sa} value={sa}>
-              {sa}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted" />
+            <input
+              type="text"
+              className="form-input pl-10 w-full text-sm"
+              placeholder="Search SA / STO / SC / Reason..."
+              value={globalSearch}
+              onChange={(e) => setGlobalSearch(e.target.value)}
+            />
+          </div>
+          <select
+            id="sa-filter"
+            className="form-input form-select min-w-[180px] w-full sm:w-auto text-sm"
+            value={selectedSA}
+            onChange={(e) => setSelectedSA(e.target.value)}
+          >
+            <option value="BRANCH BOGOR">BRANCH BOGOR</option>
+            {uniqueSAs.map((sa) => (
+              <option key={sa} value={sa}>
+                {sa}
+              </option>
+            ))}
+          </select>
+          <label className="flex items-center justify-center gap-2 cursor-pointer text-sm font-medium text-foreground bg-[var(--surface-hover)] px-3 py-2 rounded-lg border border-[var(--border)] transition-colors hover:bg-[var(--border)] whitespace-nowrap">
+            <input
+              type="checkbox"
+              checked={globalShowOnlyNeedUpdate}
+              onChange={(e) => setGlobalShowOnlyNeedUpdate(e.target.checked)}
+              className="w-4 h-4 text-amber-500 bg-background border-[var(--border)] rounded focus:ring-amber-500"
+            />
+            Need Update
+          </label>
+        </div>
       </div>
 
       {/* KPI Simulation Grid */}
@@ -172,7 +570,7 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor }: KpiAnalysis
         )}
       </div>
 
-      {/* Symptoms Detail */}
+      {/* Symptoms Detail — clickable rows */}
       <div className="glass-card overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface-hover)]">
           <h3 className="text-base font-semibold text-foreground">
@@ -187,6 +585,16 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor }: KpiAnalysis
             <Badge variant="danger">NONC: {selectedSymptomData.totalNonc}</Badge>
           </div>
         </div>
+        <div className="px-5 py-2 border-b border-[var(--border)] bg-[var(--surface)]">
+          <p className="text-xs text-foreground-muted flex items-center gap-1.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-blue">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+            Click on a symptom to view detailed tickets
+          </p>
+        </div>
         <div className="p-0">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -195,12 +603,19 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor }: KpiAnalysis
                 <th className="px-5 py-3 font-medium text-center">Total</th>
                 <th className="px-5 py-3 font-medium text-center">COMP</th>
                 <th className="px-5 py-3 font-medium text-center">NONC</th>
+                <th className="px-5 py-3 font-medium text-center w-10"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)] text-sm">
               {selectedSymptomData.symptoms.map((s) => (
-                <tr key={s.symptom} className="hover:bg-[var(--surface-hover)] transition-colors">
-                  <td className="px-5 py-3 font-medium text-foreground">{s.symptom}</td>
+                <tr
+                  key={s.symptom}
+                  onClick={() => handleSymptomClick(s.symptom)}
+                  className="hover:bg-[var(--surface-hover)] transition-colors cursor-pointer group"
+                >
+                  <td className="px-5 py-3 font-medium text-foreground group-hover:text-accent-blue transition-colors">
+                    {s.symptom}
+                  </td>
                   <td className="px-5 py-3 text-center">
                     <span className="font-mono">{s.total}</span>
                   </td>
@@ -220,11 +635,14 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor }: KpiAnalysis
                       <span className="text-foreground-muted font-mono">-</span>
                     )}
                   </td>
+                  <td className="px-5 py-3 text-center">
+                    <ChevronRight className="w-4 h-4 text-foreground-muted group-hover:text-accent-blue transition-colors" />
+                  </td>
                 </tr>
               ))}
               {selectedSymptomData.symptoms.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-5 py-8 text-center text-foreground-muted">
+                  <td colSpan={5} className="px-5 py-8 text-center text-foreground-muted">
                     No tickets found for this area.
                   </td>
                 </tr>

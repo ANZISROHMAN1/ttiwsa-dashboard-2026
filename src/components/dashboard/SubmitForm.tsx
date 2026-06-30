@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { FormField } from "@/components/ui/FormField";
 
 interface FormData {
@@ -13,6 +14,8 @@ interface FormData {
   symptomKendala: string;
   keteranganDetail: string;
   evidenceKendala: string;
+  alasanGangguanBaru: string;
+  alasanPenyelesaianLama: string;
 }
 
 interface FormErrors {
@@ -62,6 +65,8 @@ const SYMPTOM_OPTIONS = [
 ];
 
 export function SubmitForm({ stoList }: SubmitFormProps) {
+  const searchParams = useSearchParams();
+
   const [formData, setFormData] = useState<FormData>({
     sto: "",
     namaTeknisi: "",
@@ -72,7 +77,25 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
     symptomKendala: "",
     keteranganDetail: "",
     evidenceKendala: "",
+    alasanGangguanBaru: "",
+    alasanPenyelesaianLama: "",
   });
+
+  // Auto-fill from URL query params (from UPDATE REASON button)
+  useEffect(() => {
+    const sc = searchParams.get("sc");
+    const sto = searchParams.get("sto");
+    const item = searchParams.get("item");
+
+    if (sc || sto || item) {
+      setFormData((prev) => ({
+        ...prev,
+        ...(sto ? { sto } : {}),
+        ...(sc ? { nomorOrder: sc } : {}),
+        ...(item ? { itemNotComply: item } : {}),
+      }));
+    }
+  }, [searchParams]);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
 
@@ -101,6 +124,15 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
     if (!formData.itemNotComply) newErrors.itemNotComply = "ITEM NOT COMPLY is required";
     if (!formData.symptomKendala) newErrors.symptomKendala = "SYMTOM KENDALA is required";
     if (!formData.keteranganDetail.trim()) newErrors.keteranganDetail = "KETERANGAN DETAIL KENDALA is required";
+
+    if (formData.itemNotComply === "FFG atau TTR FFG NOT COMPLY") {
+      if (!formData.alasanGangguanBaru.trim()) {
+        newErrors.alasanGangguanBaru = "This field is required for FFG";
+      }
+      if (!formData.alasanPenyelesaianLama.trim()) {
+        newErrors.alasanPenyelesaianLama = "This field is required for FFG";
+      }
+    }
 
     if (!formData.evidenceKendala.match(/^https?:\/\/.+/i)) {
       newErrors.evidenceKendala = "Please enter a valid Google Drive URL (https://...)";
@@ -139,6 +171,8 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
           symptomKendala: "",
           keteranganDetail: "",
           evidenceKendala: "",
+          alasanGangguanBaru: "",
+          alasanPenyelesaianLama: "",
         });
         setSubmitState("idle");
       }, 3000);
@@ -294,6 +328,34 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
               </div>
               {errors.symptomKendala && <p className="mt-2 text-xs text-rose-500">{errors.symptomKendala}</p>}
             </div>
+
+            {formData.itemNotComply === "FFG atau TTR FFG NOT COMPLY" && (
+              <>
+                <div className="bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl p-6 shadow-sm animate-fade-in">
+                  <FormField label="Kenapa bisa muncul gangguan dlm waktu kurang dr 2 bulan pasca psb? *" id="form-alasan1" required error={errors.alasanGangguanBaru}>
+                    <textarea
+                      id="form-alasan1"
+                      className="form-input min-h-[100px] resize-y"
+                      placeholder="Your answer"
+                      value={formData.alasanGangguanBaru}
+                      onChange={(e) => updateField("alasanGangguanBaru", e.target.value)}
+                    />
+                  </FormField>
+                </div>
+                
+                <div className="bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl p-6 shadow-sm animate-fade-in">
+                  <FormField label="Dan kenapa penyelesaian gangguan nya lebih dari 3 jam? *" id="form-alasan2" required error={errors.alasanPenyelesaianLama}>
+                    <textarea
+                      id="form-alasan2"
+                      className="form-input min-h-[100px] resize-y"
+                      placeholder="Your answer"
+                      value={formData.alasanPenyelesaianLama}
+                      onChange={(e) => updateField("alasanPenyelesaianLama", e.target.value)}
+                    />
+                  </FormField>
+                </div>
+              </>
+            )}
 
             <div className="bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl p-6 shadow-sm">
               <FormField label="KETERANGAN DETAIL KENDALA *" id="form-keterangan" required error={errors.keteranganDetail}>

@@ -66,14 +66,16 @@ export function getAchievementClasses(value: number): {
 
 // ─── Data Processing ────────────────────────────────────────────────────────
 
-/** Aggregate symptoms from tickets (excluding NULL GDOC) */
-export function aggregateSymptoms(tickets: Ticket[]): SymptomAggregate[] {
+/** Aggregate symptoms from tickets (excluding NULL GDOC by default unless specified) */
+export function aggregateSymptoms(tickets: Ticket[], includeNullGdoc: boolean = false): SymptomAggregate[] {
   const map = new Map<string, { total: number; comp: number; nonc: number; serviceAreas: Set<string> }>();
 
   for (const ticket of tickets) {
-    if (ticket.NULL_GDOC || ticket.SYMTOM === "NULL GDOC") continue;
+    const isNullGdoc = ticket.NULL_GDOC || ticket.SYMTOM === "NULL GDOC";
+    if (!includeNullGdoc && isNullGdoc) continue;
 
-    const symptom = ticket.SYMTOM.trim();
+    let symptom = ticket.SYMTOM?.trim() || "";
+    if (isNullGdoc) symptom = "UPDATE REASON";
     if (!symptom) continue;
 
     const isComp = ticket.STATUS.includes("-COMP");
@@ -107,16 +109,18 @@ export function aggregateSymptoms(tickets: Ticket[]): SymptomAggregate[] {
 }
 
 /** Aggregate symptoms grouped by Service Area */
-export function aggregateSymptomsBySA(tickets: Ticket[]): SymptomBySA[] {
+export function aggregateSymptomsBySA(tickets: Ticket[], includeNullGdoc: boolean = false): SymptomBySA[] {
   const saMap = new Map<
     string,
     { symptoms: Map<string, { total: number; comp: number; nonc: number }>; totalTickets: number; totalComp: number; totalNonc: number }
   >();
 
   for (const ticket of tickets) {
-    if (ticket.NULL_GDOC || ticket.SYMTOM === "NULL GDOC") continue;
+    const isNullGdoc = ticket.NULL_GDOC || ticket.SYMTOM === "NULL GDOC";
+    if (!includeNullGdoc && isNullGdoc) continue;
 
-    const symptom = ticket.SYMTOM.trim();
+    let symptom = ticket.SYMTOM?.trim() || "";
+    if (isNullGdoc) symptom = "UPDATE REASON";
     if (!symptom) continue;
 
     const sa = ticket.SA;

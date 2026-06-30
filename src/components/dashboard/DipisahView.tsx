@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -16,6 +16,7 @@ import {
 import { Bar, Line } from "react-chartjs-2";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Badge } from "@/components/ui/Badge";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { formatPercent } from "@/lib/utils";
 import type { DashboardSummary, RankingSA, KPISimulation, Ticket } from "@/types/dashboard";
 
@@ -32,6 +33,8 @@ ChartJS.register(
   ChartDataLabels
 );
 
+type DipisahSegment = "indihome" | "indibiz";
+
 interface DipisahViewProps {
   summary: DashboardSummary;
   rankingSA: RankingSA[];
@@ -40,6 +43,21 @@ interface DipisahViewProps {
   ttiTickets: Ticket[];
   ffgTickets: Ticket[];
 }
+
+const SEGMENT_CONFIG = {
+  indihome: {
+    label: "Indihome",
+    tti: { key: "ttiIH" as keyof RankingSA, title: "TTI 3x24 Indihome" },
+    ffg: { key: "ffgIH" as keyof RankingSA, title: "TTR FFG Indihome" },
+    garansi: { key: "garansiIH" as keyof RankingSA, title: "FFG Indihome (Garansi)" },
+  },
+  indibiz: {
+    label: "Indibiz",
+    tti: { key: "ttiIB" as keyof RankingSA, title: "TTI 1x24 Indibiz" },
+    ffg: { key: "ffgIB" as keyof RankingSA, title: "TTR FFG Indibiz" },
+    garansi: { key: "garansiIB" as keyof RankingSA, title: "FFG Indibiz (Garansi)" },
+  },
+} as const;
 
 export function DipisahView({
   summary,
@@ -50,6 +68,9 @@ export function DipisahView({
   ffgTickets,
 }: DipisahViewProps) {
   const tablesRef = useRef<HTMLDivElement>(null);
+  const [segment, setSegment] = useState<DipisahSegment>("indihome");
+
+  const config = SEGMENT_CONFIG[segment];
 
   const handleDownloadPNG = async () => {
     if (!tablesRef.current) return;
@@ -64,7 +85,7 @@ export function DipisahView({
       const link = document.createElement("a");
       link.href = dataUrl;
       const dateStr = new Date().toISOString().split("T")[0];
-      link.download = `kpi-tables-${dateStr}.png`;
+      link.download = `kpi-tables-${segment}-${dateStr}.png`;
       link.click();
     } catch (err: any) {
       console.error("Failed to download image", err);
@@ -88,7 +109,7 @@ export function DipisahView({
     summary["TTI INDIBIZ"]?.achievement || 0,
     summary["GARANSI INDIHOME"]?.achievement || 0,
     summary["FFG INDIHOME"]?.achievement || 0,
-    summary["FFG INDIBIZ"]?.achievement || 0, // Assuming this is how they map it based on the previous script
+    summary["FFG INDIBIZ"]?.achievement || 0,
   ];
 
   const kpiColors = kpiLabels.map((l) =>
@@ -227,9 +248,20 @@ export function DipisahView({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Download Action & 2x2 Tables Section */}
+      {/* Segment Toggle + Download */}
       <div>
-        <div className="flex justify-end mb-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+          {/* Indihome / Indibiz Toggle */}
+          <SegmentedControl
+            segments={[
+              { value: "indihome" as DipisahSegment, label: "Indihome" },
+              { value: "indibiz" as DipisahSegment, label: "Indibiz" },
+            ]}
+            value={segment}
+            onChange={setSegment}
+          />
+
+          {/* Download Button */}
           <button
             onClick={handleDownloadPNG}
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm shadow-emerald-500/20"
@@ -241,12 +273,12 @@ export function DipisahView({
           </button>
         </div>
         
-        {/* We wrap the grid in a ref to capture it. Padding ensures shadows and borders are not clipped. */}
+        {/* 2x2 Tables — captured for PNG download */}
         <div ref={tablesRef} className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2 -m-2 bg-background">
           <MiniRankingTable title="Overall Achievement" dataKey="achievement" data={rankingSA} />
-          <MiniRankingTable title="TTI 3x24 Indihome" dataKey="ttiIH" data={rankingSA} />
-          <MiniRankingTable title="TTR FFG Indihome" dataKey="ffgIH" data={rankingSA} />
-          <MiniRankingTable title="FFG Indihome (Garansi)" dataKey="garansiIH" data={rankingSA} />
+          <MiniRankingTable title={config.tti.title} dataKey={config.tti.key} data={rankingSA} />
+          <MiniRankingTable title={config.ffg.title} dataKey={config.ffg.key} data={rankingSA} />
+          <MiniRankingTable title={config.garansi.title} dataKey={config.garansi.key} data={rankingSA} />
         </div>
       </div>
 
