@@ -19,6 +19,13 @@ export async function fetchDashboardData(
   signal?: AbortSignal
 ): Promise<DashboardData> {
   try {
+    if (!API_BASE_URL || !SALDO_PSPI_API_URL) {
+      throw new ApiError(
+        "API URLs are not configured. Please ensure NEXT_PUBLIC_TTIWSA_API_URL and NEXT_PUBLIC_PSPI_API_URL are set in your environment variables.",
+        500
+      );
+    }
+
     const [response, saldoResponse] = await Promise.all([
       fetch(API_BASE_URL, {
         signal,
