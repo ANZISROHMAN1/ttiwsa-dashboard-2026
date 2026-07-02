@@ -63,11 +63,7 @@ export function useDashboardData(): UseDashboardDataReturn {
     };
   }, [fetchData]);
 
-  // Auto-refresh interval
-  useEffect(() => {
-    const interval = setInterval(fetchData, REFRESH_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [fetchData]);
+
 
   return { data, isLoading, error, lastUpdated, refetch: fetchData };
 }

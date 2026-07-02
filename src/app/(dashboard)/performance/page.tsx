@@ -20,6 +20,7 @@ export default function PerformancePage() {
       branchBogorIncludeBanten={data.branchBogorIncludeBanten}
       ttiTickets={data.ttiTickets}
       ffgTickets={data.ffgTickets}
+      saldoPspiTickets={data.saldoPspiTickets}
     />
   );
 }

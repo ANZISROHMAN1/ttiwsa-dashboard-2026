@@ -202,8 +202,16 @@ export function DipisahView({
       .slice(0, 10);
   };
 
-  const topTtiNotc = useMemo(() => getTopSymptoms(ttiTickets, true), [ttiTickets]);
-  const topFfg = useMemo(() => getTopSymptoms(ffgTickets, false), [ffgTickets]);
+  const filteredTtiTickets = useMemo(() => {
+    return ttiTickets.filter(t => segment === 'indihome' ? t.kpi?.includes('IH') : t.kpi?.includes('IB'));
+  }, [ttiTickets, segment]);
+
+  const filteredFfgTickets = useMemo(() => {
+    return ffgTickets.filter(t => segment === 'indihome' ? t.kpi?.includes('IH') : t.kpi?.includes('IB'));
+  }, [ffgTickets, segment]);
+
+  const topTtiNotc = useMemo(() => getTopSymptoms(filteredTtiTickets, true), [filteredTtiTickets]);
+  const topFfg = useMemo(() => getTopSymptoms(filteredFfgTickets, false), [filteredFfgTickets]);
 
   const ttiChartData = {
     labels: topTtiNotc.map((s) => s[0]),

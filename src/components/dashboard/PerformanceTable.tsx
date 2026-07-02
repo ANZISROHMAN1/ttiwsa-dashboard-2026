@@ -14,8 +14,10 @@ import type {
   DashboardSummary,
   KPISimulation,
   Ticket,
+  SaldoPspiTicket,
 } from "@/types/dashboard";
 import { DipisahView } from "./DipisahView";
+import { SaldoPspiView } from "./SaldoPspiView";
 
 interface PerformanceTableProps {
   summary: DashboardSummary;
@@ -25,6 +27,7 @@ interface PerformanceTableProps {
   branchBogorIncludeBanten: KPISimulation[];
   ttiTickets: Ticket[];
   ffgTickets: Ticket[];
+  saldoPspiTickets: SaldoPspiTicket[];
 }
 
 const SEGMENT_OPTIONS: { value: Segment; label: string }[] = [
@@ -87,6 +90,7 @@ export function PerformanceTable({
   branchBogorIncludeBanten,
   ttiTickets,
   ffgTickets,
+  saldoPspiTickets,
 }: PerformanceTableProps) {
   const [metricTab, setMetricTab] = useState<PerformanceMetricTab>("overall");
   const [segment, setSegment] = useState<Segment>("indihome");
@@ -298,8 +302,8 @@ export function PerformanceTable({
           ))}
         </div>
 
-      {/* Segment + View Controls (Hide if dipisah) */}
-      {metricTab !== "dipisah" && (
+      {/* Segment + View Controls (Hide if dipisah or saldo-pspi) */}
+      {metricTab !== "dipisah" && metricTab !== "saldo-pspi" && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <SegmentedControl
             segments={SEGMENT_OPTIONS}
@@ -318,8 +322,10 @@ export function PerformanceTable({
       )}
       </div>
 
-      {/* Table or Dipisah View */}
-      {metricTab === "dipisah" ? (
+      {/* Table, Dipisah View, or SaldoPspiView */}
+      {metricTab === "saldo-pspi" ? (
+        <SaldoPspiView tickets={saldoPspiTickets} allSAs={rankingSA.map((r) => r.sa)} />
+      ) : metricTab === "dipisah" ? (
         <DipisahView
           summary={summary}
           rankingSA={rankingSA}

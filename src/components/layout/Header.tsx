@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "@/lib/constants";
 import { formatTimestamp } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
+import { LoginButton } from "@/components/layout/LoginButton";
 
 interface HeaderProps {
   lastUpdated: Date | null;
@@ -132,6 +133,8 @@ export function Header({
             </svg>
           )}
         </button>
+
+        <LoginButton />
       </div>
     </header>
   );

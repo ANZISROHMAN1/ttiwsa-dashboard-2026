@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { FormField } from "@/components/ui/FormField";
+import { SUBMIT_ENDPOINT_URL } from "@/lib/constants";
 
 interface FormData {
   sto: string;
@@ -13,7 +14,6 @@ interface FormData {
   itemNotComply: string;
   symptomKendala: string;
   keteranganDetail: string;
-  evidenceKendala: string;
   alasanGangguanBaru: string;
   alasanPenyelesaianLama: string;
 }
@@ -76,10 +76,11 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
     itemNotComply: "",
     symptomKendala: "",
     keteranganDetail: "",
-    evidenceKendala: "",
     alasanGangguanBaru: "",
     alasanPenyelesaianLama: "",
   });
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Auto-fill from URL query params (from UPDATE REASON button)
   useEffect(() => {
@@ -134,12 +135,27 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
       }
     }
 
-    if (!formData.evidenceKendala.match(/^https?:\/\/.+/i)) {
-      newErrors.evidenceKendala = "Please enter a valid Google Drive URL (https://...)";
+    if (!selectedFile) {
+      newErrors.evidenceKendala = "Please upload an evidence image";
+    } else if (selectedFile.size > 10 * 1024 * 1024) {
+      newErrors.evidenceKendala = "File size must be less than 10 MB";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64Data = result.split(",")[1];
+        resolve(base64Data);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -149,15 +165,48 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
     setSubmitState("loading");
 
     try {
+      let filePayload = undefined;
+      if (selectedFile) {
+        const base64Data = await readFileAsBase64(selectedFile);
+        filePayload = {
+          name: selectedFile.name,
+          mimeType: selectedFile.type,
+          data: base64Data
+        };
+      }
+
       const payload = {
-        ...formData,
-        submittedAt: new Date().toISOString(),
+        sheet: "EVIDENT-AREA-WEB",
+        data: {
+          Timestamp: (() => {
+            const d = new Date();
+            return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
+          })(),
+          STO: formData.sto,
+          "NOMOR ORDER / NOMOR TIKET INCIDENT": formData.nomorOrder,
+          "NAMA TEKNISI": formData.namaTeknisi,
+          "NIK TEKNISI": formData.nikTeknisi,
+          MITRA: formData.mitra,
+          "ITEM NOT COMPLY": formData.itemNotComply,
+          "SYMTOM KENDALA": formData.symptomKendala,
+          "KETERANGAN DETAIL KENDALA": formData.keteranganDetail
+        },
+        file: filePayload
       };
 
       console.log("Submission payload:", payload);
 
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const response = await fetch(SUBMIT_ENDPOINT_URL, {
+        method: "POST",
+        mode: "no-cors", // Required for Google Apps Script to avoid CORS errors in browser
+        headers: {
+          "Content-Type": "text/plain", 
+        },
+        body: JSON.stringify(payload)
+      });
 
+      // With mode: "no-cors", the response is "opaque" so we can't check response.ok
+      // We assume success if the fetch didn't throw a network error
       setSubmitState("success");
 
       setTimeout(() => {
@@ -170,10 +219,10 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
           itemNotComply: "",
           symptomKendala: "",
           keteranganDetail: "",
-          evidenceKendala: "",
           alasanGangguanBaru: "",
           alasanPenyelesaianLama: "",
         });
+        setSelectedFile(null);
         setSubmitState("idle");
       }, 3000);
     } catch {
@@ -378,18 +427,54 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
                   Submit Evidence berupa bukti yang mendukung reason dari NOT COMPLY TTI, FFG atau TTR FFG
                 </div>
                 <div className="text-sm text-foreground-muted mt-2">
-                  Upload 1 supported file. Max 10 MB. (Please provide Google Drive Link)
+                  Upload 1 supported file. Max 10 MB. (Direct image upload)
                 </div>
               </div>
-              <input
-                id="form-evidence"
-                type="url"
-                className={`form-input mt-2 ${errors.evidenceKendala ? "border-rose-500" : ""}`}
-                placeholder="https://drive.google.com/..."
-                value={formData.evidenceKendala}
-                onChange={(e) => updateField("evidenceKendala", e.target.value)}
-              />
-              {errors.evidenceKendala && <p className="mt-1 text-xs text-rose-500">{errors.evidenceKendala}</p>}
+              <div className="mt-2 flex items-center gap-4">
+                <label className={`flex-1 cursor-pointer flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl transition-colors ${errors.evidenceKendala ? 'border-rose-500 bg-rose-500/5 hover:bg-rose-500/10' : 'border-[var(--border)] hover:border-accent-blue bg-[var(--surface)] hover:bg-blue-500/5'}`}>
+                  <svg className={`w-8 h-8 mb-2 ${errors.evidenceKendala ? 'text-rose-500' : 'text-accent-blue'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  <span className="text-sm font-medium text-foreground">
+                    {selectedFile ? selectedFile.name : "Click to upload an image"}
+                  </span>
+                  {selectedFile && (
+                    <span className="text-xs text-foreground-muted mt-1">
+                      {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                    </span>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setSelectedFile(e.target.files[0]);
+                        if (errors.evidenceKendala) {
+                          setErrors(prev => {
+                            const next = { ...prev };
+                            delete next.evidenceKendala;
+                            return next;
+                          });
+                        }
+                      }
+                    }}
+                  />
+                </label>
+                {selectedFile && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFile(null)}
+                    className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                    title="Remove file"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              {errors.evidenceKendala && <p className="mt-2 text-xs text-rose-500">{errors.evidenceKendala}</p>}
             </div>
 
             <div className="pt-4 pb-2 flex justify-between items-center">

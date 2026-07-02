@@ -54,6 +54,7 @@ export interface TTITicket {
   REASON: string;
   EVIDENT: string;
   DURASI: number | string;
+  kpi?: string;
 }
 
 export interface FFGTicket {
@@ -66,6 +67,46 @@ export interface FFGTicket {
   REASON: string;
   EVIDENT: string;
   DURASI: number | string;
+  kpi?: string;
+}
+
+export interface SaldoPspiTicket {
+  SA: string;
+  "Status PS/PI": string;
+  "ERROR CODE": string;
+  "SUB ERROR CODE": string;
+  KETERANGAN: string;
+  org_1: string;
+  org_2: string;
+  org_3: string;
+  org_4: string;
+  sto: string;
+  ndem: string;
+  ncli: number;
+  ndos: number;
+  nd: string;
+  nd_speedy: number;
+  ncx_orderid: string;
+  sc_orderid: string;
+  order_type: string;
+  tgl_pi: string;
+  tgl_complete: string;
+  tgl_ca: string;
+  tgl_un: string;
+  tgl_open: string;
+  tgl_revoke: string;
+  last_status: string;
+  f_pspi: string;
+  sc_last_status: string;
+  sc_last_status_message: string;
+  bima_wonum: string;
+  bima_errorcode: string;
+  bima_suberrorcode: string;
+  cgest: string;
+  cseg: number;
+  divisi: string;
+  periode_pspi: number;
+  lastupdate: string;
 }
 
 /** Unified ticket type for both TTI and FFG */
@@ -96,6 +137,7 @@ export interface DashboardData {
   rankingSTO: RankingSTO[];
   ttiTickets: TTITicket[];
   ffgTickets: FFGTicket[];
+  saldoPspiTickets: SaldoPspiTicket[];
   kpiSimulation: KPISimulation[];
   resume: Resume;
   branchBogor: KPISimulation[];
@@ -106,7 +148,7 @@ export interface DashboardData {
 
 export type Segment = "indihome" | "indibiz";
 
-export type PerformanceMetricTab = "overall" | "tti" | "ttr-ffg" | "ffg" | "dipisah";
+export type PerformanceMetricTab = "overall" | "tti" | "ttr-ffg" | "ffg" | "dipisah" | "saldo-pspi";
 
 export interface SymptomAggregate {
   symptom: string;

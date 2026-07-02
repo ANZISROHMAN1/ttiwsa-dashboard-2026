@@ -8,12 +8,15 @@ interface SummaryCardsProps {
 }
 
 export function SummaryCards({ summary }: SummaryCardsProps) {
-  const ttiIH = summary["TTI INDIHOME"];
-  const ffgIH = summary["FFG INDIHOME"];
-  const ttiIB = summary["TTI INDIBIZ"];
-  const ffgIB = summary["FFG INDIBIZ"];
-  const garansiIH = summary["GARANSI INDIHOME"];
-  const garansiIB = summary["GARANSI INDIBIZ"];
+  const defaultMetric = { comply: 0, notcomply: 0, target: 0, achievement: 0 };
+  const defaultGaransi = { totalPS: 0, totalTicket: 0, achievement: 0 };
+
+  const ttiIH = summary["TTI INDIHOME"] || defaultMetric;
+  const ffgIH = summary["FFG INDIHOME"] || defaultMetric;
+  const ttiIB = summary["TTI INDIBIZ"] || defaultMetric;
+  const ffgIB = summary["FFG INDIBIZ"] || defaultMetric;
+  const garansiIH = summary["GARANSI INDIHOME"] || defaultGaransi;
+  const garansiIB = summary["GARANSI INDIBIZ"] || defaultGaransi;
 
   return (
     <div className="space-y-6">

@@ -50,9 +50,35 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor }: KpiAnalysis
     
     if (selectedKpiCard) {
       base = base.filter((t) => {
-        const isTTI = selectedKpiCard.includes("TTI");
-        if (isTTI) return t.STATUS.startsWith("TTI-");
-        return t.STATUS.startsWith("TTR-");
+        // Map the display label back to the internal kpi key
+        const reverseLabels: Record<string, string> = {
+          "TTI 3x24 Indihome": "TTI IH",
+          "TTR FFG Indihome": "FFG IH",
+          "FFG Indihome": "GARANSI IH",
+          "TTI 1x24 Indibiz": "TTI IB",
+          "TTR FFG Indibiz": "FFG IB",
+          "FFG Indibiz": "GARANSI IB"
+        };
+        
+        const internalKpi = reverseLabels[selectedKpiCard] || selectedKpiCard;
+        let expectedKpi = internalKpi;
+        if (internalKpi === "GARANSI IH") expectedKpi = "FFG IH";
+        if (internalKpi === "GARANSI IB") expectedKpi = "FFG IB";
+        
+        // If data is fresh and has the exact KPI tag, use it.
+        if (t.kpi) {
+          return t.kpi === expectedKpi;
+        }
+
+        // Fallback: If browser is still using cached data without the `kpi` field.
+        const isExpectedFFG = expectedKpi.includes("FFG");
+        const isFFGTicket = t.SYMTOM?.includes("[FFG]") || t.STATUS.startsWith("TTR-");
+        
+        if (isExpectedFFG) {
+          return isFFGTicket;
+        } else {
+          return !isFFGTicket;
+        }
       });
     }
 

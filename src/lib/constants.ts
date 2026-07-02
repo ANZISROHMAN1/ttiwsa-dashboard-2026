@@ -1,13 +1,8 @@
 // ─── API Configuration ──────────────────────────────────────────────────────
 
-export const API_BASE_URL =
-  "https://script.google.com/macros/s/AKfycbzqAmF0tVcKziIFqnQ_BUea-p5uyzK_3GPdW97IQFulGBd1q1OHPqOZCiPnrdQgEmjA/exec?api=true";
-
-/**
- * Placeholder POST endpoint for the update submission form.
- * Replace with the actual Google Apps Script web app URL once available.
- */
-export const SUBMIT_ENDPOINT_URL = "https://placeholder-endpoint.example.com/submit";
+export const SUBMIT_ENDPOINT_URL = process.env.NEXT_PUBLIC_SUBMIT_API_URL || "";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_TTIWSA_API_URL || "";
+export const SALDO_PSPI_API_URL = process.env.NEXT_PUBLIC_PSPI_API_URL || "";
 
 /** Auto-refresh interval in milliseconds (5 minutes) */
 export const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
@@ -111,4 +106,5 @@ export const PERF_METRIC_TABS = [
   { value: "tti" as const, label: "TTI" },
   { value: "ttr-ffg" as const, label: "TTR FFG" },
   { value: "ffg" as const, label: "FFG (Garansi)" },
+  { value: "saldo-pspi" as const, label: "SALDO PS/PI" },
 ];
