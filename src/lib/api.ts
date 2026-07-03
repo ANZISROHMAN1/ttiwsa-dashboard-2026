@@ -1,5 +1,5 @@
-import { API_BASE_URL, SALDO_PSPI_API_URL, KPI_TARGET } from "./constants";
-import type { DashboardData, SaldoPspiTicket, KPISimulation, TTITicket, FFGTicket, RankingSA, RankingSTO, DashboardSummary, Resume } from "@/types/dashboard";
+import { API_BASE_URL, SALDO_PSPI_API_URL, UNSPEC_API_URL, KPI_TARGET } from "./constants";
+import type { DashboardData, SaldoPspiTicket, UnspecTicket, KPISimulation, TTITicket, FFGTicket, RankingSA, RankingSTO, DashboardSummary, Resume } from "@/types/dashboard";
 
 // ─── API Error ──────────────────────────────────────────────────────────────
 
@@ -19,19 +19,23 @@ export async function fetchDashboardData(
   signal?: AbortSignal
 ): Promise<DashboardData> {
   try {
-    if (!API_BASE_URL || !SALDO_PSPI_API_URL) {
+    if (!API_BASE_URL || !SALDO_PSPI_API_URL || !UNSPEC_API_URL) {
       throw new ApiError(
-        "API URLs are not configured. Please ensure NEXT_PUBLIC_TTIWSA_API_URL and NEXT_PUBLIC_PSPI_API_URL are set in your environment variables.",
+        "API URLs are not configured. Please ensure NEXT_PUBLIC_TTIWSA_API_URL, NEXT_PUBLIC_PSPI_API_URL, and UNSPEC_API_URL are set in your environment variables.",
         500
       );
     }
 
-    const [response, saldoResponse] = await Promise.all([
+    const [response, saldoResponse, unspecResponse] = await Promise.all([
       fetch(API_BASE_URL, {
         signal,
         next: { revalidate: 0 },
       }),
       fetch(SALDO_PSPI_API_URL, {
+        signal,
+        next: { revalidate: 0 },
+      }),
+      fetch(UNSPEC_API_URL, {
         signal,
         next: { revalidate: 0 },
       })
@@ -45,10 +49,20 @@ export async function fetchDashboardData(
       console.error(`Saldo API returned ${saldoResponse.status}: ${saldoResponse.statusText}`);
     }
 
+    if (!unspecResponse.ok) {
+      console.error(`Unspec API returned ${unspecResponse.status}: ${unspecResponse.statusText}`);
+    }
+
     const rawData = await response.json();
+    
     let saldoPspiTickets: SaldoPspiTicket[] = [];
     if (saldoResponse.ok) {
       saldoPspiTickets = await saldoResponse.json();
+    }
+
+    let unspecTickets: UnspecTicket[] = [];
+    if (unspecResponse.ok) {
+      unspecTickets = await unspecResponse.json();
     }
 
     const internalTti: (TTITicket & { kpi: string })[] = [];
@@ -249,6 +263,7 @@ export async function fetchDashboardData(
       ttiTickets,
       ffgTickets,
       saldoPspiTickets,
+      unspecTickets,
       kpiSimulation,
       resume,
       branchBogor,

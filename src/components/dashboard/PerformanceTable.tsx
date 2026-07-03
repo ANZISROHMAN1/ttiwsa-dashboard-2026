@@ -18,6 +18,8 @@ import type {
 } from "@/types/dashboard";
 import { DipisahView } from "./DipisahView";
 import { SaldoPspiView } from "./SaldoPspiView";
+import { UnspecView } from "./UnspecView";
+import type { UnspecTicket } from "@/types/dashboard";
 
 interface PerformanceTableProps {
   summary: DashboardSummary;
@@ -28,6 +30,7 @@ interface PerformanceTableProps {
   ttiTickets: Ticket[];
   ffgTickets: Ticket[];
   saldoPspiTickets: SaldoPspiTicket[];
+  unspecTickets: UnspecTicket[];
 }
 
 const SEGMENT_OPTIONS: { value: Segment; label: string }[] = [
@@ -91,6 +94,7 @@ export function PerformanceTable({
   ttiTickets,
   ffgTickets,
   saldoPspiTickets,
+  unspecTickets,
 }: PerformanceTableProps) {
   const [metricTab, setMetricTab] = useState<PerformanceMetricTab>("overall");
   const [segment, setSegment] = useState<Segment>("indihome");
@@ -302,8 +306,8 @@ export function PerformanceTable({
           ))}
         </div>
 
-      {/* Segment + View Controls (Hide if dipisah or saldo-pspi) */}
-      {metricTab !== "dipisah" && metricTab !== "saldo-pspi" && (
+      {/* Segment + View Controls (Hide if dipisah, saldo-pspi, or unspec) */}
+      {metricTab !== "dipisah" && metricTab !== "saldo-pspi" && metricTab !== "unspec" && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <SegmentedControl
             segments={SEGMENT_OPTIONS}
@@ -322,8 +326,10 @@ export function PerformanceTable({
       )}
       </div>
 
-      {/* Table, Dipisah View, or SaldoPspiView */}
-      {metricTab === "saldo-pspi" ? (
+      {/* Table, Dipisah View, SaldoPspiView, or UnspecView */}
+      {metricTab === "unspec" ? (
+        <UnspecView tickets={unspecTickets} allSAs={rankingSA.map((r) => r.sa)} allSTOs={rankingSTO.map((r) => r.sto)} />
+      ) : metricTab === "saldo-pspi" ? (
         <SaldoPspiView tickets={saldoPspiTickets} allSAs={rankingSA.map((r) => r.sa)} />
       ) : metricTab === "dipisah" ? (
         <DipisahView

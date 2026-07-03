@@ -109,6 +109,14 @@ export interface SaldoPspiTicket {
   lastupdate: string;
 }
 
+export interface UnspecTicket {
+  SA: string;
+  sto: string;
+  nd_speedy: string | number;
+  sc_orderid: string;
+  last_status_ukur: string;
+}
+
 /** Unified ticket type for both TTI and FFG */
 export type Ticket = TTITicket | FFGTicket;
 
@@ -138,6 +146,7 @@ export interface DashboardData {
   ttiTickets: TTITicket[];
   ffgTickets: FFGTicket[];
   saldoPspiTickets: SaldoPspiTicket[];
+  unspecTickets: UnspecTicket[];
   kpiSimulation: KPISimulation[];
   resume: Resume;
   branchBogor: KPISimulation[];
@@ -148,7 +157,7 @@ export interface DashboardData {
 
 export type Segment = "indihome" | "indibiz";
 
-export type PerformanceMetricTab = "overall" | "tti" | "ttr-ffg" | "ffg" | "dipisah" | "saldo-pspi";
+export type PerformanceMetricTab = "overall" | "tti" | "ttr-ffg" | "ffg" | "dipisah" | "saldo-pspi" | "unspec";
 
 export interface SymptomAggregate {
   symptom: string;

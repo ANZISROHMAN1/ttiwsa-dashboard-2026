@@ -3,6 +3,7 @@
 export const SUBMIT_ENDPOINT_URL = process.env.SUBMIT_API_URL || "";
 export const API_BASE_URL = process.env.TTIWSA_API_URL || "";
 export const SALDO_PSPI_API_URL = process.env.PSPI_API_URL || "";
+export const UNSPEC_API_URL = process.env.UNSPEC_API_URL || "";
 
 /** Auto-refresh interval in milliseconds (5 minutes) */
 export const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
@@ -107,4 +108,5 @@ export const PERF_METRIC_TABS = [
   { value: "ttr-ffg" as const, label: "TTR FFG" },
   { value: "ffg" as const, label: "FFG (Garansi)" },
   { value: "saldo-pspi" as const, label: "SALDO PS/PI" },
+  { value: "unspec" as const, label: "UNSPEC" },
 ];

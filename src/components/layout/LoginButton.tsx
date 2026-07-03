@@ -2,37 +2,53 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useAuth } from "@/lib/auth";
 
 export function LoginButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { isLoggedIn, login, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
+
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      username === process.env.NEXT_PUBLIC_ADMIN_USERNAME &&
-      password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD
-    ) {
-      setIsLoggedIn(true);
-      setIsOpen(false);
-      setError("");
-    } else {
-      setError("Invalid username or password");
+    setIsLoading(true);
+    setError("");
+    
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        login();
+        setIsOpen(false);
+      } else {
+        setError(data.message || "Invalid username or password");
+      }
+    } catch (err) {
+      setError("Failed to connect to server");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   if (isLoggedIn) {
     return (
       <button
-        onClick={() => setIsLoggedIn(false)}
+        onClick={logout}
         className="btn-secondary !py-2 !px-3 text-xs flex items-center gap-2"
         title="Logout"
       >
@@ -106,8 +122,8 @@ export function LoginButton() {
                 </div>
               )}
               
-              <button type="submit" className="btn-primary w-full py-2.5 mt-2">
-                Login
+              <button type="submit" disabled={isLoading} className="btn-primary w-full py-2.5 mt-2 disabled:opacity-50">
+                {isLoading ? "Logging in..." : "Login"}
               </button>
             </form>
           </div>

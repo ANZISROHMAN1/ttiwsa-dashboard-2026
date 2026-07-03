@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/Badge";
+import { useAuth } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 import { aggregateSymptomsBySA, getUniqueServiceAreas, formatPercent } from "@/lib/utils";
 import { KPI_SIM_LABELS } from "@/lib/constants";
 import type { Ticket, KPISimulation } from "@/types/dashboard";
@@ -16,6 +18,8 @@ interface KpiAnalysisProps {
 }
 
 export function KpiAnalysis({ tickets, kpiSimulation, branchBogor }: KpiAnalysisProps) {
+  const router = useRouter();
+  const { isLoggedIn } = useAuth();
   const uniqueSAs = useMemo(() => getUniqueServiceAreas(tickets), [tickets]);
   const [selectedSA, setSelectedSA] = useState<string>("BRANCH BOGOR");
   const [selectedKpiCard, setSelectedKpiCard] = useState<string | null>(null);
@@ -249,6 +253,11 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor }: KpiAnalysis
     setDetailStatus("");
     setShowOnlyNeedUpdate(false);
   };
+  
+  const handleUpdateClick = (t: Ticket, status: "ACCEPT" | "REJECT") => {
+    const item = t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY';
+    router.push(`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(item)}&evidenceStatus=${status}`);
+  };
 
   // ====== DRILL-DOWN VIEW (detail tickets for a specific symptom) ======
   if (selectedSymptom && drillDownAnalysis) {
@@ -434,20 +443,22 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor }: KpiAnalysis
                             </svg>
                             Lihat foto
                           </button>
-                          <div className="flex items-center gap-2">
-                            <Link
-                              href={`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}&evidenceStatus=ACCEPT`}
-                              className="flex-1 text-center inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors border border-emerald-500/20"
-                            >
-                              Accept
-                            </Link>
-                            <Link
-                              href={`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}&evidenceStatus=REJECT`}
-                              className="flex-1 text-center inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-colors border border-rose-500/20"
-                            >
-                              Reject
-                            </Link>
-                          </div>
+                          {isLoggedIn && (
+                            <div className="flex items-center gap-2">
+                              <Link
+                                href={`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}&evidenceStatus=ACCEPT`}
+                                className="flex-1 text-center inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors border border-emerald-500/20"
+                              >
+                                Accept
+                              </Link>
+                              <Link
+                                href={`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}&evidenceStatus=REJECT`}
+                                className="flex-1 text-center inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-colors border border-rose-500/20"
+                              >
+                                Reject
+                              </Link>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <span className="text-foreground-muted truncate block max-w-[200px]">

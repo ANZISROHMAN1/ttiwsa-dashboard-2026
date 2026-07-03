@@ -21,6 +21,7 @@ export default function PerformancePage() {
       ttiTickets={data.ttiTickets}
       ffgTickets={data.ffgTickets}
       saldoPspiTickets={data.saldoPspiTickets}
+      unspecTickets={data.unspecTickets}
     />
   );
 }

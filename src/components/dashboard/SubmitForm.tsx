@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { FormField } from "@/components/ui/FormField";
+import { useAuth } from "@/lib/auth";
 
 interface FormData {
   sto: string;
@@ -75,6 +76,7 @@ const IMAGE_CATEGORIES = [
 
 export function SubmitForm({ stoList }: SubmitFormProps) {
   const searchParams = useSearchParams();
+  const { isLoggedIn } = useAuth();
 
   const [formData, setFormData] = useState<FormData>({
     sto: "",
@@ -441,35 +443,37 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
               {errors.symptomKendala && <p className="mt-2 text-xs text-rose-500">{errors.symptomKendala}</p>}
             </div>
 
-            <div className="bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl p-6 shadow-sm">
-              <label className="block text-sm font-bold text-foreground mb-4">
-                REJECT/ACCEPT EVIDENCE (Optional)
-              </label>
-              <div className="space-y-4">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="evidenceStatus"
-                    value="ACCEPT"
-                    checked={formData.evidenceStatus === "ACCEPT"}
-                    onChange={(e) => updateField("evidenceStatus", e.target.value)}
-                    className="w-4 h-4 text-emerald-500 bg-background border-[var(--border)] focus:ring-emerald-500"
-                  />
-                  <span className="text-sm font-medium text-foreground">ACCEPT EVIDENCE</span>
+            {isLoggedIn && (
+              <div className="bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl p-6 shadow-sm">
+                <label className="block text-sm font-bold text-foreground mb-4">
+                  REJECT/ACCEPT EVIDENCE (Optional)
                 </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="evidenceStatus"
-                    value="REJECT"
-                    checked={formData.evidenceStatus === "REJECT"}
-                    onChange={(e) => updateField("evidenceStatus", e.target.value)}
-                    className="w-4 h-4 text-rose-500 bg-background border-[var(--border)] focus:ring-rose-500"
-                  />
-                  <span className="text-sm font-medium text-foreground">REJECT EVIDENCE</span>
-                </label>
+                <div className="space-y-4">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="evidenceStatus"
+                      value="ACCEPT"
+                      checked={formData.evidenceStatus === "ACCEPT"}
+                      onChange={(e) => updateField("evidenceStatus", e.target.value)}
+                      className="w-4 h-4 text-emerald-500 bg-background border-[var(--border)] focus:ring-emerald-500"
+                    />
+                    <span className="text-sm font-medium text-foreground">ACCEPT EVIDENCE</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="evidenceStatus"
+                      value="REJECT"
+                      checked={formData.evidenceStatus === "REJECT"}
+                      onChange={(e) => updateField("evidenceStatus", e.target.value)}
+                      className="w-4 h-4 text-rose-500 bg-background border-[var(--border)] focus:ring-rose-500"
+                    />
+                    <span className="text-sm font-medium text-foreground">REJECT EVIDENCE</span>
+                  </label>
+                </div>
               </div>
-            </div>
+            )}
 
             {formData.itemNotComply === "FFG atau TTR FFG NOT COMPLY" && (
               <>
