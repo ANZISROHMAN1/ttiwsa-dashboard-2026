@@ -69,6 +69,8 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
             </div>
           </div>
           <button
+
+          
             onClick={onClose}
             className="btn-icon"
             aria-label="Close menu"

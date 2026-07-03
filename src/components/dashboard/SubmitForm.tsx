@@ -15,6 +15,7 @@ interface FormData {
   keteranganDetail: string;
   alasanGangguanBaru: string;
   alasanPenyelesaianLama: string;
+  evidenceStatus: string;
 }
 
 interface FormErrors {
@@ -86,6 +87,7 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
     keteranganDetail: "",
     alasanGangguanBaru: "",
     alasanPenyelesaianLama: "",
+    evidenceStatus: "",
   });
 
   // Track multiple optional files
@@ -95,14 +97,16 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
     const sc = searchParams.get("sc");
     const sto = searchParams.get("sto");
     const item = searchParams.get("item");
+    const evidenceStatus = searchParams.get("evidenceStatus");
 
-    if (sc || sto || item) {
+    if (sc || sto || item || evidenceStatus) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData((prev) => ({
         ...prev,
         ...(sto ? { sto } : {}),
         ...(sc ? { nomorOrder: sc } : {}),
         ...(item ? { itemNotComply: item } : {}),
+        ...(evidenceStatus ? { evidenceStatus } : {}),
       }));
     }
   }, [searchParams]);
@@ -214,6 +218,11 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
         });
       }
 
+      let finalKeterangan = formData.keteranganDetail;
+      if (formData.itemNotComply === "FFG atau TTR FFG NOT COMPLY") {
+        finalKeterangan = `Kenapa penyelesaian gangguan nya lebih dari 3 jam? : ${formData.alasanPenyelesaianLama}\n\nKenapa bisa muncul gangguan dlm waktu kurang dr 2 bulan pasca psb?: ${formData.alasanGangguanBaru}\n\n${formData.keteranganDetail}`;
+      }
+
       const payload = {
         sheet: "EVIDENT-AREA-WEB",
         data: {
@@ -228,7 +237,8 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
           MITRA: formData.mitra,
           "ITEM NOT COMPLY": formData.itemNotComply,
           "SYMTOM KENDALA": formData.symptomKendala,
-          "KETERANGAN DETAIL KENDALA": formData.keteranganDetail
+          "KETERANGAN DETAIL KENDALA": finalKeterangan,
+          "REJECT/ACCEPT EVIDENCE": formData.evidenceStatus || ""
         },
         files: filePayloads.length > 0 ? filePayloads : undefined
       };
@@ -261,6 +271,7 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
           keteranganDetail: "",
           alasanGangguanBaru: "",
           alasanPenyelesaianLama: "",
+          evidenceStatus: "",
         });
         setSelectedFiles({});
         setSubmitState("idle");
@@ -428,6 +439,36 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
                 ))}
               </div>
               {errors.symptomKendala && <p className="mt-2 text-xs text-rose-500">{errors.symptomKendala}</p>}
+            </div>
+
+            <div className="bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl p-6 shadow-sm">
+              <label className="block text-sm font-bold text-foreground mb-4">
+                REJECT/ACCEPT EVIDENCE (Optional)
+              </label>
+              <div className="space-y-4">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="evidenceStatus"
+                    value="ACCEPT"
+                    checked={formData.evidenceStatus === "ACCEPT"}
+                    onChange={(e) => updateField("evidenceStatus", e.target.value)}
+                    className="w-4 h-4 text-emerald-500 bg-background border-[var(--border)] focus:ring-emerald-500"
+                  />
+                  <span className="text-sm font-medium text-foreground">ACCEPT EVIDENCE</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="evidenceStatus"
+                    value="REJECT"
+                    checked={formData.evidenceStatus === "REJECT"}
+                    onChange={(e) => updateField("evidenceStatus", e.target.value)}
+                    className="w-4 h-4 text-rose-500 bg-background border-[var(--border)] focus:ring-rose-500"
+                  />
+                  <span className="text-sm font-medium text-foreground">REJECT EVIDENCE</span>
+                </label>
+              </div>
             </div>
 
             {formData.itemNotComply === "FFG atau TTR FFG NOT COMPLY" && (

@@ -208,19 +208,35 @@ export function FfgDetailTable({ tickets }: FfgDetailTableProps) {
                   </td>
                   <td className="px-5 py-3 min-w-[200px] text-foreground-muted">{t.REASON}</td>
                   <td className="px-5 py-3 min-w-[150px]">
-                    {t.EVIDENT?.startsWith("http") ? (
-                      <button
-                        onClick={() => setPreviewEvidence(t.EVIDENT)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20 transition-colors"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                          <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                          <polyline points="21 15 16 10 5 21"></polyline>
-                        </svg>
-                        Lihat foto
-                      </button>
-                    ) : (
+                      {t.EVIDENT?.startsWith("http") ? (
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={() => setPreviewEvidence(t.EVIDENT)}
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20 transition-colors"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                              <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                            Lihat foto
+                          </button>
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent('FFG atau TTR FFG NOT COMPLY')}&evidenceStatus=ACCEPT`}
+                              className="flex-1 text-center inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors border border-emerald-500/20"
+                            >
+                              Accept
+                            </Link>
+                            <Link
+                              href={`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent('FFG atau TTR FFG NOT COMPLY')}&evidenceStatus=REJECT`}
+                              className="flex-1 text-center inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-colors border border-rose-500/20"
+                            >
+                              Reject
+                            </Link>
+                          </div>
+                        </div>
+                      ) : (
                       <span className="text-foreground-muted truncate block max-w-[200px]">
                         {t.EVIDENT}
                       </span>
