@@ -1,8 +1,8 @@
 // ─── API Configuration ──────────────────────────────────────────────────────
 
-export const SUBMIT_ENDPOINT_URL = process.env.NEXT_PUBLIC_SUBMIT_API_URL || "";
-export const API_BASE_URL = process.env.NEXT_PUBLIC_TTIWSA_API_URL || "";
-export const SALDO_PSPI_API_URL = process.env.NEXT_PUBLIC_PSPI_API_URL || "";
+export const SUBMIT_ENDPOINT_URL = process.env.SUBMIT_API_URL || "";
+export const API_BASE_URL = process.env.TTIWSA_API_URL || "";
+export const SALDO_PSPI_API_URL = process.env.PSPI_API_URL || "";
 
 /** Auto-refresh interval in milliseconds (5 minutes) */
 export const REFRESH_INTERVAL_MS = 5 * 60 * 1000;

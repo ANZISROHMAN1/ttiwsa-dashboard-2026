@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { fetchDashboardData, ApiError } from "@/lib/api";
-import { REFRESH_INTERVAL_MS } from "@/lib/constants";
 import type { DashboardData } from "@/types/dashboard";
 
 interface UseDashboardDataReturn {
@@ -34,7 +32,12 @@ export function useDashboardData(): UseDashboardDataReturn {
     setError(null);
 
     try {
-      const result = await fetchDashboardData(controller.signal);
+      const res = await fetch("/api/dashboard", { signal: controller.signal });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `API error: ${res.status}`);
+      }
+      const result = await res.json();
       if (!controller.signal.aborted) {
         setData(result);
         setLastUpdated(new Date());
@@ -42,7 +45,7 @@ export function useDashboardData(): UseDashboardDataReturn {
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
       const message =
-        err instanceof ApiError
+        err instanceof Error
           ? err.message
           : "An unexpected error occurred";
       if (!controller.signal.aborted) {

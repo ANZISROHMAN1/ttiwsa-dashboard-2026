@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { FormField } from "@/components/ui/FormField";
-import { SUBMIT_ENDPOINT_URL } from "@/lib/constants";
 
 interface FormData {
   sto: string;
@@ -196,17 +195,19 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
 
       console.log("Submission payload:", payload);
 
-      const response = await fetch(SUBMIT_ENDPOINT_URL, {
+      const response = await fetch("/api/submit", {
         method: "POST",
-        mode: "no-cors", // Required for Google Apps Script to avoid CORS errors in browser
         headers: {
           "Content-Type": "text/plain", 
         },
         body: JSON.stringify(payload)
       });
 
-      // With mode: "no-cors", the response is "opaque" so we can't check response.ok
-      // We assume success if the fetch didn't throw a network error
+      if (!response.ok) {
+        throw new Error("Failed to submit");
+      }
+
+      // We assume success if the fetch didn't throw a network error and response was ok
       setSubmitState("success");
 
       setTimeout(() => {
