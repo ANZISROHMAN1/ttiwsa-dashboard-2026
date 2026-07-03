@@ -63,6 +63,15 @@ const SYMPTOM_OPTIONS = [
   "[TTI] PERLU ACTION UNIT LAIN"
 ];
 
+const IMAGE_CATEGORIES = [
+  "EVIDENCE 1",
+  "EVIDENCE 2",
+  "EVIDENCE 3",
+  "EVIDENCE 4",
+  "BA GANGGUAN FFG PELANGGAN",
+  "FOTO DENGAN PELANGGAN MEMEGANG BA"
+];
+
 export function SubmitForm({ stoList }: SubmitFormProps) {
   const searchParams = useSearchParams();
 
@@ -79,7 +88,8 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
     alasanPenyelesaianLama: "",
   });
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  // Track multiple optional files
+  const [selectedFiles, setSelectedFiles] = useState<Record<string, File>>({});
 
   // Auto-fill from URL query params (from UPDATE REASON button)
   useEffect(() => {
@@ -96,6 +106,7 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
       }));
     }
   }, [searchParams]);
+  
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
 
@@ -134,26 +145,51 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
       }
     }
 
-    if (!selectedFile) {
-      newErrors.evidenceKendala = "Please upload an evidence image";
-    } else if (selectedFile.size > 10 * 1024 * 1024) {
-      newErrors.evidenceKendala = "File size must be less than 10 MB";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const readFileAsBase64 = (file: File): Promise<string> => {
+  const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        const base64Data = result.split(",")[1];
-        resolve(base64Data);
-      };
-      reader.onerror = reject;
       reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+          
+          // Max dimension to keep file size small
+          const MAX_WIDTH = 1000;
+          const MAX_HEIGHT = 1000;
+          
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Compress to JPEG with 0.6 quality
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
+          const base64Data = dataUrl.split(",")[1];
+          resolve(base64Data);
+        };
+        img.onerror = (err) => reject(err);
+      };
+      reader.onerror = (err) => reject(err);
     });
   };
 
@@ -164,14 +200,18 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
     setSubmitState("loading");
 
     try {
-      let filePayload = undefined;
-      if (selectedFile) {
-        const base64Data = await readFileAsBase64(selectedFile);
-        filePayload = {
-          name: selectedFile.name,
-          mimeType: selectedFile.type,
-          data: base64Data
-        };
+      // Process all selected files using the compressor
+      const filePayloads = [];
+      for (const category of Object.keys(selectedFiles)) {
+        const file = selectedFiles[category];
+        const compressedBase64 = await compressImage(file);
+        
+        filePayloads.push({
+          category: category,
+          name: file.name,
+          mimeType: "image/jpeg", // We converted it to JPEG in compression
+          data: compressedBase64
+        });
       }
 
       const payload = {
@@ -190,10 +230,10 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
           "SYMTOM KENDALA": formData.symptomKendala,
           "KETERANGAN DETAIL KENDALA": formData.keteranganDetail
         },
-        file: filePayload
+        files: filePayloads.length > 0 ? filePayloads : undefined
       };
 
-      console.log("Submission payload:", payload);
+      console.log("Submission payload size:", JSON.stringify(payload).length, "bytes");
 
       const response = await fetch("/api/submit", {
         method: "POST",
@@ -207,7 +247,6 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
         throw new Error("Failed to submit");
       }
 
-      // We assume success if the fetch didn't throw a network error and response was ok
       setSubmitState("success");
 
       setTimeout(() => {
@@ -223,13 +262,25 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
           alasanGangguanBaru: "",
           alasanPenyelesaianLama: "",
         });
-        setSelectedFile(null);
+        setSelectedFiles({});
         setSubmitState("idle");
       }, 3000);
     } catch {
       setSubmitState("error");
       setTimeout(() => setSubmitState("idle"), 3000);
     }
+  };
+
+  const handleFileChange = (category: string, file: File | null) => {
+    setSelectedFiles(prev => {
+      const next = { ...prev };
+      if (file) {
+        next[category] = file;
+      } else {
+        delete next[category];
+      }
+      return next;
+    });
   };
 
   return (
@@ -419,63 +470,66 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
               </FormField>
             </div>
 
+            {/* MULTIPLE OPTIONAL UPLOADS */}
             <div className="bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl p-6 shadow-sm">
-              <div className="mb-2">
-                <label htmlFor="form-evidence" className="block text-sm font-bold text-foreground">
-                  EVIDENCE KENDALA <span className="text-rose-500">*</span>
+              <div className="mb-4">
+                <label className="block text-sm font-bold text-foreground">
+                  EVIDENCE KENDALA
                 </label>
                 <div className="text-sm text-foreground-muted mt-1 italic font-semibold">
-                  Submit Evidence berupa bukti yang mendukung reason dari NOT COMPLY TTI, FFG atau TTR FFG
-                </div>
-                <div className="text-sm text-foreground-muted mt-2">
-                  Upload 1 supported file. Max 10 MB. (Direct image upload)
+                  Upload supported evidence. You can upload multiple images to different categories (Optional).
                 </div>
               </div>
-              <div className="mt-2 flex items-center gap-4">
-                <label className={`flex-1 cursor-pointer flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl transition-colors ${errors.evidenceKendala ? 'border-rose-500 bg-rose-500/5 hover:bg-rose-500/10' : 'border-[var(--border)] hover:border-accent-blue bg-[var(--surface)] hover:bg-blue-500/5'}`}>
-                  <svg className={`w-8 h-8 mb-2 ${errors.evidenceKendala ? 'text-rose-500' : 'text-accent-blue'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                  <span className="text-sm font-medium text-foreground">
-                    {selectedFile ? selectedFile.name : "Click to upload an image"}
-                  </span>
-                  {selectedFile && (
-                    <span className="text-xs text-foreground-muted mt-1">
-                      {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-                    </span>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        setSelectedFile(e.target.files[0]);
-                        if (errors.evidenceKendala) {
-                          setErrors(prev => {
-                            const next = { ...prev };
-                            delete next.evidenceKendala;
-                            return next;
-                          });
-                        }
-                      }
-                    }}
-                  />
-                </label>
-                {selectedFile && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedFile(null)}
-                    className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                    title="Remove file"
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {IMAGE_CATEGORIES.map((category) => {
+                  const file = selectedFiles[category];
+                  return (
+                    <div key={category} className="flex flex-col">
+                      <span className="text-xs font-semibold mb-2 text-foreground-muted truncate" title={category}>
+                        {category}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <label className={`flex-1 cursor-pointer flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-xl transition-colors min-h-[100px] ${file ? 'border-emerald-500 bg-emerald-500/5' : 'border-[var(--border)] hover:border-accent-blue bg-[var(--surface)] hover:bg-blue-500/5'}`}>
+                          <svg className={`w-6 h-6 mb-1 ${file ? 'text-emerald-500' : 'text-accent-blue'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                          </svg>
+                          <span className="text-xs font-medium text-center text-foreground px-2 truncate w-full">
+                            {file ? file.name : "Upload Image"}
+                          </span>
+                          {file && (
+                            <span className="text-[10px] text-foreground-muted mt-1">
+                              {(file.size / (1024 * 1024)).toFixed(2)} MB
+                            </span>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleFileChange(category, e.target.files[0]);
+                              }
+                            }}
+                          />
+                        </label>
+                        {file && (
+                          <button
+                            type="button"
+                            onClick={() => handleFileChange(category, null)}
+                            className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors h-fit self-center"
+                            title="Remove file"
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              {errors.evidenceKendala && <p className="mt-2 text-xs text-rose-500">{errors.evidenceKendala}</p>}
             </div>
 
             <div className="pt-4 pb-2 flex justify-between items-center">
@@ -491,7 +545,7 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
                 }`}
               >
                 {submitState === "idle" && "Submit"}
-                {submitState === "loading" && "Submitting..."}
+                {submitState === "loading" && "Submitting (Compressing)..."}
                 {submitState === "success" && "Submitted"}
                 {submitState === "error" && "Failed"}
               </button>

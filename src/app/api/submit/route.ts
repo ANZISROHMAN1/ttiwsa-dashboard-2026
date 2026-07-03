@@ -9,7 +9,7 @@ export async function POST(request: Request) {
 
     const payload = await request.text();
 
-    await fetch(SUBMIT_ENDPOINT_URL, {
+    const gasResponse = await fetch(SUBMIT_ENDPOINT_URL, {
       method: "POST",
       headers: {
         "Content-Type": "text/plain",
@@ -17,7 +17,19 @@ export async function POST(request: Request) {
       body: payload,
     });
 
-    return NextResponse.json({ success: true });
+    const gasText = await gasResponse.text();
+    console.log("GAS Response:", gasText);
+
+    try {
+      const gasJson = JSON.parse(gasText);
+      if (gasJson.error) {
+        return NextResponse.json(gasJson, { status: 400 });
+      }
+      return NextResponse.json(gasJson);
+    } catch {
+      // If it's not JSON, just return it as text
+      return NextResponse.json({ success: true, response: gasText });
+    }
   } catch (error) {
     console.error("Submit Proxy Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
