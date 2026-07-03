@@ -24,20 +24,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Logo / Brand */}
       <div className="h-[var(--header-height)] flex items-center px-5 border-b border-[var(--border)]">
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-8 h-8 rounded-lg bg-accent-blue flex items-center justify-center shrink-0">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-            </svg>
-          </div>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
+              <img 
+                src="/testsayyid.jpg" 
+                alt="Logo" 
+                className="w-full h-full object-cover"
+              />
+            </div>
           {!collapsed && (
             <div className="animate-fade-in">
               <span className="font-semibold text-sm text-foreground tracking-tight">
