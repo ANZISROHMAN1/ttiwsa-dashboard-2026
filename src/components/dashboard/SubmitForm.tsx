@@ -91,13 +91,13 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
   // Track multiple optional files
   const [selectedFiles, setSelectedFiles] = useState<Record<string, File>>({});
 
-  // Auto-fill from URL query params (from UPDATE REASON button)
   useEffect(() => {
     const sc = searchParams.get("sc");
     const sto = searchParams.get("sto");
     const item = searchParams.get("item");
 
     if (sc || sto || item) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData((prev) => ({
         ...prev,
         ...(sto ? { sto } : {}),
