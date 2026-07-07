@@ -6,18 +6,22 @@ import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { aggregateSymptomsBySA, getUniqueServiceAreas, formatPercent } from "@/lib/utils";
 import { KPI_SIM_LABELS } from "@/lib/constants";
-import type { Ticket, KPISimulation } from "@/types/dashboard";
+import type { Ticket, KPISimulation, SaldoPspiTicket, UnspecTicket } from "@/types/dashboard";
 import { CheckCircle2, AlertCircle, ChevronRight, ArrowLeft, Search } from "lucide-react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
+
+type SymptomTab = "tti-ffg" | "pspi" | "unspec";
 
 interface KpiAnalysisProps {
   tickets: Ticket[];
   kpiSimulation: KPISimulation[];
   branchBogor: KPISimulation[];
+  saldoPspiTickets?: SaldoPspiTicket[];
+  unspecTickets?: UnspecTicket[];
 }
 
-export function KpiAnalysis({ tickets, kpiSimulation, branchBogor }: KpiAnalysisProps) {
+export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTickets = [], unspecTickets = [] }: KpiAnalysisProps) {
   const router = useRouter();
   const { isLoggedIn } = useAuth();
   const uniqueSAs = useMemo(() => getUniqueServiceAreas(tickets), [tickets]);
@@ -35,6 +39,12 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor }: KpiAnalysis
   const [globalShowOnlyNeedUpdate, setGlobalShowOnlyNeedUpdate] = useState(false);
   // Evidence preview modal
   const [previewEvidence, setPreviewEvidence] = useState<string | null>(null);
+  // Symptom breakdown tab state
+  const [symptomTab, setSymptomTab] = useState<SymptomTab>("tti-ffg");
+  // Track which drill-down type is active
+  const [drillDownType, setDrillDownType] = useState<SymptomTab>("tti-ffg");
+  // PSPI/Unspec drill-down search
+  const [pspiUnspecSearch, setPspiUnspecSearch] = useState("");
 
   // Helper to convert GDrive links to preview iframe URL
   const getDrivePreviewUrl = (url: string) => {
@@ -240,18 +250,22 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor }: KpiAnalysis
   }, [selectedSymptom, filteredTickets, selectedSA]);
 
   // Handle clicking a symptom row
-  const handleSymptomClick = (symptom: string) => {
+  const handleSymptomClick = (symptom: string, type: SymptomTab = "tti-ffg") => {
     setSelectedSymptom(symptom);
+    setDrillDownType(type);
     setDetailSearch("");
     setDetailStatus("");
+    setPspiUnspecSearch("");
   };
 
   // Handle going back
   const handleBack = () => {
     setSelectedSymptom(null);
+    setDrillDownType("tti-ffg");
     setDetailSearch("");
     setDetailStatus("");
     setShowOnlyNeedUpdate(false);
+    setPspiUnspecSearch("");
   };
   
   const handleUpdateClick = (t: Ticket, status: "ACCEPT" | "REJECT") => {
@@ -259,7 +273,295 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor }: KpiAnalysis
     router.push(`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(item)}&evidenceStatus=${status}`);
   };
 
-  // ====== DRILL-DOWN VIEW (detail tickets for a specific symptom) ======
+  // --- PSPI drill-down tickets ---
+  const pspiDrillDownTickets = useMemo(() => {
+    if (!selectedSymptom || drillDownType !== "pspi") return [];
+    let base = saldoPspiTickets;
+    if (selectedSA !== "BRANCH BOGOR") {
+      base = base.filter((t) => t.SA === selectedSA);
+    }
+    base = base.filter((t) => (t["Status PS/PI"] || t.f_pspi || "UNKNOWN") === selectedSymptom);
+    if (pspiUnspecSearch) {
+      const q = pspiUnspecSearch.toUpperCase();
+      base = base.filter((t) =>
+        t.SA?.toUpperCase().includes(q) ||
+        t.sto?.toUpperCase().includes(q) ||
+        t.sc_orderid?.toUpperCase().includes(q) ||
+        t.nd?.toUpperCase().includes(q) ||
+        t.last_status?.toUpperCase().includes(q) ||
+        t.KETERANGAN?.toUpperCase().includes(q)
+      );
+    }
+    return base;
+  }, [selectedSymptom, drillDownType, saldoPspiTickets, selectedSA, pspiUnspecSearch]);
+
+  // --- Unspec drill-down tickets ---
+  const unspecDrillDownTickets = useMemo(() => {
+    if (!selectedSymptom || drillDownType !== "unspec") return [];
+    let base = unspecTickets;
+    if (selectedSA !== "BRANCH BOGOR") {
+      base = base.filter((t) => t.SA === selectedSA);
+    }
+    base = base.filter((t) => (t.last_status_ukur || "UNKNOWN") === selectedSymptom);
+    if (pspiUnspecSearch) {
+      const q = pspiUnspecSearch.toUpperCase();
+      base = base.filter((t) =>
+        t.SA?.toUpperCase().includes(q) ||
+        t.sto?.toUpperCase().includes(q) ||
+        t.sc_orderid?.toUpperCase().includes(q) ||
+        String(t.nd_speedy)?.toUpperCase().includes(q)
+      );
+    }
+    return base;
+  }, [selectedSymptom, drillDownType, unspecTickets, selectedSA, pspiUnspecSearch]);
+
+  // ====== PSPI DRILL-DOWN VIEW ======
+  if (selectedSymptom && drillDownType === "pspi") {
+    const topSto: Record<string, number> = {};
+    pspiDrillDownTickets.forEach((t) => { topSto[t.sto || "UNKNOWN"] = (topSto[t.sto || "UNKNOWN"] || 0) + 1; });
+    const sortedSto = Object.entries(topSto).sort((a, b) => b[1] - a[1]);
+    const pspiTopSto = sortedSto[0] || ["-", 0];
+
+    // Get unfiltered count for stats
+    let pspiBase = saldoPspiTickets;
+    if (selectedSA !== "BRANCH BOGOR") pspiBase = pspiBase.filter((t) => t.SA === selectedSA);
+    const pspiSymptomAll = pspiBase.filter((t) => (t["Status PS/PI"] || t.f_pspi || "UNKNOWN") === selectedSymptom);
+
+    return (
+      <div className="space-y-5 animate-fade-in">
+        {/* Breadcrumb */}
+        <div className="glass-card p-4">
+          <div className="flex items-center gap-2 text-sm flex-wrap">
+            <button onClick={handleBack} className="flex items-center gap-1.5 text-accent-blue hover:text-blue-400 transition-colors font-medium">
+              <ArrowLeft className="w-4 h-4" /> Back
+            </button>
+            <span className="text-foreground-muted">|</span>
+            <button onClick={handleBack} className="text-accent-blue hover:text-blue-400 transition-colors font-medium">KPI Analysis</button>
+            <ChevronRight className="w-4 h-4 text-foreground-muted" />
+            <span className="text-rose-400 font-medium">PS/PI</span>
+            <ChevronRight className="w-4 h-4 text-foreground-muted" />
+            {selectedSA !== "BRANCH BOGOR" && (
+              <>
+                <button onClick={handleBack} className="text-accent-blue hover:text-blue-400 transition-colors font-medium">{selectedSA}</button>
+                <ChevronRight className="w-4 h-4 text-foreground-muted" />
+              </>
+            )}
+            <span className="text-foreground font-semibold truncate">{selectedSymptom}</span>
+          </div>
+        </div>
+
+        {/* Summary Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="glass-card-sm p-4 text-center">
+            <div className="text-2xl font-bold text-foreground">{pspiSymptomAll.length}</div>
+            <div className="text-xs text-foreground-muted mt-1">Total Tickets</div>
+          </div>
+          <div className="glass-card-sm p-4 text-center">
+            <div className="text-2xl font-bold text-foreground">{pspiTopSto[0]}</div>
+            <div className="text-xs text-foreground-muted mt-1">Top STO</div>
+          </div>
+          <div className="glass-card-sm p-4 text-center">
+            <div className="text-2xl font-bold text-foreground">{pspiTopSto[1]}</div>
+            <div className="text-xs text-foreground-muted mt-1">Tickets at Top STO</div>
+          </div>
+        </div>
+
+        {/* Analysis Box */}
+        <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-5 text-sm text-foreground">
+          <p className="font-bold text-rose-400 text-lg mb-2">Analisa: {selectedSymptom}</p>
+          <p>
+            Total ticket PS/PI dengan status <strong>{selectedSymptom}</strong> saat ini sebanyak{" "}
+            <strong>{pspiSymptomAll.length}</strong> ticket.{" "}
+            STO dengan jumlah ticket tertinggi adalah <strong>{pspiTopSto[0]}</strong> ({pspiTopSto[1]} ticket).
+          </p>
+        </div>
+
+        {/* Filters */}
+        <div className="glass-card p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted" />
+              <input
+                type="text"
+                className="form-input pl-10 w-full"
+                placeholder="Search SA / STO / SC / ND / Keterangan..."
+                value={pspiUnspecSearch}
+                onChange={(e) => setPspiUnspecSearch(e.target.value)}
+              />
+            </div>
+            <Badge variant="info" className="px-4 py-2 text-sm font-semibold rounded-lg shadow-sm">
+              Showing: <span className="ml-1 font-mono">{pspiDrillDownTickets.length}</span>
+            </Badge>
+          </div>
+        </div>
+
+        {/* Detail Ticket Table */}
+        <div className="glass-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[900px]">
+              <thead>
+                <tr className="bg-[var(--surface-hover)] border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted">
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">SA</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">STO</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">SC ORDER ID</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">ND</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">STATUS PS/PI</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">LAST STATUS</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">KETERANGAN</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">ERROR CODE</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)] text-sm">
+                {pspiDrillDownTickets.map((t, idx) => (
+                  <tr key={idx} className="hover:bg-[var(--surface-hover)] transition-colors">
+                    <td className="px-5 py-3 whitespace-nowrap">{t.SA}</td>
+                    <td className="px-5 py-3 whitespace-nowrap">{t.sto}</td>
+                    <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.sc_orderid}</td>
+                    <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.nd}</td>
+                    <td className="px-5 py-3 whitespace-nowrap">
+                      <Badge variant="info">{t["Status PS/PI"] || t.f_pspi}</Badge>
+                    </td>
+                    <td className="px-5 py-3 whitespace-nowrap">{t.last_status}</td>
+                    <td className="px-5 py-3 min-w-[200px] text-foreground-muted">{t.KETERANGAN}</td>
+                    <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t["ERROR CODE"]}</td>
+                  </tr>
+                ))}
+                {pspiDrillDownTickets.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-5 py-12 text-center text-foreground-muted">
+                      Tidak ada ticket yang sesuai dengan filter.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ====== UNSPEC DRILL-DOWN VIEW ======
+  if (selectedSymptom && drillDownType === "unspec") {
+    const topSto: Record<string, number> = {};
+    unspecDrillDownTickets.forEach((t) => { topSto[t.sto || "UNKNOWN"] = (topSto[t.sto || "UNKNOWN"] || 0) + 1; });
+    const sortedSto = Object.entries(topSto).sort((a, b) => b[1] - a[1]);
+    const unspecTopSto = sortedSto[0] || ["-", 0];
+
+    // Get unfiltered count for stats
+    let unspecBase = unspecTickets;
+    if (selectedSA !== "BRANCH BOGOR") unspecBase = unspecBase.filter((t) => t.SA === selectedSA);
+    const unspecSymptomAll = unspecBase.filter((t) => (t.last_status_ukur || "UNKNOWN") === selectedSymptom);
+
+    return (
+      <div className="space-y-5 animate-fade-in">
+        {/* Breadcrumb */}
+        <div className="glass-card p-4">
+          <div className="flex items-center gap-2 text-sm flex-wrap">
+            <button onClick={handleBack} className="flex items-center gap-1.5 text-accent-blue hover:text-blue-400 transition-colors font-medium">
+              <ArrowLeft className="w-4 h-4" /> Back
+            </button>
+            <span className="text-foreground-muted">|</span>
+            <button onClick={handleBack} className="text-accent-blue hover:text-blue-400 transition-colors font-medium">KPI Analysis</button>
+            <ChevronRight className="w-4 h-4 text-foreground-muted" />
+            <span className="text-emerald-400 font-medium">UNDERSPEC</span>
+            <ChevronRight className="w-4 h-4 text-foreground-muted" />
+            {selectedSA !== "BRANCH BOGOR" && (
+              <>
+                <button onClick={handleBack} className="text-accent-blue hover:text-blue-400 transition-colors font-medium">{selectedSA}</button>
+                <ChevronRight className="w-4 h-4 text-foreground-muted" />
+              </>
+            )}
+            <span className="text-foreground font-semibold truncate">{selectedSymptom}</span>
+          </div>
+        </div>
+
+        {/* Summary Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="glass-card-sm p-4 text-center">
+            <div className="text-2xl font-bold text-foreground">{unspecSymptomAll.length}</div>
+            <div className="text-xs text-foreground-muted mt-1">Total Tickets</div>
+          </div>
+          <div className="glass-card-sm p-4 text-center">
+            <div className="text-2xl font-bold text-foreground">{unspecTopSto[0]}</div>
+            <div className="text-xs text-foreground-muted mt-1">Top STO</div>
+          </div>
+          <div className="glass-card-sm p-4 text-center">
+            <div className="text-2xl font-bold text-foreground">{unspecTopSto[1]}</div>
+            <div className="text-xs text-foreground-muted mt-1">Tickets at Top STO</div>
+          </div>
+        </div>
+
+        {/* Analysis Box */}
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-5 text-sm text-foreground">
+          <p className="font-bold text-emerald-400 text-lg mb-2">Analisa: {selectedSymptom}</p>
+          <p>
+            Total ticket UNDERSPEC dengan status <strong>{selectedSymptom}</strong> saat ini sebanyak{" "}
+            <strong>{unspecSymptomAll.length}</strong> ticket.{" "}
+            STO dengan jumlah ticket tertinggi adalah <strong>{unspecTopSto[0]}</strong> ({unspecTopSto[1]} ticket).
+          </p>
+        </div>
+
+        {/* Filters */}
+        <div className="glass-card p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted" />
+              <input
+                type="text"
+                className="form-input pl-10 w-full"
+                placeholder="Search SA / STO / SC / ND Speedy..."
+                value={pspiUnspecSearch}
+                onChange={(e) => setPspiUnspecSearch(e.target.value)}
+              />
+            </div>
+            <Badge variant="info" className="px-4 py-2 text-sm font-semibold rounded-lg shadow-sm">
+              Showing: <span className="ml-1 font-mono">{unspecDrillDownTickets.length}</span>
+            </Badge>
+          </div>
+        </div>
+
+        {/* Detail Ticket Table */}
+        <div className="glass-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[700px]">
+              <thead>
+                <tr className="bg-[var(--surface-hover)] border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted">
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">SA</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">STO</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">ND SPEEDY</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">SC ORDER ID</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">LAST STATUS UKUR</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)] text-sm">
+                {unspecDrillDownTickets.map((t, idx) => (
+                  <tr key={idx} className="hover:bg-[var(--surface-hover)] transition-colors">
+                    <td className="px-5 py-3 whitespace-nowrap">{t.SA}</td>
+                    <td className="px-5 py-3 whitespace-nowrap">{t.sto}</td>
+                    <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.nd_speedy}</td>
+                    <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.sc_orderid}</td>
+                    <td className="px-5 py-3 whitespace-nowrap">
+                      <Badge variant="info">{t.last_status_ukur}</Badge>
+                    </td>
+                  </tr>
+                ))}
+                {unspecDrillDownTickets.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-12 text-center text-foreground-muted">
+                      Tidak ada ticket yang sesuai dengan filter.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ====== TTI/FFG DRILL-DOWN VIEW (detail tickets for a specific symptom) ======
   if (selectedSymptom && drillDownAnalysis) {
     // Determine available statuses for the filter
     const statusOptions = new Set(drillDownTickets.map((t) => t.STATUS));
@@ -419,7 +721,7 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor }: KpiAnalysis
                     <td className="px-5 py-3 min-w-[200px]">
                       {t.NULL_GDOC ? (
                         <Link
-                          href={`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}`}
+                          href={`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}&symptomKendala=${encodeURIComponent(t.SYMTOM || "")}&keteranganDetail=${encodeURIComponent(t.REASON || "")}`}
                           className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition-colors"
                         >
                           UPDATE REASON
@@ -446,13 +748,13 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor }: KpiAnalysis
                           {isLoggedIn && (
                             <div className="flex items-center gap-2">
                               <Link
-                                href={`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}&evidenceStatus=ACCEPT`}
+                                href={`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}&evidenceStatus=ACCEPT&symptomKendala=${encodeURIComponent(t.SYMTOM || "")}&keteranganDetail=${encodeURIComponent(t.REASON || "")}`}
                                 className="flex-1 text-center inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors border border-emerald-500/20"
                               >
                                 Accept
                               </Link>
                               <Link
-                                href={`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}&evidenceStatus=REJECT`}
+                                href={`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}&evidenceStatus=REJECT&symptomKendala=${encodeURIComponent(t.SYMTOM || "")}&keteranganDetail=${encodeURIComponent(t.REASON || "")}`}
                                 className="flex-1 text-center inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-colors border border-rose-500/20"
                               >
                                 Reject
@@ -623,87 +925,280 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor }: KpiAnalysis
         )}
       </div>
 
-      {/* Symptoms Detail — clickable rows */}
-      <div className="glass-card overflow-hidden">
-        <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface-hover)]">
-          <h3 className="text-base font-semibold text-foreground">
-            Symptom Breakdown ({selectedSA}) 
-            {selectedKpiCard && <span className="ml-2 text-sm font-normal text-primary bg-primary/10 px-2 py-1 rounded-full">Filtered: {selectedKpiCard}</span>}
-          </h3>
-          <div className="flex gap-2">
-            <Badge variant="info">Total: {selectedSymptomData.totalTickets}</Badge>
-            <Badge variant="default" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-              COMP: {selectedSymptomData.totalComp}
-            </Badge>
-            <Badge variant="danger">NONC: {selectedSymptomData.totalNonc}</Badge>
-          </div>
-        </div>
-        <div className="px-5 py-2 border-b border-[var(--border)] bg-[var(--surface)]">
-          <p className="text-xs text-foreground-muted flex items-center gap-1.5">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-blue">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="16" x2="12" y2="12" />
-              <line x1="12" y1="8" x2="12.01" y2="8" />
-            </svg>
-            Click on a symptom to view detailed tickets
-          </p>
-        </div>
-        <div className="p-0">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted bg-[var(--surface)]">
-                <th className="px-5 py-3 font-medium">Symptom</th>
-                <th className="px-5 py-3 font-medium text-center">Total</th>
-                <th className="px-5 py-3 font-medium text-center">COMP</th>
-                <th className="px-5 py-3 font-medium text-center">NONC</th>
-                <th className="px-5 py-3 font-medium text-center w-10"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border)] text-sm">
-              {selectedSymptomData.symptoms.map((s) => (
-                <tr
-                  key={s.symptom}
-                  onClick={() => handleSymptomClick(s.symptom)}
-                  className="hover:bg-[var(--surface-hover)] transition-colors cursor-pointer group"
-                >
-                  <td className="px-5 py-3 font-medium text-foreground group-hover:text-accent-blue transition-colors">
-                    {s.symptom}
-                  </td>
-                  <td className="px-5 py-3 text-center">
-                    <span className="font-mono">{s.total}</span>
-                  </td>
-                  <td className="px-5 py-3 text-center">
-                    {s.comp > 0 ? (
+      {/* Symptom Breakdown Tabs + Content */}
+      {(() => {
+        // --- Aggregate PSPI data by SA ---
+        const pspiDataBySA = (() => {
+          const saMap = new Map<string, { status: string; total: number }[]>();
+          for (const t of saldoPspiTickets) {
+            const sa = t.SA || "UNKNOWN";
+            const status = t["Status PS/PI"] || t.f_pspi || "UNKNOWN";
+            if (!saMap.has(sa)) saMap.set(sa, []);
+            const arr = saMap.get(sa)!;
+            const existing = arr.find((s) => s.status === status);
+            if (existing) existing.total++;
+            else arr.push({ status, total: 1 });
+          }
+          return saMap;
+        })();
+
+        const pspiForSelectedSA = (() => {
+          if (selectedSA === "BRANCH BOGOR") {
+            // Aggregate all SAs
+            const merged = new Map<string, number>();
+            for (const t of saldoPspiTickets) {
+              const status = t["Status PS/PI"] || t.f_pspi || "UNKNOWN";
+              merged.set(status, (merged.get(status) || 0) + 1);
+            }
+            return Array.from(merged.entries())
+              .map(([status, total]) => ({ status, total }))
+              .sort((a, b) => b.total - a.total);
+          }
+          return (pspiDataBySA.get(selectedSA) || []).sort((a, b) => b.total - a.total);
+        })();
+
+        const pspiTotal = pspiForSelectedSA.reduce((acc, s) => acc + s.total, 0);
+
+        // --- Aggregate Unspec data by SA ---
+        const unspecDataBySA = (() => {
+          const saMap = new Map<string, { status: string; total: number }[]>();
+          for (const t of unspecTickets) {
+            const sa = t.SA || "UNKNOWN";
+            const status = t.last_status_ukur || "UNKNOWN";
+            if (!saMap.has(sa)) saMap.set(sa, []);
+            const arr = saMap.get(sa)!;
+            const existing = arr.find((s) => s.status === status);
+            if (existing) existing.total++;
+            else arr.push({ status, total: 1 });
+          }
+          return saMap;
+        })();
+
+        const unspecForSelectedSA = (() => {
+          if (selectedSA === "BRANCH BOGOR") {
+            const merged = new Map<string, number>();
+            for (const t of unspecTickets) {
+              const status = t.last_status_ukur || "UNKNOWN";
+              merged.set(status, (merged.get(status) || 0) + 1);
+            }
+            return Array.from(merged.entries())
+              .map(([status, total]) => ({ status, total }))
+              .sort((a, b) => b.total - a.total);
+          }
+          return (unspecDataBySA.get(selectedSA) || []).sort((a, b) => b.total - a.total);
+        })();
+
+        const unspecTotal = unspecForSelectedSA.reduce((acc, s) => acc + s.total, 0);
+
+        return (
+          <>
+            {/* Tab Buttons */}
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => setSymptomTab(symptomTab === "pspi" ? "tti-ffg" : "pspi")}
+                className={`px-5 py-3 rounded-xl text-sm font-bold transition-all duration-200 border-2 ${
+                  symptomTab === "pspi"
+                    ? "bg-rose-500/15 text-rose-400 border-rose-500/40 shadow-lg shadow-rose-500/10 scale-[1.02]"
+                    : "bg-[var(--surface)] text-foreground-muted border-[var(--border)] hover:bg-rose-500/5 hover:text-rose-400 hover:border-rose-500/20"
+                }`}
+              >
+                PS/PI
+              </button>
+              <button
+                onClick={() => setSymptomTab(symptomTab === "unspec" ? "tti-ffg" : "unspec")}
+                className={`px-5 py-3 rounded-xl text-sm font-bold transition-all duration-200 border-2 ${
+                  symptomTab === "unspec"
+                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/40 shadow-lg shadow-emerald-500/10 scale-[1.02]"
+                    : "bg-[var(--surface)] text-foreground-muted border-[var(--border)] hover:bg-emerald-500/5 hover:text-emerald-400 hover:border-emerald-500/20"
+                }`}
+              >
+                UNDERSPEC
+              </button>
+            </div>
+
+            {/* Symptoms Detail — clickable rows */}
+            <div className="glass-card overflow-hidden">
+              <div className="px-5 py-4 border-b border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--surface-hover)]">
+                <h3 className="text-base font-semibold text-foreground">
+                  {symptomTab === "pspi" && "PS/PI "}
+                  {symptomTab === "unspec" && "UNDERSPEC "}
+                  Symptom Breakdown ({selectedSA})
+                  {symptomTab === "tti-ffg" && selectedKpiCard && (
+                    <span className="ml-2 text-sm font-normal text-primary bg-primary/10 px-2 py-1 rounded-full">
+                      Filtered: {selectedKpiCard}
+                    </span>
+                  )}
+                </h3>
+                <div className="flex gap-2 flex-wrap">
+                  {symptomTab === "tti-ffg" && (
+                    <>
+                      <Badge variant="info">Total: {selectedSymptomData.totalTickets}</Badge>
                       <Badge variant="default" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                        {s.comp}
+                        COMP: {selectedSymptomData.totalComp}
                       </Badge>
-                    ) : (
-                      <span className="text-foreground-muted font-mono">-</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3 text-center">
-                    {s.nonc > 0 ? (
-                      <Badge variant="danger">{s.nonc}</Badge>
-                    ) : (
-                      <span className="text-foreground-muted font-mono">-</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3 text-center">
-                    <ChevronRight className="w-4 h-4 text-foreground-muted group-hover:text-accent-blue transition-colors" />
-                  </td>
-                </tr>
-              ))}
-              {selectedSymptomData.symptoms.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-5 py-8 text-center text-foreground-muted">
-                    No tickets found for this area.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                      <Badge variant="danger">NONC: {selectedSymptomData.totalNonc}</Badge>
+                    </>
+                  )}
+                  {symptomTab === "pspi" && (
+                    <Badge variant="info">Total: {pspiTotal}</Badge>
+                  )}
+                  {symptomTab === "unspec" && (
+                    <Badge variant="info">Total: {unspecTotal}</Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="px-5 py-2 border-b border-[var(--border)] bg-[var(--surface)]">
+                <p className="text-xs text-foreground-muted flex items-center gap-1.5">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-blue">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  Click on a symptom to view detailed tickets
+                </p>
+              </div>
+
+              <div className="p-0">
+                {/* === TTI/FFG Symptom Table === */}
+                {symptomTab === "tti-ffg" && (
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted bg-[var(--surface)]">
+                        <th className="px-5 py-3 font-medium">Symptom</th>
+                        <th className="px-5 py-3 font-medium text-center">Total</th>
+                        <th className="px-5 py-3 font-medium text-center">COMP</th>
+                        <th className="px-5 py-3 font-medium text-center">NONC</th>
+                        <th className="px-5 py-3 font-medium text-center w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--border)] text-sm">
+                      {selectedSymptomData.symptoms.map((s) => (
+                        <tr
+                          key={s.symptom}
+                          onClick={() => handleSymptomClick(s.symptom)}
+                          className="hover:bg-[var(--surface-hover)] transition-colors cursor-pointer group"
+                        >
+                          <td className="px-5 py-3 font-medium text-foreground group-hover:text-accent-blue transition-colors">
+                            {s.symptom}
+                          </td>
+                          <td className="px-5 py-3 text-center">
+                            <span className="font-mono">{s.total}</span>
+                          </td>
+                          <td className="px-5 py-3 text-center">
+                            {s.comp > 0 ? (
+                              <Badge variant="default" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                                {s.comp}
+                              </Badge>
+                            ) : (
+                              <span className="text-foreground-muted font-mono">-</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3 text-center">
+                            {s.nonc > 0 ? (
+                              <Badge variant="danger">{s.nonc}</Badge>
+                            ) : (
+                              <span className="text-foreground-muted font-mono">-</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3 text-center">
+                            <ChevronRight className="w-4 h-4 text-foreground-muted group-hover:text-accent-blue transition-colors" />
+                          </td>
+                        </tr>
+                      ))}
+                      {selectedSymptomData.symptoms.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="px-5 py-8 text-center text-foreground-muted">
+                            No tickets found for this area.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* === PS/PI Table === */}
+                {symptomTab === "pspi" && (
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted bg-[var(--surface)]">
+                        <th className="px-5 py-3 font-medium">Status PS/PI</th>
+                        <th className="px-5 py-3 font-medium text-center">Total</th>
+                        <th className="px-5 py-3 font-medium text-center w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--border)] text-sm">
+                      {pspiForSelectedSA.map((s) => (
+                        <tr
+                          key={s.status}
+                          onClick={() => handleSymptomClick(s.status, "pspi")}
+                          className="hover:bg-[var(--surface-hover)] transition-colors cursor-pointer group"
+                        >
+                          <td className="px-5 py-3 font-medium text-foreground group-hover:text-rose-400 transition-colors">
+                            {s.status}
+                          </td>
+                          <td className="px-5 py-3 text-center">
+                            <span className="font-mono">{s.total}</span>
+                          </td>
+                          <td className="px-5 py-3 text-center">
+                            <ChevronRight className="w-4 h-4 text-foreground-muted group-hover:text-rose-400 transition-colors" />
+                          </td>
+                        </tr>
+                      ))}
+                      {pspiForSelectedSA.length === 0 && (
+                        <tr>
+                          <td colSpan={3} className="px-5 py-8 text-center text-foreground-muted">
+                            No PS/PI tickets found for this area.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* === UNDERSPEC Table === */}
+                {symptomTab === "unspec" && (
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted bg-[var(--surface)]">
+                        <th className="px-5 py-3 font-medium">Last Status Ukur</th>
+                        <th className="px-5 py-3 font-medium text-center">Total</th>
+                        <th className="px-5 py-3 font-medium text-center w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--border)] text-sm">
+                      {unspecForSelectedSA.map((s) => (
+                        <tr
+                          key={s.status}
+                          onClick={() => handleSymptomClick(s.status, "unspec")}
+                          className="hover:bg-[var(--surface-hover)] transition-colors cursor-pointer group"
+                        >
+                          <td className="px-5 py-3 font-medium text-foreground group-hover:text-emerald-400 transition-colors">
+                            {s.status}
+                          </td>
+                          <td className="px-5 py-3 text-center">
+                            <span className="font-mono">{s.total}</span>
+                          </td>
+                          <td className="px-5 py-3 text-center">
+                            <ChevronRight className="w-4 h-4 text-foreground-muted group-hover:text-emerald-400 transition-colors" />
+                          </td>
+                        </tr>
+                      ))}
+                      {unspecForSelectedSA.length === 0 && (
+                        <tr>
+                          <td colSpan={3} className="px-5 py-8 text-center text-foreground-muted">
+                            No UNSPEC tickets found for this area.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }

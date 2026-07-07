@@ -100,8 +100,10 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
     const sto = searchParams.get("sto");
     const item = searchParams.get("item");
     const evidenceStatus = searchParams.get("evidenceStatus");
+    const symptomKendala = searchParams.get("symptomKendala");
+    const keteranganDetail = searchParams.get("keteranganDetail");
 
-    if (sc || sto || item || evidenceStatus) {
+    if (sc || sto || item || evidenceStatus || symptomKendala || keteranganDetail) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData((prev) => ({
         ...prev,
@@ -109,6 +111,8 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
         ...(sc ? { nomorOrder: sc } : {}),
         ...(item ? { itemNotComply: item } : {}),
         ...(evidenceStatus ? { evidenceStatus } : {}),
+        ...(symptomKendala ? { symptomKendala } : {}),
+        ...(keteranganDetail ? { keteranganDetail } : {}),
       }));
     }
   }, [searchParams]);

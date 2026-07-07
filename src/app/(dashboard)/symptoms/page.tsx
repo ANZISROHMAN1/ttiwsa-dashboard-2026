@@ -18,6 +18,8 @@ export default function SymptomsPage() {
       tickets={allTickets}
       kpiSimulation={data.kpiSimulation}
       branchBogor={data.branchBogor}
+      saldoPspiTickets={data.saldoPspiTickets}
+      unspecTickets={data.unspecTickets}
     />
   );
 }
