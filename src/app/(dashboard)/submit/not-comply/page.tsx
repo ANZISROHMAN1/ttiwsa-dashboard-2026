@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import { useDashboard } from "../layout";
+import { useDashboard } from "../../layout";
 import { SubmitForm } from "@/components/dashboard/SubmitForm";
 import { PageSkeleton } from "@/components/ui/Skeleton";
-import { getUniqueServiceAreas, getUniqueSTOs } from "@/lib/utils";
+import { getUniqueSTOs } from "@/lib/utils";
 
-export default function SubmitPage() {
+export default function NotComplySubmitPage() {
   const { data, isLoading } = useDashboard();
 
   const stoList = useMemo(
