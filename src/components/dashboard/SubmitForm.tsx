@@ -283,6 +283,7 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
           alasanGangguanBaru: "",
           alasanPenyelesaianLama: "",
           evidenceStatus: "",
+          evidenceLink: "",
         });
         setSelectedFiles({});
         setSubmitState("idle");
