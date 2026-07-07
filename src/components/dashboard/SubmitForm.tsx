@@ -17,6 +17,7 @@ interface FormData {
   alasanGangguanBaru: string;
   alasanPenyelesaianLama: string;
   evidenceStatus: string;
+  evidenceLink: string;
 }
 
 interface FormErrors {
@@ -90,6 +91,7 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
     alasanGangguanBaru: "",
     alasanPenyelesaianLama: "",
     evidenceStatus: "",
+    evidenceLink: "",
   });
 
   // Track multiple optional files
@@ -102,8 +104,9 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
     const evidenceStatus = searchParams.get("evidenceStatus");
     const symptomKendala = searchParams.get("symptomKendala");
     const keteranganDetail = searchParams.get("keteranganDetail");
+    const evidenceLink = searchParams.get("evidenceLink");
 
-    if (sc || sto || item || evidenceStatus || symptomKendala || keteranganDetail) {
+    if (sc || sto || item || evidenceStatus || symptomKendala || keteranganDetail || evidenceLink) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData((prev) => ({
         ...prev,
@@ -113,6 +116,7 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
         ...(evidenceStatus ? { evidenceStatus } : {}),
         ...(symptomKendala ? { symptomKendala } : {}),
         ...(keteranganDetail ? { keteranganDetail } : {}),
+        ...(evidenceLink ? { evidenceLink } : {}),
       }));
     }
   }, [searchParams]);
@@ -244,7 +248,8 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
           "ITEM NOT COMPLY": formData.itemNotComply,
           "SYMTOM KENDALA": formData.symptomKendala,
           "KETERANGAN DETAIL KENDALA": finalKeterangan,
-          "REJECT/ACCEPT EVIDENCE": formData.evidenceStatus || ""
+          "REJECT/ACCEPT EVIDENCE": formData.evidenceStatus || "",
+          "EVIDENCE 1": formData.evidenceLink || ""
         },
         files: filePayloads.length > 0 ? filePayloads : undefined
       };
