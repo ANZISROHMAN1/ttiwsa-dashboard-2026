@@ -992,28 +992,57 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
 
         return (
           <>
-            {/* Tab Buttons */}
-            <div className="flex flex-wrap gap-3">
-              <button
+            {/* Tab Buttons styled as KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-4">
+              <div
                 onClick={() => setSymptomTab(symptomTab === "pspi" ? "tti-ffg" : "pspi")}
-                className={`px-5 py-3 rounded-xl text-sm font-bold transition-all duration-200 border-2 ${
-                  symptomTab === "pspi"
-                    ? "bg-rose-500/15 text-rose-400 border-rose-500/40 shadow-lg shadow-rose-500/10 scale-[1.02]"
-                    : "bg-[var(--surface)] text-foreground-muted border-[var(--border)] hover:bg-rose-500/5 hover:text-rose-400 hover:border-rose-500/20"
+                className={`glass-card p-5 border-l-4 cursor-pointer transition-all duration-200 border-l-rose-500 ${
+                  symptomTab === "pspi" ? "ring-2 ring-primary scale-[1.02] shadow-xl" : "hover:scale-[1.01]"
                 }`}
               >
-                PS/PI
-              </button>
-              <button
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="font-semibold text-foreground text-sm tracking-wide">
+                    PS/PI
+                  </h3>
+                  <AlertCircle className="w-5 h-5 text-rose-500" />
+                </div>
+                <div className="flex justify-between items-end mb-4">
+                  <div>
+                    <div className="text-xs text-foreground-muted mb-1">Total Tickets</div>
+                    <div className="text-2xl font-bold font-mono text-rose-400">
+                      {pspiTotal}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-xs px-3 py-2 rounded-md font-medium text-center bg-rose-500/10 text-rose-500">
+                  MENUNGGU ACTION PS/PI
+                </div>
+              </div>
+
+              <div
                 onClick={() => setSymptomTab(symptomTab === "unspec" ? "tti-ffg" : "unspec")}
-                className={`px-5 py-3 rounded-xl text-sm font-bold transition-all duration-200 border-2 ${
-                  symptomTab === "unspec"
-                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/40 shadow-lg shadow-emerald-500/10 scale-[1.02]"
-                    : "bg-[var(--surface)] text-foreground-muted border-[var(--border)] hover:bg-emerald-500/5 hover:text-emerald-400 hover:border-emerald-500/20"
+                className={`glass-card p-5 border-l-4 cursor-pointer transition-all duration-200 border-l-emerald-500 ${
+                  symptomTab === "unspec" ? "ring-2 ring-primary scale-[1.02] shadow-xl" : "hover:scale-[1.01]"
                 }`}
               >
-                UNDERSPEC
-              </button>
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="font-semibold text-foreground text-sm tracking-wide">
+                    UNDERSPEC
+                  </h3>
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                </div>
+                <div className="flex justify-between items-end mb-4">
+                  <div>
+                    <div className="text-xs text-foreground-muted mb-1">Total Tickets</div>
+                    <div className="text-2xl font-bold font-mono text-emerald-400">
+                      {unspecTotal}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-xs px-3 py-2 rounded-md font-medium text-center bg-emerald-500/10 text-emerald-500">
+                  TICKETS UNDERSPEC
+                </div>
+              </div>
             </div>
 
             {/* Symptoms Detail — clickable rows */}
