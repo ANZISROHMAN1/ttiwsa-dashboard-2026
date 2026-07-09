@@ -199,7 +199,7 @@ export function FfgDetailTable({ tickets }: FfgDetailTableProps) {
                   <td className="px-5 py-3 min-w-[200px]">
                     {t.NULL_GDOC ? (
                       <Link
-                        href={`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent('FFG atau TTR FFG NOT COMPLY')}`}
+                        href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent('FFG atau TTR FFG NOT COMPLY')}`}
                         className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition-colors"
                       >
                         UPDATE REASON

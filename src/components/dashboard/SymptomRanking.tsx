@@ -409,6 +409,7 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
                   <th className="px-5 py-3 font-medium whitespace-nowrap">LAST STATUS</th>
                   <th className="px-5 py-3 font-medium whitespace-nowrap">KETERANGAN</th>
                   <th className="px-5 py-3 font-medium whitespace-nowrap">ERROR CODE</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">ACTION</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)] text-sm">
@@ -424,11 +425,19 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
                     <td className="px-5 py-3 whitespace-nowrap">{t.last_status}</td>
                     <td className="px-5 py-3 min-w-[200px] text-foreground-muted">{t.KETERANGAN}</td>
                     <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t["ERROR CODE"]}</td>
+                    <td className="px-5 py-3 whitespace-nowrap">
+                      <Link
+                        href={`/submit/ps-pi?sc=${encodeURIComponent(t.sc_orderid)}`}
+                        className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 transition-colors"
+                      >
+                        UPDATE DATA
+                      </Link>
+                    </td>
                   </tr>
                 ))}
                 {pspiDrillDownTickets.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-5 py-12 text-center text-foreground-muted">
+                    <td colSpan={9} className="px-5 py-12 text-center text-foreground-muted">
                       Tidak ada ticket yang sesuai dengan filter.
                     </td>
                   </tr>
@@ -721,7 +730,7 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
                     <td className="px-5 py-3 min-w-[200px]">
                       {t.NULL_GDOC ? (
                         <Link
-                          href={`/submit?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}&symptomKendala=${encodeURIComponent(t.SYMTOM || "")}&keteranganDetail=${encodeURIComponent(t.REASON || "")}`}
+                          href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}&symptomKendala=${encodeURIComponent(t.SYMTOM || "")}&keteranganDetail=${encodeURIComponent(t.REASON || "")}`}
                           className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition-colors"
                         >
                           UPDATE REASON

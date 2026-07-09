@@ -97,13 +97,15 @@ export function SubmitFormPSPI() {
       const response = await fetch("/api/submit", {
         method: "POST",
         headers: {
-          "Content-Type": "text/plain", 
+          "Content-Type": "text/plain",
         },
         body: JSON.stringify(payload)
       });
 
+      const gasJson = await response.json();
+
       if (!response.ok) {
-        throw new Error("Failed to submit");
+        throw new Error(gasJson.error || "Failed to submit data");
       }
 
       setSubmitState("success");
@@ -140,7 +142,7 @@ export function SubmitFormPSPI() {
         <div className="p-6 lg:p-8">
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            
+
             <div className="bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl p-6 shadow-sm">
               <FormField label="NOMOR ORDER (sc_orderid) *" id="form-nomorOrder" required error={errors.nomorOrder}>
                 <input
@@ -196,13 +198,12 @@ export function SubmitFormPSPI() {
               <button
                 type="submit"
                 disabled={submitState === "loading" || submitState === "success"}
-                className={`btn-primary px-8 py-2.5 shadow-md ${
-                  submitState === "success"
+                className={`btn-primary px-8 py-2.5 shadow-md ${submitState === "success"
                     ? "!bg-emerald-500"
                     : submitState === "error"
-                    ? "!bg-rose-500"
-                    : ""
-                }`}
+                      ? "!bg-rose-500"
+                      : ""
+                  }`}
               >
                 {submitState === "idle" && "Submit"}
                 {submitState === "loading" && "Submitting..."}
