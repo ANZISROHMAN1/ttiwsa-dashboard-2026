@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { SUBMIT_ENDPOINT_URL } from "@/lib/constants";
+import { jwtVerify } from "jose";
 
 export async function POST(request: Request) {
   try {
@@ -8,6 +9,39 @@ export async function POST(request: Request) {
     }
 
     const payload = await request.text();
+    let isProtectedAction = false;
+
+    // Check if the payload contains a Reject/Accept action
+    try {
+      const parsedPayload = JSON.parse(payload);
+      if (parsedPayload.data && parsedPayload.data["REJECT/ACCEPT EVIDENCE"]) {
+        isProtectedAction = true;
+      }
+    } catch (e) {
+      // Not JSON, just continue
+    }
+
+    // If it's a protected action, strictly verify the JWT
+    if (isProtectedAction) {
+      // Next.js Request cookies requires parsing from headers in older versions, 
+      // but in App Router Route Handlers we can parse cookies directly from the request object or headers.
+      // Wait, request is the standard Web Request, we can get cookies from headers.
+      const cookieHeader = request.headers.get("cookie") || "";
+      const match = cookieHeader.match(/(?:^|;\s*)auth_token=([^;]*)/);
+      const token = match ? match[1] : null;
+
+      if (!token) {
+        return NextResponse.json({ error: "Unauthorized: Admin login required to approve/reject" }, { status: 401 });
+      }
+
+      try {
+        const secretKey = process.env.JWT_SECRET || "default_dev_secret_please_change_in_prod";
+        const secret = new TextEncoder().encode(secretKey);
+        await jwtVerify(token, secret);
+      } catch (err) {
+        return NextResponse.json({ error: "Unauthorized: Invalid or expired session" }, { status: 401 });
+      }
+    }
 
     const gasResponse = await fetch(SUBMIT_ENDPOINT_URL, {
       method: "POST",
@@ -27,7 +61,6 @@ export async function POST(request: Request) {
       }
       return NextResponse.json(gasJson);
     } catch {
-      // If it's not JSON, just return it as text
       return NextResponse.json({ success: true, response: gasText });
     }
   } catch (error) {

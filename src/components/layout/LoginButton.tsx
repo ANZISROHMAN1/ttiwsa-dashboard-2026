@@ -45,10 +45,19 @@ export function LoginButton() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } catch (e) {
+      console.error("Logout failed", e);
+    }
+    logout();
+  };
+
   if (isLoggedIn) {
     return (
       <button
-        onClick={logout}
+        onClick={handleLogout}
         className="btn-secondary !py-2 !px-3 text-xs flex items-center gap-2"
         title="Logout"
       >

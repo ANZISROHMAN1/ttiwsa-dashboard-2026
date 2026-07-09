@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { SignJWT } from "jose";
 
 export async function POST(request: Request) {
   try {
@@ -14,7 +15,29 @@ export async function POST(request: Request) {
     }
 
     if (username === validUsername && password === validPassword) {
-      return NextResponse.json({ success: true });
+      // Create JWT
+      const secretKey = process.env.JWT_SECRET || "default_dev_secret_please_change_in_prod";
+      const secret = new TextEncoder().encode(secretKey);
+      
+      const jwt = await new SignJWT({ role: "admin", user: username })
+        .setProtectedHeader({ alg: "HS256" })
+        .setIssuedAt()
+        .setExpirationTime("24h")
+        .sign(secret);
+
+      const response = NextResponse.json({ success: true });
+      
+      response.cookies.set({
+        name: "auth_token",
+        value: jwt,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 60 * 60 * 24, // 24 hours
+      });
+
+      return response;
     } else {
       return NextResponse.json({ success: false, message: "Invalid username or password" }, { status: 401 });
     }

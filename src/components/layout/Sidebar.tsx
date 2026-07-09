@@ -148,7 +148,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               )}
 
               {!collapsed && hasSubItems && isDropdownOpen && (
-                <div className="pl-10 pr-3 py-1 space-y-1 animate-fade-in">
+                <div className="mx-3 p-1.5 my-1 space-y-1 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-sm animate-slide-down">
                   {item.subItems!.map((subItem) => {
                     const isSubActive = pathname === subItem.href;
                     return (
