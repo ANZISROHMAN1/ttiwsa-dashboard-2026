@@ -78,26 +78,6 @@ ttiwsa-dashboard-2026/
 
 ---
 
-## 🔒 Environment Variables
-
-To run this project locally or deploy it to Vercel, you must configure the following environment variables. Create a `.env.local` file in the root directory:
-
-```env
-# The target Google Apps Script Web App URL for fetching and submitting data
-NEXT_PUBLIC_API_URL=https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
-SUBMIT_ENDPOINT_URL=https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
-
-# Admin Credentials for Evidence Review
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=your_super_secure_password
-
-# 64-character high-entropy cryptographic hex string
-# (Generate via: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
-JWT_SECRET=your_generated_hex_string
-```
-
----
-
 ## 🔌 API Endpoints Reference
 
 | Endpoint | Method | Security | Description |
