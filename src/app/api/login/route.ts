@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
 import { SignJWT } from "jose";
 
-// Simple in-memory rate limiter to mitigate online dictionary attacks
 const rateLimitMap = new Map<string, { attempts: number; lockoutUntil: number }>();
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
 
 export async function POST(request: Request) {
   try {
-    // Get IP for rate limiting (Vercel uses x-forwarded-for)
     const ip = request.headers.get("x-forwarded-for") || "unknown";
     
-    // Check rate limit status
     const record = rateLimitMap.get(ip);
     if (record && record.lockoutUntil > Date.now()) {
       const remainingMinutes = Math.ceil((record.lockoutUntil - Date.now()) / 60000);
@@ -33,10 +30,9 @@ export async function POST(request: Request) {
     }
 
     if (username === validUsername && password === validPassword) {
-      // Success - clear rate limit for this IP
+
       rateLimitMap.delete(ip);
 
-      // Create JWT
       const secretKey = process.env.JWT_SECRET || "default_dev_secret_please_change_in_prod";
       const secret = new TextEncoder().encode(secretKey);
       
@@ -55,12 +51,11 @@ export async function POST(request: Request) {
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         path: "/",
-        maxAge: 60 * 60 * 24, // 24 hours
+        maxAge: 60 * 60 * 24,
       });
 
       return response;
     } else {
-      // Failed login - increment rate limit
       const currentAttempts = record ? record.attempts + 1 : 1;
       const lockoutUntil = currentAttempts >= MAX_ATTEMPTS 
         ? Date.now() + LOCKOUT_MINUTES * 60000 
