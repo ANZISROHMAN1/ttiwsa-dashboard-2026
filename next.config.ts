@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  poweredByHeader: false,
   async headers() {
     return [
       {
@@ -13,7 +12,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'X-Frame-Options',
-            value: 'DENY', 
+            value: 'DENY',
           },
           {
             key: 'Referrer-Policy',
