@@ -64,7 +64,8 @@ export const NAV_ITEMS: NavItem[] = [
     description: "Submit ticket update",
     subItems: [
       { label: "Update Penyebab Not Comply", href: "/submit/not-comply", description: "TTI, FFG & TTR FFG" },
-      { label: "Update PS/PI", href: "/submit/ps-pi", description: "PS/PI-Web Update" }
+      { label: "Update PS/PI", href: "/submit/ps-pi", description: "PS/PI-Web Update" },
+      { label: "Update UNSPEC", href: "/submit/unspec", description: "UNSPEC Update" }
     ]
   },
 ];

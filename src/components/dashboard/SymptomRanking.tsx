@@ -541,6 +541,7 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
                   <th className="px-5 py-3 font-medium whitespace-nowrap">ND SPEEDY</th>
                   <th className="px-5 py-3 font-medium whitespace-nowrap">SC ORDER ID</th>
                   <th className="px-5 py-3 font-medium whitespace-nowrap">LAST STATUS UKUR</th>
+                  <th className="px-5 py-3 font-medium whitespace-nowrap">ACTION</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)] text-sm">
@@ -553,11 +554,19 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
                     <td className="px-5 py-3 whitespace-nowrap">
                       <Badge variant="info">{t.last_status_ukur}</Badge>
                     </td>
+                    <td className="px-5 py-3 whitespace-nowrap">
+                      <Link
+                        href={`/submit/unspec?sc=${encodeURIComponent(t.sc_orderid)}`}
+                        className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 py-1 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20"
+                      >
+                        UPDATE DATA
+                      </Link>
+                    </td>
                   </tr>
                 ))}
                 {unspecDrillDownTickets.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-5 py-12 text-center text-foreground-muted">
+                    <td colSpan={6} className="px-5 py-12 text-center text-foreground-muted">
                       Tidak ada ticket yang sesuai dengan filter.
                     </td>
                   </tr>
