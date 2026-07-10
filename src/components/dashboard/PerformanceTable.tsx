@@ -119,6 +119,23 @@ export function PerformanceTable({
     );
   }, [rankingSTO, sortKey]);
 
+  // Enrich data with PS/PI and UNSPEC counts
+  const enrichedSortedSA = useMemo(() => {
+    return sortedSA.map(row => {
+      const pspi = saldoPspiTickets.filter(t => t.SA?.toUpperCase() === row.sa?.toUpperCase()).length;
+      const unspec = unspecTickets.filter(t => t.SA?.toUpperCase() === row.sa?.toUpperCase()).length;
+      return { ...row, _pspi: pspi, _unspec: unspec };
+    });
+  }, [sortedSA, saldoPspiTickets, unspecTickets]);
+
+  const enrichedSortedSTO = useMemo(() => {
+    return sortedSTO.map(row => {
+      const pspi = saldoPspiTickets.filter(t => t.sto?.toUpperCase() === row.sto?.toUpperCase()).length;
+      const unspec = unspecTickets.filter(t => t.sto?.toUpperCase() === row.sto?.toUpperCase()).length;
+      return { ...row, _pspi: pspi, _unspec: unspec };
+    });
+  }, [sortedSTO, saldoPspiTickets, unspecTickets]);
+
   // ── Build columns based on metric tab ──
 
   function buildSAColumns() {
@@ -164,6 +181,24 @@ export function PerformanceTable({
               col("ttiIB", "TTI"),
               col("ffgIB", "TTR FFG"),
               col("garansiIB", "FFG"),
+              {
+                key: "_pspi",
+                label: "PS/PI",
+                sortable: true,
+                align: "center" as const,
+                render: (row: any) => (
+                  <span className="font-mono text-sm">{row._pspi}</span>
+                )
+              },
+              {
+                key: "_unspec",
+                label: "UNSPEC",
+                sortable: true,
+                align: "center" as const,
+                render: (row: any) => (
+                  <span className="font-mono text-sm">{row._unspec}</span>
+                )
+              },
             ]),
       ];
     }
@@ -247,6 +282,24 @@ export function PerformanceTable({
               colSTO("ttiIB", "TTI"),
               colSTO("ffgIB", "TTR FFG"),
               colSTO("garansiIB", "FFG"),
+              {
+                key: "_pspi",
+                label: "PS/PI",
+                sortable: true,
+                align: "center" as const,
+                render: (row: any) => (
+                  <span className="font-mono text-sm">{row._pspi}</span>
+                )
+              },
+              {
+                key: "_unspec",
+                label: "UNSPEC",
+                sortable: true,
+                align: "center" as const,
+                render: (row: any) => (
+                  <span className="font-mono text-sm">{row._unspec}</span>
+                )
+              },
             ]),
       ];
     }
@@ -287,9 +340,9 @@ export function PerformanceTable({
   }
 
   return (
-    <div className="space-y-5 animate-fade-in">
-      {/* Metric Tabs */}
-      <div className="flex flex-col gap-4">
+    <div className="space-y-5 animate-fade-in relative">
+      {/* Sticky Header for Controls */}
+      <div className="sticky top-[var(--header-height)] z-20 bg-[var(--background)]/95 backdrop-blur-xl pt-5 lg:pt-8 pb-4 -mx-5 px-5 lg:-mx-8 lg:px-8 border-b border-[var(--border)] mb-6 flex flex-col gap-4 -mt-5 lg:-mt-8">
         <div className="flex flex-wrap gap-2">
           {PERF_METRIC_TABS.map((tab) => (
             <button
@@ -306,22 +359,26 @@ export function PerformanceTable({
           ))}
         </div>
 
-      {/* Segment + View Controls (Hide if dipisah, saldo-pspi, or unspec) */}
-      {metricTab !== "dipisah" && metricTab !== "saldo-pspi" && metricTab !== "unspec" && (
+      {/* Segment + View Controls (Hide if saldo-pspi or unspec) */}
+      {metricTab !== "saldo-pspi" && metricTab !== "unspec" && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <SegmentedControl
             segments={SEGMENT_OPTIONS}
             value={segment}
             onChange={setSegment}
           />
-          <SegmentedControl
-            segments={VIEW_OPTIONS}
-            value={view}
-            onChange={setView}
-          />
-          <div className="text-xs text-foreground-muted ml-auto hidden sm:block">
-            Ranked by: <span className="text-foreground font-medium">{getMetricTitle(metricTab, segment)}</span>
-          </div>
+          {metricTab !== "dipisah" && (
+            <>
+              <SegmentedControl
+                segments={VIEW_OPTIONS}
+                value={view}
+                onChange={setView}
+              />
+              <div className="text-xs text-foreground-muted ml-auto hidden sm:block">
+                Ranked by: <span className="text-foreground font-medium">{getMetricTitle(metricTab, segment)}</span>
+              </div>
+            </>
+          )}
         </div>
       )}
       </div>
@@ -339,17 +396,18 @@ export function PerformanceTable({
           branchBogorIncludeBanten={branchBogorIncludeBanten}
           ttiTickets={ttiTickets}
           ffgTickets={ffgTickets}
+          segment={segment}
         />
       ) : view === "sa" ? (
         <DataTable
           columns={buildSAColumns()}
-          data={sortedSA}
+          data={enrichedSortedSA}
           keyExtractor={(row) => row.sa}
         />
       ) : (
         <DataTable
           columns={buildSTOColumns()}
-          data={sortedSTO}
+          data={enrichedSortedSTO}
           keyExtractor={(row) => row.sto}
         />
       )}

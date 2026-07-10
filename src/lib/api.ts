@@ -87,7 +87,9 @@ export async function fetchDashboardData(
           SA: row['SA-TTI-IH'], STO: row['STO-TTI-IH'], SC: row['SC-TTI-IH'],
           STATUS: row['STATUS-TTI-IH'] as any, SYMTOM: row['SYMTOM-TTI-IH']?.trim(),
           NULL_GDOC: isNullGdoc,
-          REASON: row['REASON-TTI-IH'], EVIDENT: row['EVIDENT-TTI-IH'], DURASI: row['DURASI-TTI-IH'],
+          REASON: row['REASON-TTI-IH'], EVIDENT: row['EVIDENT-TTI-IH'],
+          EVIDENT2: row['EVIDEN 2-TTI-IH'] || '', EVIDENT3: row['EVIDEN 3-TTI-IH'] || '', EVIDENT4: row['EVIDEN 4-TTI-IH'] || '',
+          DURASI: row['DURASI-TTI-IH'],
           kpi: 'TTI IH'
         });
       }
@@ -100,7 +102,9 @@ export async function fetchDashboardData(
           SA: row['SA-FFG-IH'], STO: row['STO-FFG-IH'], SC: row['SC-FFG-IH'],
           STATUS: row['STATUS-FFG-IH'] as any, SYMTOM: row['SYMTOM-FFG-IH']?.trim(),
           NULL_GDOC: isNullGdoc,
-          REASON: row['REASON-FFG-IH'], EVIDENT: row['EVIDENT-FFG-IH'], DURASI: row['DURASI-FFG-IH'],
+          REASON: row['REASON-FFG-IH'], EVIDENT: row['EVIDENT-FFG-IH'],
+          EVIDENT2: row['EVIDEN 2-FFG-IH'] || '', EVIDENT3: row['EVIDEN 3-FFG-IH'] || '', EVIDENT4: row['EVIDEN 4-FFG-IH'] || '',
+          DURASI: row['DURASI-FFG-IH'],
           kpi: 'FFG IH'
         });
       }
@@ -112,7 +116,9 @@ export async function fetchDashboardData(
           SA: row['SA-TTI-IB'], STO: row['STO-TTI-IB'], SC: row['SC-TTI-IB'],
           STATUS: row['STATUS-TTI-IB'] as any, SYMTOM: row['SYMTOM-TTI-IB']?.trim(),
           NULL_GDOC: isNullGdoc,
-          REASON: row['REASON-TTI-IB'], EVIDENT: row['EVIDENT-TTI-IB'], DURASI: row['DURASI-TTI-IB'],
+          REASON: row['REASON-TTI-IB'], EVIDENT: row['EVIDENT-TTI-IB'],
+          EVIDENT2: row['EVIDEN 2-TTI-IB'] || '', EVIDENT3: row['EVIDEN 3-TTI-IB'] || '', EVIDENT4: row['EVIDEN 4-TTI-IB'] || '',
+          DURASI: row['DURASI-TTI-IB'],
           kpi: 'TTI IB'
         });
       }
@@ -125,7 +131,9 @@ export async function fetchDashboardData(
           SA: row['SA-FFG-IB'], STO: row['STO-FFG-IB'], SC: row['SC-FFG-IB'],
           STATUS: row['STATUS-FFG-IB'] as any, SYMTOM: row['SYMTOM-FFG-IB']?.trim(),
           NULL_GDOC: isNullGdoc,
-          REASON: row['REASON-FFG-IB'], EVIDENT: row['EVIDENT-FFG-IB'], DURASI: row['DURASI-FFG-IB'],
+          REASON: row['REASON-FFG-IB'], EVIDENT: row['EVIDENT-FFG-IB'],
+          EVIDENT2: row['EVIDEN 2-FFG-IB'] || '', EVIDENT3: row['EVIDEN 3-FFG-IB'] || '', EVIDENT4: row['EVIDEN 4-FFG-IB'] || '',
+          DURASI: row['DURASI-FFG-IB'],
           kpi: 'FFG IB'
         });
       }

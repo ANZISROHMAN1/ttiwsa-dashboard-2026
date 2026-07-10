@@ -53,6 +53,9 @@ export interface TTITicket {
   NULL_GDOC: boolean;
   REASON: string;
   EVIDENT: string;
+  EVIDENT2?: string;
+  EVIDENT3?: string;
+  EVIDENT4?: string;
   DURASI: number | string;
   kpi?: string;
 }
@@ -66,6 +69,9 @@ export interface FFGTicket {
   NULL_GDOC: boolean;
   REASON: string;
   EVIDENT: string;
+  EVIDENT2?: string;
+  EVIDENT3?: string;
+  EVIDENT4?: string;
   DURASI: number | string;
   kpi?: string;
 }

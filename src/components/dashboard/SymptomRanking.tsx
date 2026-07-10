@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/Badge";
+import { EvidenceModal } from "@/components/ui/EvidenceModal";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { aggregateSymptomsBySA, getUniqueServiceAreas, formatPercent } from "@/lib/utils";
@@ -9,7 +10,6 @@ import { KPI_SIM_LABELS } from "@/lib/constants";
 import type { Ticket, KPISimulation, SaldoPspiTicket, UnspecTicket } from "@/types/dashboard";
 import { CheckCircle2, AlertCircle, ChevronRight, ArrowLeft, Search } from "lucide-react";
 import Link from "next/link";
-import { createPortal } from "react-dom";
 
 type SymptomTab = "tti-ffg" | "pspi" | "unspec";
 
@@ -38,7 +38,7 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
   const [globalSearch, setGlobalSearch] = useState("");
   const [globalShowOnlyNeedUpdate, setGlobalShowOnlyNeedUpdate] = useState(false);
   // Evidence preview modal
-  const [previewEvidence, setPreviewEvidence] = useState<string | null>(null);
+  const [previewEvidence, setPreviewEvidence] = useState<string[] | null>(null);
   // Symptom breakdown tab state
   const [symptomTab, setSymptomTab] = useState<SymptomTab>("tti-ffg");
   // Track which drill-down type is active
@@ -46,18 +46,7 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
   // PSPI/Unspec drill-down search
   const [pspiUnspecSearch, setPspiUnspecSearch] = useState("");
 
-  // Helper to convert GDrive links to preview iframe URL
-  const getDrivePreviewUrl = (url: string) => {
-    let id = "";
-    const matchD = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-    if (matchD) id = matchD[1];
-    else {
-      const matchId = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-      if (matchId) id = matchId[1];
-    }
-    if (id) return `https://drive.google.com/file/d/${id}/preview`;
-    return url;
-  };
+
 
   const filteredTickets = useMemo(() => {
     let base = tickets;
@@ -753,7 +742,7 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
                       {t.EVIDENT?.startsWith("http") ? (
                         <div className="flex flex-col gap-2">
                           <button
-                            onClick={() => setPreviewEvidence(t.EVIDENT)}
+                            onClick={() => setPreviewEvidence([t.EVIDENT, t.EVIDENT2 || '', t.EVIDENT3 || '', t.EVIDENT4 || ''].filter(u => u && u.startsWith('http')))}
                             className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20 transition-colors"
                           >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -802,32 +791,11 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
         </div>
 
         {/* Evidence Preview Modal */}
-        {previewEvidence && typeof document !== "undefined" && createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={() => setPreviewEvidence(null)}>
-            <div 
-              className="relative bg-[var(--surface)] rounded-xl shadow-2xl p-4 w-full max-w-4xl h-[85vh] flex flex-col border border-[var(--border)]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-foreground text-lg">Evidence Preview</h3>
-                <button 
-                  onClick={() => setPreviewEvidence(null)}
-                  className="p-2 hover:bg-[var(--surface-hover)] rounded-lg text-foreground-muted hover:text-foreground transition-colors"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
-              </div>
-              <iframe 
-                src={getDrivePreviewUrl(previewEvidence)} 
-                className="w-full flex-1 rounded-lg border border-[var(--border)] bg-white"
-                allow="autoplay"
-              />
-            </div>
-          </div>,
-          document.body
+        {previewEvidence && (
+          <EvidenceModal
+            evidenceUrls={previewEvidence}
+            onClose={() => setPreviewEvidence(null)}
+          />
         )}
       </div>
     );

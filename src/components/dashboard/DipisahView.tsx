@@ -42,6 +42,7 @@ interface DipisahViewProps {
   branchBogorIncludeBanten: KPISimulation[];
   ttiTickets: Ticket[];
   ffgTickets: Ticket[];
+  segment: DipisahSegment;
 }
 
 const SEGMENT_CONFIG = {
@@ -66,9 +67,9 @@ export function DipisahView({
   branchBogorIncludeBanten,
   ttiTickets,
   ffgTickets,
+  segment,
 }: DipisahViewProps) {
   const tablesRef = useRef<HTMLDivElement>(null);
-  const [segment, setSegment] = useState<DipisahSegment>("indihome");
 
   const config = SEGMENT_CONFIG[segment];
 
@@ -256,19 +257,9 @@ export function DipisahView({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Segment Toggle + Download */}
+      {/* Download */}
       <div>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-          {/* Indihome / Indibiz Toggle */}
-          <SegmentedControl
-            segments={[
-              { value: "indihome" as DipisahSegment, label: "Indihome" },
-              { value: "indibiz" as DipisahSegment, label: "Indibiz" },
-            ]}
-            value={segment}
-            onChange={setSegment}
-          />
-
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-end gap-3 mb-4">
           {/* Download Button */}
           <button
             onClick={handleDownloadPNG}

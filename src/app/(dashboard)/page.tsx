@@ -32,6 +32,7 @@ export default function OverviewPage() {
             }))}
             maxValue={100}
             colorByValue
+            valueFormatter={(value) => `${value.toFixed(2)}%`}
           />
         </div>
 
@@ -47,6 +48,7 @@ export default function OverviewPage() {
             }))}
             maxValue={100}
             colorByValue
+            valueFormatter={(value) => `${value.toFixed(2)}%`}
           />
         </div>
       </div>

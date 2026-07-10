@@ -14,6 +14,7 @@ interface BarChartProps {
   className?: string;
   showValue?: boolean;
   colorByValue?: boolean;
+  valueFormatter?: (value: number) => React.ReactNode;
 }
 
 export function BarChart({
@@ -22,6 +23,7 @@ export function BarChart({
   className,
   showValue = true,
   colorByValue = false,
+  valueFormatter,
 }: BarChartProps) {
   const maxValue = propMax || Math.max(...items.map((i) => i.value), 1);
 
@@ -46,7 +48,7 @@ export function BarChart({
                     colors ? colors.text : "text-accent-blue"
                   )}
                 >
-                  {item.value}
+                  {valueFormatter ? valueFormatter(item.value) : item.value}
                 </span>
               )}
             </div>
