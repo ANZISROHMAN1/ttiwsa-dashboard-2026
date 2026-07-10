@@ -5,14 +5,14 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { EvidenceModal } from "@/components/ui/EvidenceModal";
 import { useAuth } from "@/lib/auth";
-import type { FFGTicket } from "@/types/dashboard";
+import type { TTITicket } from "@/types/dashboard";
 import { Search } from "lucide-react";
 
-interface FfgDetailTableProps {
-  tickets: FFGTicket[];
+interface TtiDetailTableProps {
+  tickets: TTITicket[];
 }
 
-export function FfgDetailTable({ tickets }: FfgDetailTableProps) {
+export function TtiDetailTable({ tickets }: TtiDetailTableProps) {
   const { isLoggedIn } = useAuth();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -73,7 +73,7 @@ export function FfgDetailTable({ tickets }: FfgDetailTableProps) {
     <div className="space-y-6 animate-fade-in">
       <div className="glass-card p-5">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
-          <h2 className="text-xl font-bold text-foreground">FFG DETAIL (COMP + NOTC)</h2>
+          <h2 className="text-xl font-bold text-foreground">TTI DETAIL (COMP + NOTC)</h2>
           <div className="text-sm md:text-right text-foreground-muted bg-[var(--surface-hover)] p-3 rounded-xl border border-[var(--border)]">
             <div>
               <span className="font-semibold text-foreground">Total Ticket:</span> {total}
@@ -105,8 +105,8 @@ export function FfgDetailTable({ tickets }: FfgDetailTableProps) {
               onChange={(e) => setStatus(e.target.value)}
             >
               <option value="">ALL STATUS</option>
-              <option value="TTR-COMP">TTR-COMP</option>
-              <option value="TTR-NOTC">TTR-NOTC</option>
+              <option value="TTI-COMP">TTI-COMP</option>
+              <option value="TTI-NOTC">TTI-NOTC</option>
             </select>
           </div>
           <div className="flex items-center gap-2">
@@ -125,19 +125,19 @@ export function FfgDetailTable({ tickets }: FfgDetailTableProps) {
           </div>
         </div>
 
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-5 mb-6 text-sm text-foreground">
-          <p className="font-bold text-amber-500 text-lg mb-2">Analisa FFG</p>
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-5 mb-6 text-sm text-foreground">
+          <p className="font-bold text-blue-500 text-lg mb-2">Analisa TTI</p>
           <p className="mb-3">
-            Total ticket <strong className="text-foreground">FFG</strong> saat ini sebanyak{" "}
+            Total ticket <strong className="text-foreground">TTI</strong> saat ini sebanyak{" "}
             <strong className="text-foreground">{total}</strong> ticket. STO dengan jumlah ticket tertinggi adalah{" "}
             <strong className="text-foreground">{topSto[0]}</strong>. Symptom yang paling dominan adalah{" "}
             <strong className="text-foreground">{topSymptom[0]}</strong> sebanyak{" "}
             <strong className="text-foreground">{topSymptom[1]}</strong> kasus.
           </p>
 
-          <hr className="border-amber-500/20 my-4" />
+          <hr className="border-blue-500/20 my-4" />
 
-          <p className="font-bold text-amber-500 mb-2">BELUM UPDATE REASON PER SA</p>
+          <p className="font-bold text-blue-500 mb-2">BELUM UPDATE REASON PER SA</p>
           <ul className="list-disc pl-5 mb-4 space-y-1 text-foreground-muted">
             {nullGdocRank.length > 0 ? (
               nullGdocRank.map(([sa, count]) => (
@@ -150,7 +150,7 @@ export function FfgDetailTable({ tickets }: FfgDetailTableProps) {
             )}
           </ul>
 
-          <p className="font-bold text-amber-500 mb-2">Rekomendasi:</p>
+          <p className="font-bold text-blue-500 mb-2">Rekomendasi:</p>
           <ul className="list-disc pl-5 text-foreground-muted space-y-1">
             <li>Monitoring ticket aging secara berkala</li>
             <li>Validasi evidence teknisi lapangan</li>
@@ -180,14 +180,14 @@ export function FfgDetailTable({ tickets }: FfgDetailTableProps) {
                   <td className="px-5 py-3 whitespace-nowrap">{t.STO}</td>
                   <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.SC}</td>
                   <td className="px-5 py-3 whitespace-nowrap">
-                    <Badge variant={t.STATUS === "TTR-COMP" ? "default" : "danger"}>
+                    <Badge variant={t.STATUS === "TTI-COMP" ? "default" : "danger"}>
                       {t.STATUS}
                     </Badge>
                   </td>
                   <td className="px-5 py-3 min-w-[200px]">
                     {t.NULL_GDOC ? (
                       <Link
-                        href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent('FFG atau TTR FFG NOT COMPLY')}`}
+                        href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent('TTI NOT COMPLY')}`}
                         className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition-colors"
                       >
                         UPDATE REASON
@@ -214,13 +214,13 @@ export function FfgDetailTable({ tickets }: FfgDetailTableProps) {
                           {isLoggedIn && (
                             <div className="flex items-center gap-2">
                               <Link
-                                href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent('FFG atau TTR FFG NOT COMPLY')}&evidenceStatus=ACCEPT`}
+                                href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent('TTI NOT COMPLY')}&evidenceStatus=ACCEPT`}
                                 className="flex-1 text-center inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors border border-emerald-500/20"
                               >
                                 Accept
                               </Link>
                               <Link
-                                href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent('FFG atau TTR FFG NOT COMPLY')}&evidenceStatus=REJECT`}
+                                href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent('TTI NOT COMPLY')}&evidenceStatus=REJECT`}
                                 className="flex-1 text-center inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-colors border border-rose-500/20"
                               >
                                 Reject

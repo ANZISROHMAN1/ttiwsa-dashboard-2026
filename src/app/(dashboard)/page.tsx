@@ -4,6 +4,7 @@ import { useDashboard } from "./layout";
 import { SummaryCards } from "@/components/dashboard/SummaryCards";
 import { PageSkeleton } from "@/components/ui/Skeleton";
 import { BarChart } from "@/components/ui/BarChart";
+import { TtiDetailTable } from "@/components/dashboard/TtiDetailTable";
 import { FfgDetailTable } from "@/components/dashboard/FfgDetailTable";
 
 export default function OverviewPage() {
@@ -75,10 +76,15 @@ export default function OverviewPage() {
         </div>
         <div className="glass-card-sm p-4 text-center">
           <div className="text-2xl font-bold text-foreground">
-            {data.ttiTickets.filter((t) => !t.NULL_GDOC).length}
+            {data.ffgTickets.length}
           </div>
-          <div className="text-xs text-foreground-muted mt-1">With GDoc</div>
+          <div className="text-xs text-foreground-muted mt-1">FFG Tickets</div>
         </div>
+      </div>
+
+      {/* TTI Detail Section */}
+      <div className="mt-8">
+        <TtiDetailTable tickets={data.ttiTickets} />
       </div>
 
       {/* FFG Detail Section */}
