@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/not-comply-report",
-      "schedule": "0 1,9 * * *"
+      "schedule": "0 1 * * *"
     }
   ]
 }
