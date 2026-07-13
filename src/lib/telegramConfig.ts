@@ -2,27 +2,19 @@ import { Ticket } from "@/types/dashboard";
 
 export const CHAT_IDS: Record<string, string> = {
   "@sayyidfaqihhh": "1356724050",
-  "@chzadabi": "1256111343"
+  "@chzadabi": "1256111343",
+  "@bzandryrenaldy": "170841268"
 };
 
 // ==========================================
-// TEST MAPPING: Only contains @chzadabi for safety.
-// @sayyidfaqihhh receives all STOs because it's hardcoded in the loop.
+// TEST MAPPING: Distributed equally (33.3% each) among 3 test IDs
 // ==========================================
 export const USER_MAPPING: Record<string, string> = {
-  // chzadabi STOs
-  "BOO": "@chzadabi",
-  "CPS": "@chzadabi",
-  "CWI": "@chzadabi",
-  "JGL": "@chzadabi",
-  "CLS": "@chzadabi",
-  "CAU": "@chzadabi",
-  "GPI": "@chzadabi",
-  "CSN": "@chzadabi",
-  "PLG": "@chzadabi",
-  
-  // sayyidfaqihhh STOs (everyone else)
+  // @sayyidfaqihhh (13 STOs)
+  "BOO": "@sayyidfaqihhh",
   "PAG": "@sayyidfaqihhh",
+  "CPS": "@sayyidfaqihhh",
+  "CWI": "@sayyidfaqihhh",
   "CSR": "@sayyidfaqihhh",
   "CRI": "@sayyidfaqihhh",
   "CJU": "@sayyidfaqihhh",
@@ -32,26 +24,36 @@ export const USER_MAPPING: Record<string, string> = {
   "CKB": "@sayyidfaqihhh",
   "CCR": "@sayyidfaqihhh",
   "CBD": "@sayyidfaqihhh",
-  "BGL": "@sayyidfaqihhh",
-  "TJH": "@sayyidfaqihhh",
-  "CBI": "@sayyidfaqihhh",
-  "BJD": "@sayyidfaqihhh",
-  "LWL": "@sayyidfaqihhh",
-  "LBI": "@sayyidfaqihhh",
-  "JSA": "@sayyidfaqihhh",
-  "DMG": "@sayyidfaqihhh",
-  "CGD": "@sayyidfaqihhh",
-  "KHL": "@sayyidfaqihhh",
-  "SPL": "@sayyidfaqihhh",
-  "PAR": "@sayyidfaqihhh",
-  "CSE": "@sayyidfaqihhh",
-  "STL": "@sayyidfaqihhh",
-  "PMU": "@sayyidfaqihhh",
-  "CTR": "@sayyidfaqihhh",
-  "SKB": "@sayyidfaqihhh",
-  "SGN": "@sayyidfaqihhh",
-  "NLD": "@sayyidfaqihhh",
-  "CMO": "@sayyidfaqihhh"
+
+  // @chzadabi (13 STOs)
+  "BGL": "@chzadabi",
+  "TJH": "@chzadabi",
+  "CBI": "@chzadabi",
+  "BJD": "@chzadabi",
+  "JGL": "@chzadabi",
+  "CLS": "@chzadabi",
+  "CAU": "@chzadabi",
+  "LWL": "@chzadabi",
+  "LBI": "@chzadabi",
+  "JSA": "@chzadabi",
+  "DMG": "@chzadabi",
+  "CGD": "@chzadabi",
+  "GPI": "@chzadabi",
+
+  // @bzandryrenaldy (13 STOs)
+  "CSN": "@bzandryrenaldy",
+  "KHL": "@bzandryrenaldy",
+  "SPL": "@bzandryrenaldy",
+  "PAR": "@bzandryrenaldy",
+  "CSE": "@bzandryrenaldy",
+  "STL": "@bzandryrenaldy",
+  "PMU": "@bzandryrenaldy",
+  "CTR": "@bzandryrenaldy",
+  "SKB": "@bzandryrenaldy",
+  "SGN": "@bzandryrenaldy",
+  "NLD": "@bzandryrenaldy",
+  "CMO": "@bzandryrenaldy",
+  "PLG": "@bzandryrenaldy"
 };
 
 // ==========================================
@@ -101,7 +103,7 @@ export const FULL_USER_MAPPING: Record<string, string> = {
 */
 
 export function formatNotComplyMessage(tickets: Ticket[]): string {
-  let message = "🛑format japrinya \n\nREKON NOT COMPLY\n\nLink Update:\nhttps://ttiwsa-dashboard-2026.vercel.app/submit/not-comply\n\n";
+  let message = "format japrinya \n\nREKON NOT COMPLY\n\nLink Update:\nhttps://ttiwsa-dashboard-2026.vercel.app/submit/not-comply\n\n";
 
   tickets.forEach(t => {
     const isTTI = t.STATUS.startsWith("TTI");

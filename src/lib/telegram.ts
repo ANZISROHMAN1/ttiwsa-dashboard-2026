@@ -92,3 +92,4 @@ export function generateTelegramText(data: DashboardData, isManual: boolean = fa
 
   return text;
 }
+
