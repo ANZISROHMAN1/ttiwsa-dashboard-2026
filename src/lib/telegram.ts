@@ -85,8 +85,10 @@ export function generateTelegramText(data: DashboardData, isManual: boolean = fa
   });
 
   if (!isManual) {
-    text += `\n_This is an automated daily report._`;
+    text += `\n_This is an automated daily report._\n`;
   }
+  
+  text += `\n🔗 [View Full Dashboard](https://ttiwsa-dashboard-2026.vercel.app/performance)`;
 
   return text;
 }
