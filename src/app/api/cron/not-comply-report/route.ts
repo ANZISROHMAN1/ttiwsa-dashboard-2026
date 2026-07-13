@@ -40,9 +40,9 @@ export async function GET(request: Request) {
 
     for (const [sto, tickets] of Object.entries(groupedBySTO)) {
       if (tickets.length === 0) continue; // No empty messages
-      
+
       const text = formatNotComplyMessage(tickets);
-      
+
       // Get users for this STO
       const mappedUsers = USER_MAPPING[sto] || "";
       const usernames = new Set(mappedUsers.split(" ").filter(Boolean));
