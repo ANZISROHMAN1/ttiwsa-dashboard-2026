@@ -18,6 +18,8 @@ import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Badge } from "@/components/ui/Badge";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { formatPercent } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
+import { generateTelegramText } from "@/lib/telegram";
 import type { DashboardSummary, RankingSA, KPISimulation, Ticket, SaldoPspiTicket, UnspecTicket } from "@/types/dashboard";
 
 ChartJS.register(
@@ -73,6 +75,7 @@ export function DipisahView({
   unspecTickets = [],
   segment,
 }: DipisahViewProps) {
+  const { isLoggedIn } = useAuth();
   const tablesRef = useRef<HTMLDivElement>(null);
   
   const [selectedTables, setSelectedTables] = useState<string[]>([
@@ -80,6 +83,36 @@ export function DipisahView({
   ]);
   const [ttiIbOrderTypeFilter, setTtiIbOrderTypeFilter] = useState<string>("ALL");
   const [ttiIbStatusFilter, setTtiIbStatusFilter] = useState<"ALL" | "COMP" | "NOTC">("ALL");
+  const [isSendingTelegram, setIsSendingTelegram] = useState(false);
+
+  const handleSendTelegram = async () => {
+    try {
+      setIsSendingTelegram(true);
+      
+      const dataForTelegram = {
+        summary,
+        rankingSA,
+        saldoPspiTickets: saldoPspiTickets || [],
+        unspecTickets: unspecTickets || [],
+      } as any;
+      
+      const text = generateTelegramText(dataForTelegram, true);
+      
+      const res = await fetch("/api/telegram/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!res.ok) throw new Error("Failed to send");
+      alert("Report sent to Telegram!");
+    } catch (err) {
+      console.error(err);
+      alert("Error sending report to Telegram");
+    } finally {
+      setIsSendingTelegram(false);
+    }
+  };
 
   const toggleTable = (table: string) => {
     setSelectedTables(prev => 
@@ -385,16 +418,33 @@ export function DipisahView({
              ))}
           </div>
           
-          {/* Download Button */}
-          <button
-            onClick={handleDownloadPNG}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm shadow-emerald-500/20 whitespace-nowrap"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-            </svg>
-            Download PNG
-          </button>
+          <div className="flex gap-2">
+            {/* Send to Telegram Button (Admin Only) */}
+            {isLoggedIn && (
+              <button
+                onClick={handleSendTelegram}
+                disabled={isSendingTelegram}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm shadow-blue-500/20 whitespace-nowrap disabled:opacity-50"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+                {isSendingTelegram ? "Sending..." : "Send Telegram"}
+              </button>
+            )}
+
+            {/* Download Button */}
+            <button
+              onClick={handleDownloadPNG}
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm shadow-emerald-500/20 whitespace-nowrap"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+              </svg>
+              Download PNG
+            </button>
+          </div>
         </div>
         
         {/* Tables — captured for PNG download */}
