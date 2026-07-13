@@ -2,6 +2,9 @@
 
 import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/Badge";
+import { BarChart } from "@/components/ui/BarChart";
+import { PieChart } from "@/components/ui/PieChart";
+import { Histogram } from "@/components/ui/Histogram";
 import { EvidenceModal } from "@/components/ui/EvidenceModal";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
@@ -152,10 +155,22 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
 
   // Find KPI simulations for the selected SA
   const selectedSimulation = useMemo(() => {
+    let sims = [];
     if (selectedSA === "BRANCH BOGOR") {
-      return branchBogor;
+      sims = branchBogor;
+    } else {
+      sims = kpiSimulation.filter((s) => s.sa === selectedSA);
     }
-    return kpiSimulation.filter((s) => s.sa === selectedSA);
+    
+    return [...sims].sort((a, b) => {
+      const aLabel = KPI_SIM_LABELS[a.kpi] || a.kpi;
+      const bLabel = KPI_SIM_LABELS[b.kpi] || b.kpi;
+      const aIsIndihome = aLabel.toLowerCase().includes("indihome");
+      const bIsIndihome = bLabel.toLowerCase().includes("indihome");
+      if (aIsIndihome && !bIsIndihome) return -1;
+      if (!aIsIndihome && bIsIndihome) return 1;
+      return 0;
+    });
   }, [selectedSA, kpiSimulation, branchBogor]);
 
   // --- Drill-down: get raw tickets for the selected symptom ---
@@ -262,16 +277,14 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
     router.push(`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(item)}&evidenceStatus=${status}`);
   };
 
-  // --- PSPI drill-down tickets ---
-  const pspiDrillDownTickets = useMemo(() => {
-    if (!selectedSymptom || drillDownType !== "pspi") return [];
+  // --- PSPI front tickets ---
+  const pspiFrontTickets = useMemo(() => {
     let base = saldoPspiTickets;
     if (selectedSA !== "BRANCH BOGOR") {
       base = base.filter((t) => t.SA === selectedSA);
     }
-    base = base.filter((t) => (t["Status PS/PI"] || t.f_pspi || "UNKNOWN") === selectedSymptom);
-    if (pspiUnspecSearch) {
-      const q = pspiUnspecSearch.toUpperCase();
+    if (globalSearch) {
+      const q = globalSearch.toUpperCase();
       base = base.filter((t) =>
         t.SA?.toUpperCase().includes(q) ||
         t.sto?.toUpperCase().includes(q) ||
@@ -282,18 +295,16 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
       );
     }
     return base;
-  }, [selectedSymptom, drillDownType, saldoPspiTickets, selectedSA, pspiUnspecSearch]);
+  }, [saldoPspiTickets, selectedSA, globalSearch]);
 
-  // --- Unspec drill-down tickets ---
-  const unspecDrillDownTickets = useMemo(() => {
-    if (!selectedSymptom || drillDownType !== "unspec") return [];
+  // --- Unspec front tickets ---
+  const unspecFrontTickets = useMemo(() => {
     let base = unspecTickets;
     if (selectedSA !== "BRANCH BOGOR") {
       base = base.filter((t) => t.SA === selectedSA);
     }
-    base = base.filter((t) => (t.last_status_ukur || "UNKNOWN") === selectedSymptom);
-    if (pspiUnspecSearch) {
-      const q = pspiUnspecSearch.toUpperCase();
+    if (globalSearch) {
+      const q = globalSearch.toUpperCase();
       base = base.filter((t) =>
         t.SA?.toUpperCase().includes(q) ||
         t.sto?.toUpperCase().includes(q) ||
@@ -302,271 +313,8 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
       );
     }
     return base;
-  }, [selectedSymptom, drillDownType, unspecTickets, selectedSA, pspiUnspecSearch]);
+  }, [unspecTickets, selectedSA, globalSearch]);
 
-  // ====== PSPI DRILL-DOWN VIEW ======
-  if (selectedSymptom && drillDownType === "pspi") {
-    const topSto: Record<string, number> = {};
-    pspiDrillDownTickets.forEach((t) => { topSto[t.sto || "UNKNOWN"] = (topSto[t.sto || "UNKNOWN"] || 0) + 1; });
-    const sortedSto = Object.entries(topSto).sort((a, b) => b[1] - a[1]);
-    const pspiTopSto = sortedSto[0] || ["-", 0];
-
-    // Get unfiltered count for stats
-    let pspiBase = saldoPspiTickets;
-    if (selectedSA !== "BRANCH BOGOR") pspiBase = pspiBase.filter((t) => t.SA === selectedSA);
-    const pspiSymptomAll = pspiBase.filter((t) => (t["Status PS/PI"] || t.f_pspi || "UNKNOWN") === selectedSymptom);
-
-    return (
-      <div className="space-y-5 animate-fade-in">
-        {/* Breadcrumb */}
-        <div className="glass-card p-4">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
-            <button onClick={handleBack} className="flex items-center gap-1.5 text-accent-blue hover:text-blue-400 transition-colors font-medium">
-              <ArrowLeft className="w-4 h-4" /> Back
-            </button>
-            <span className="text-foreground-muted">|</span>
-            <button onClick={handleBack} className="text-accent-blue hover:text-blue-400 transition-colors font-medium">KPI Analysis</button>
-            <ChevronRight className="w-4 h-4 text-foreground-muted" />
-            <span className="text-rose-400 font-medium">PS/PI</span>
-            <ChevronRight className="w-4 h-4 text-foreground-muted" />
-            {selectedSA !== "BRANCH BOGOR" && (
-              <>
-                <button onClick={handleBack} className="text-accent-blue hover:text-blue-400 transition-colors font-medium">{selectedSA}</button>
-                <ChevronRight className="w-4 h-4 text-foreground-muted" />
-              </>
-            )}
-            <span className="text-foreground font-semibold truncate">{selectedSymptom}</span>
-          </div>
-        </div>
-
-        {/* Summary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="glass-card-sm p-4 text-center">
-            <div className="text-2xl font-bold text-foreground">{pspiSymptomAll.length}</div>
-            <div className="text-xs text-foreground-muted mt-1">Total Tickets</div>
-          </div>
-          <div className="glass-card-sm p-4 text-center">
-            <div className="text-2xl font-bold text-foreground">{pspiTopSto[0]}</div>
-            <div className="text-xs text-foreground-muted mt-1">Top STO</div>
-          </div>
-          <div className="glass-card-sm p-4 text-center">
-            <div className="text-2xl font-bold text-foreground">{pspiTopSto[1]}</div>
-            <div className="text-xs text-foreground-muted mt-1">Tickets at Top STO</div>
-          </div>
-        </div>
-
-        {/* Analysis Box */}
-        <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-5 text-sm text-foreground">
-          <p className="font-bold text-rose-400 text-lg mb-2">Analisa: {selectedSymptom}</p>
-          <p>
-            Total ticket PS/PI dengan status <strong>{selectedSymptom}</strong> saat ini sebanyak{" "}
-            <strong>{pspiSymptomAll.length}</strong> ticket.{" "}
-            STO dengan jumlah ticket tertinggi adalah <strong>{pspiTopSto[0]}</strong> ({pspiTopSto[1]} ticket).
-          </p>
-        </div>
-
-        {/* Filters */}
-        <div className="glass-card p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted" />
-              <input
-                type="text"
-                className="form-input pl-10 w-full"
-                placeholder="Search SA / STO / SC / ND / Keterangan..."
-                value={pspiUnspecSearch}
-                onChange={(e) => setPspiUnspecSearch(e.target.value)}
-              />
-            </div>
-            <Badge variant="info" className="px-4 py-2 text-sm font-semibold rounded-lg shadow-sm">
-              Showing: <span className="ml-1 font-mono">{pspiDrillDownTickets.length}</span>
-            </Badge>
-          </div>
-        </div>
-
-        {/* Detail Ticket Table */}
-        <div className="glass-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[900px]">
-              <thead>
-                <tr className="bg-[var(--surface-hover)] border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted">
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">SA</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">STO</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">SC ORDER ID</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">ND</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">STATUS PS/PI</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">LAST STATUS</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">KETERANGAN</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">ERROR CODE</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">ACTION</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border)] text-sm">
-                {pspiDrillDownTickets.map((t, idx) => (
-                  <tr key={idx} className="hover:bg-[var(--surface-hover)] transition-colors">
-                    <td className="px-5 py-3 whitespace-nowrap">{t.SA}</td>
-                    <td className="px-5 py-3 whitespace-nowrap">{t.sto}</td>
-                    <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.sc_orderid}</td>
-                    <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.nd}</td>
-                    <td className="px-5 py-3 whitespace-nowrap">
-                      <Badge variant="info">{t["Status PS/PI"] || t.f_pspi}</Badge>
-                    </td>
-                    <td className="px-5 py-3 whitespace-nowrap">{t.last_status}</td>
-                    <td className="px-5 py-3 min-w-[200px] text-foreground-muted">{t.KETERANGAN}</td>
-                    <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t["ERROR CODE"]}</td>
-                    <td className="px-5 py-3 whitespace-nowrap">
-                      <Link
-                        href={`/submit/ps-pi?sc=${encodeURIComponent(t.sc_orderid)}`}
-                        className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 transition-colors"
-                      >
-                        UPDATE DATA
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-                {pspiDrillDownTickets.length === 0 && (
-                  <tr>
-                    <td colSpan={9} className="px-5 py-12 text-center text-foreground-muted">
-                      Tidak ada ticket yang sesuai dengan filter.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ====== UNSPEC DRILL-DOWN VIEW ======
-  if (selectedSymptom && drillDownType === "unspec") {
-    const topSto: Record<string, number> = {};
-    unspecDrillDownTickets.forEach((t) => { topSto[t.sto || "UNKNOWN"] = (topSto[t.sto || "UNKNOWN"] || 0) + 1; });
-    const sortedSto = Object.entries(topSto).sort((a, b) => b[1] - a[1]);
-    const unspecTopSto = sortedSto[0] || ["-", 0];
-
-    // Get unfiltered count for stats
-    let unspecBase = unspecTickets;
-    if (selectedSA !== "BRANCH BOGOR") unspecBase = unspecBase.filter((t) => t.SA === selectedSA);
-    const unspecSymptomAll = unspecBase.filter((t) => (t.last_status_ukur || "UNKNOWN") === selectedSymptom);
-
-    return (
-      <div className="space-y-5 animate-fade-in">
-        {/* Breadcrumb */}
-        <div className="glass-card p-4">
-          <div className="flex items-center gap-2 text-sm flex-wrap">
-            <button onClick={handleBack} className="flex items-center gap-1.5 text-accent-blue hover:text-blue-400 transition-colors font-medium">
-              <ArrowLeft className="w-4 h-4" /> Back
-            </button>
-            <span className="text-foreground-muted">|</span>
-            <button onClick={handleBack} className="text-accent-blue hover:text-blue-400 transition-colors font-medium">KPI Analysis</button>
-            <ChevronRight className="w-4 h-4 text-foreground-muted" />
-            <span className="text-emerald-400 font-medium">UNDERSPEC</span>
-            <ChevronRight className="w-4 h-4 text-foreground-muted" />
-            {selectedSA !== "BRANCH BOGOR" && (
-              <>
-                <button onClick={handleBack} className="text-accent-blue hover:text-blue-400 transition-colors font-medium">{selectedSA}</button>
-                <ChevronRight className="w-4 h-4 text-foreground-muted" />
-              </>
-            )}
-            <span className="text-foreground font-semibold truncate">{selectedSymptom}</span>
-          </div>
-        </div>
-
-        {/* Summary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="glass-card-sm p-4 text-center">
-            <div className="text-2xl font-bold text-foreground">{unspecSymptomAll.length}</div>
-            <div className="text-xs text-foreground-muted mt-1">Total Tickets</div>
-          </div>
-          <div className="glass-card-sm p-4 text-center">
-            <div className="text-2xl font-bold text-foreground">{unspecTopSto[0]}</div>
-            <div className="text-xs text-foreground-muted mt-1">Top STO</div>
-          </div>
-          <div className="glass-card-sm p-4 text-center">
-            <div className="text-2xl font-bold text-foreground">{unspecTopSto[1]}</div>
-            <div className="text-xs text-foreground-muted mt-1">Tickets at Top STO</div>
-          </div>
-        </div>
-
-        {/* Analysis Box */}
-        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-5 text-sm text-foreground">
-          <p className="font-bold text-emerald-400 text-lg mb-2">Analisa: {selectedSymptom}</p>
-          <p>
-            Total ticket UNDERSPEC dengan status <strong>{selectedSymptom}</strong> saat ini sebanyak{" "}
-            <strong>{unspecSymptomAll.length}</strong> ticket.{" "}
-            STO dengan jumlah ticket tertinggi adalah <strong>{unspecTopSto[0]}</strong> ({unspecTopSto[1]} ticket).
-          </p>
-        </div>
-
-        {/* Filters */}
-        <div className="glass-card p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted" />
-              <input
-                type="text"
-                className="form-input pl-10 w-full"
-                placeholder="Search SA / STO / SC / ND Speedy..."
-                value={pspiUnspecSearch}
-                onChange={(e) => setPspiUnspecSearch(e.target.value)}
-              />
-            </div>
-            <Badge variant="info" className="px-4 py-2 text-sm font-semibold rounded-lg shadow-sm">
-              Showing: <span className="ml-1 font-mono">{unspecDrillDownTickets.length}</span>
-            </Badge>
-          </div>
-        </div>
-
-        {/* Detail Ticket Table */}
-        <div className="glass-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[700px]">
-              <thead>
-                <tr className="bg-[var(--surface-hover)] border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted">
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">SA</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">STO</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">ND SPEEDY</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">SC ORDER ID</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">LAST STATUS UKUR</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">ACTION</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border)] text-sm">
-                {unspecDrillDownTickets.map((t, idx) => (
-                  <tr key={idx} className="hover:bg-[var(--surface-hover)] transition-colors">
-                    <td className="px-5 py-3 whitespace-nowrap">{t.SA}</td>
-                    <td className="px-5 py-3 whitespace-nowrap">{t.sto}</td>
-                    <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.nd_speedy}</td>
-                    <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.sc_orderid}</td>
-                    <td className="px-5 py-3 whitespace-nowrap">
-                      <Badge variant="info">{t.last_status_ukur}</Badge>
-                    </td>
-                    <td className="px-5 py-3 whitespace-nowrap">
-                      <Link
-                        href={`/submit/unspec?sc=${encodeURIComponent(t.sc_orderid)}`}
-                        className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 py-1 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20"
-                      >
-                        UPDATE DATA
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-                {unspecDrillDownTickets.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-5 py-12 text-center text-foreground-muted">
-                      Tidak ada ticket yang sesuai dengan filter.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // ====== TTI/FFG DRILL-DOWN VIEW (detail tickets for a specific symptom) ======
   if (selectedSymptom && drillDownAnalysis) {
@@ -789,6 +537,76 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
             </table>
           </div>
         </div>
+
+        {/* Distribution Charts */}
+        {drillDownTickets.length > 0 && (() => {
+          const compTickets = drillDownTickets.filter((t) => t.STATUS.includes("-COMP"));
+          const notcTickets = drillDownTickets.filter((t) => t.STATUS.includes("-NOTC"));
+
+          return (
+            <div className="space-y-8 mt-8">
+              {compTickets.length > 0 && (
+                <div className="animate-fade-in">
+                  <h3 className="font-bold text-lg text-emerald-400 border-b border-[var(--border)] pb-2 mb-4">COMPLY (COMP)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="glass-card p-5">
+                      <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider text-emerald-400">Distribusi SA (Pie)</h3>
+                      <PieChart data={(() => {
+                        const count: Record<string, number> = {};
+                        compTickets.forEach(t => {
+                          const sa = t.SA || "UNKNOWN";
+                          count[sa] = (count[sa] || 0) + 1;
+                        });
+                        return Object.fromEntries(Object.entries(count).sort((a,b)=>b[1]-a[1]).slice(0, 10));
+                      })()} />
+                    </div>
+                    <div className="glass-card p-5">
+                      <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider text-emerald-400">Distribusi STO (Histogram)</h3>
+                      <Histogram data={(() => {
+                        const count: Record<string, number> = {};
+                        compTickets.forEach(t => {
+                          const sto = t.STO || "UNKNOWN";
+                          count[sto] = (count[sto] || 0) + 1;
+                        });
+                        return Object.fromEntries(Object.entries(count).sort((a,b)=>b[1]-a[1]).slice(0, 15));
+                      })()} color="rgba(16, 185, 129, 0.8)" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {notcTickets.length > 0 && (
+                <div className="animate-fade-in">
+                  <h3 className="font-bold text-lg text-rose-400 border-b border-[var(--border)] pb-2 mb-4">NOT COMPLY (NOTC)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="glass-card p-5">
+                      <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider text-rose-400">Distribusi SA (Pie)</h3>
+                      <PieChart data={(() => {
+                        const count: Record<string, number> = {};
+                        notcTickets.forEach(t => {
+                          const sa = t.SA || "UNKNOWN";
+                          count[sa] = (count[sa] || 0) + 1;
+                        });
+                        return Object.fromEntries(Object.entries(count).sort((a,b)=>b[1]-a[1]).slice(0, 10));
+                      })()} />
+                    </div>
+                    <div className="glass-card p-5">
+                      <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider text-rose-400">Distribusi STO (Histogram)</h3>
+                      <Histogram data={(() => {
+                        const count: Record<string, number> = {};
+                        notcTickets.forEach(t => {
+                          const sto = t.STO || "UNKNOWN";
+                          count[sto] = (count[sto] || 0) + 1;
+                        });
+                        return Object.fromEntries(Object.entries(count).sort((a,b)=>b[1]-a[1]).slice(0, 15));
+                      })()} color="rgba(244, 63, 94, 0.8)" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Evidence Preview Modal */}
         {previewEvidence && (
@@ -1132,82 +950,162 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
                   </table>
                 )}
 
-                {/* === PS/PI Table === */}
+                {/* === PS/PI Details === */}
                 {symptomTab === "pspi" && (
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted bg-[var(--surface)]">
-                        <th className="px-5 py-3 font-medium">Status PS/PI</th>
-                        <th className="px-5 py-3 font-medium text-center">Total</th>
-                        <th className="px-5 py-3 font-medium text-center w-10"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--border)] text-sm">
-                      {pspiForSelectedSA.map((s) => (
-                        <tr
-                          key={s.status}
-                          onClick={() => handleSymptomClick(s.status, "pspi")}
-                          className="hover:bg-[var(--surface-hover)] transition-colors cursor-pointer group"
-                        >
-                          <td className="px-5 py-3 font-medium text-foreground group-hover:text-rose-400 transition-colors">
-                            {s.status}
-                          </td>
-                          <td className="px-5 py-3 text-center">
-                            <span className="font-mono">{s.total}</span>
-                          </td>
-                          <td className="px-5 py-3 text-center">
-                            <ChevronRight className="w-4 h-4 text-foreground-muted group-hover:text-rose-400 transition-colors" />
-                          </td>
-                        </tr>
-                      ))}
-                      {pspiForSelectedSA.length === 0 && (
-                        <tr>
-                          <td colSpan={3} className="px-5 py-8 text-center text-foreground-muted">
-                            No PS/PI tickets found for this area.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                  <div className="p-5 bg-[var(--surface)] space-y-6">
+                    <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
+                      <table className="w-full text-left border-collapse min-w-[900px]">
+                        <thead>
+                          <tr className="bg-[var(--surface-hover)] border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted">
+                            <th className="px-5 py-3 font-medium whitespace-nowrap">SA</th>
+                            <th className="px-5 py-3 font-medium whitespace-nowrap">STO</th>
+                            <th className="px-5 py-3 font-medium whitespace-nowrap">SC ORDER ID</th>
+                            <th className="px-5 py-3 font-medium whitespace-nowrap">ND</th>
+                            <th className="px-5 py-3 font-medium whitespace-nowrap">STATUS PS/PI</th>
+                            <th className="px-5 py-3 font-medium whitespace-nowrap">LAST STATUS</th>
+                            <th className="px-5 py-3 font-medium whitespace-nowrap">KETERANGAN</th>
+                            <th className="px-5 py-3 font-medium whitespace-nowrap">ERROR CODE</th>
+                            <th className="px-5 py-3 font-medium whitespace-nowrap">ACTION</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--border)] text-sm">
+                          {pspiFrontTickets.map((t, idx) => (
+                            <tr key={idx} className="hover:bg-[var(--surface-hover)] transition-colors">
+                              <td className="px-5 py-3 whitespace-nowrap">{t.SA}</td>
+                              <td className="px-5 py-3 whitespace-nowrap">{t.sto}</td>
+                              <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.sc_orderid}</td>
+                              <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.nd}</td>
+                              <td className="px-5 py-3 whitespace-nowrap">
+                                <Badge variant="info">{t["Status PS/PI"] || t.f_pspi}</Badge>
+                              </td>
+                              <td className="px-5 py-3 whitespace-nowrap">{t.last_status}</td>
+                              <td className="px-5 py-3 min-w-[200px] text-foreground-muted">{t.KETERANGAN}</td>
+                              <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t["ERROR CODE"]}</td>
+                              <td className="px-5 py-3 whitespace-nowrap">
+                                <Link
+                                  href={`/submit/ps-pi?sc=${encodeURIComponent(t.sc_orderid)}`}
+                                  className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 transition-colors"
+                                >
+                                  UPDATE DATA
+                                </Link>
+                              </td>
+                            </tr>
+                          ))}
+                          {pspiFrontTickets.length === 0 && (
+                            <tr>
+                              <td colSpan={9} className="px-5 py-12 text-center text-foreground-muted">
+                                Tidak ada ticket yang sesuai dengan filter.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Distribution Charts */}
+                    {pspiFrontTickets.length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        <div className="glass-card p-5">
+                          <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider text-rose-400">Distribusi SA (Pie)</h3>
+                          <PieChart data={(() => {
+                            const count: Record<string, number> = {};
+                            pspiFrontTickets.forEach(t => {
+                              const sa = t.SA || "UNKNOWN";
+                              count[sa] = (count[sa] || 0) + 1;
+                            });
+                            return Object.fromEntries(Object.entries(count).sort((a,b)=>b[1]-a[1]).slice(0, 10));
+                          })()} />
+                        </div>
+                        <div className="glass-card p-5">
+                          <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider text-rose-400">Distribusi STO (Histogram)</h3>
+                          <Histogram data={(() => {
+                            const count: Record<string, number> = {};
+                            pspiFrontTickets.forEach(t => {
+                              const sto = t.sto || "UNKNOWN";
+                              count[sto] = (count[sto] || 0) + 1;
+                            });
+                            return Object.fromEntries(Object.entries(count).sort((a,b)=>b[1]-a[1]).slice(0, 15));
+                          })()} color="rgba(244, 63, 94, 0.8)" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
 
-                {/* === UNDERSPEC Table === */}
+                {/* === UNDERSPEC Details === */}
                 {symptomTab === "unspec" && (
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted bg-[var(--surface)]">
-                        <th className="px-5 py-3 font-medium">Last Status Ukur</th>
-                        <th className="px-5 py-3 font-medium text-center">Total</th>
-                        <th className="px-5 py-3 font-medium text-center w-10"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--border)] text-sm">
-                      {unspecForSelectedSA.map((s) => (
-                        <tr
-                          key={s.status}
-                          onClick={() => handleSymptomClick(s.status, "unspec")}
-                          className="hover:bg-[var(--surface-hover)] transition-colors cursor-pointer group"
-                        >
-                          <td className="px-5 py-3 font-medium text-foreground group-hover:text-emerald-400 transition-colors">
-                            {s.status}
-                          </td>
-                          <td className="px-5 py-3 text-center">
-                            <span className="font-mono">{s.total}</span>
-                          </td>
-                          <td className="px-5 py-3 text-center">
-                            <ChevronRight className="w-4 h-4 text-foreground-muted group-hover:text-emerald-400 transition-colors" />
-                          </td>
-                        </tr>
-                      ))}
-                      {unspecForSelectedSA.length === 0 && (
-                        <tr>
-                          <td colSpan={3} className="px-5 py-8 text-center text-foreground-muted">
-                            No UNSPEC tickets found for this area.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                  <div className="p-5 bg-[var(--surface)] space-y-6">
+                    <div className="overflow-x-auto rounded-lg border border-[var(--border)]">
+                      <table className="w-full text-left border-collapse min-w-[900px]">
+                        <thead>
+                          <tr className="bg-[var(--surface-hover)] border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted">
+                            <th className="px-5 py-3 font-medium whitespace-nowrap">SA</th>
+                            <th className="px-5 py-3 font-medium whitespace-nowrap">STO</th>
+                            <th className="px-5 py-3 font-medium whitespace-nowrap">ND</th>
+                            <th className="px-5 py-3 font-medium whitespace-nowrap">SC ORDER ID</th>
+                            <th className="px-5 py-3 font-medium whitespace-nowrap">LAST STATUS UKUR</th>
+                            <th className="px-5 py-3 font-medium whitespace-nowrap">ACTION</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--border)] text-sm">
+                          {unspecFrontTickets.map((t, idx) => (
+                            <tr key={idx} className="hover:bg-[var(--surface-hover)] transition-colors">
+                              <td className="px-5 py-3 whitespace-nowrap">{t.SA}</td>
+                              <td className="px-5 py-3 whitespace-nowrap">{t.sto}</td>
+                              <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.nd_speedy}</td>
+                              <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.sc_orderid}</td>
+                              <td className="px-5 py-3 whitespace-nowrap">
+                                <Badge variant="info">{t.last_status_ukur}</Badge>
+                              </td>
+                              <td className="px-5 py-3 whitespace-nowrap">
+                                <Link
+                                  href={`/submit/unspec?sc=${encodeURIComponent(t.sc_orderid)}`}
+                                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 py-1 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20"
+                                >
+                                  UPDATE DATA
+                                </Link>
+                              </td>
+                            </tr>
+                          ))}
+                          {unspecFrontTickets.length === 0 && (
+                            <tr>
+                              <td colSpan={6} className="px-5 py-12 text-center text-foreground-muted">
+                                Tidak ada ticket yang sesuai dengan filter.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Distribution Charts */}
+                    {unspecFrontTickets.length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        <div className="glass-card p-5">
+                          <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider text-emerald-400">Distribusi SA (Pie)</h3>
+                          <PieChart data={(() => {
+                            const count: Record<string, number> = {};
+                            unspecFrontTickets.forEach(t => {
+                              const sa = t.SA || "UNKNOWN";
+                              count[sa] = (count[sa] || 0) + 1;
+                            });
+                            return Object.fromEntries(Object.entries(count).sort((a,b)=>b[1]-a[1]).slice(0, 10));
+                          })()} />
+                        </div>
+                        <div className="glass-card p-5">
+                          <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider text-emerald-400">Distribusi STO (Histogram)</h3>
+                          <Histogram data={(() => {
+                            const count: Record<string, number> = {};
+                            unspecFrontTickets.forEach(t => {
+                              const sto = t.sto || "UNKNOWN";
+                              count[sto] = (count[sto] || 0) + 1;
+                            });
+                            return Object.fromEntries(Object.entries(count).sort((a,b)=>b[1]-a[1]).slice(0, 15));
+                          })()} color="rgba(16, 185, 129, 0.8)" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

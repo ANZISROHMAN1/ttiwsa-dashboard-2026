@@ -396,6 +396,8 @@ export function PerformanceTable({
           branchBogorIncludeBanten={branchBogorIncludeBanten}
           ttiTickets={ttiTickets}
           ffgTickets={ffgTickets}
+          saldoPspiTickets={saldoPspiTickets}
+          unspecTickets={unspecTickets}
           segment={segment}
         />
       ) : view === "sa" ? (

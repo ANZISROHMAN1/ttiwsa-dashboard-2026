@@ -58,6 +58,7 @@ export interface TTITicket {
   EVIDENT4?: string;
   DURASI: number | string;
   kpi?: string;
+  ORDER_TYPE?: string;
 }
 
 export interface FFGTicket {
@@ -74,6 +75,7 @@ export interface FFGTicket {
   EVIDENT4?: string;
   DURASI: number | string;
   kpi?: string;
+  ORDER_TYPE?: string;
 }
 
 export interface SaldoPspiTicket {

@@ -1,8 +1,65 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { FormField } from "@/components/ui/FormField";
+import { ChevronDown } from "lucide-react";
+
+const ERROR_CODE_MAP: Record<string, string[]> = {
+  "COMPLETED (PS)": [
+    "COMPLETED (PS)"
+  ],
+  "KENDALA PELANGGAN": [
+    "ALAMAT TIDAK DITEMUKAN",
+    "BATAL",
+    "DOUBLE INPUT",
+    "GANTI PAKET",
+    "INDIKASI CABUT PASANG",
+    "KENDALA DEPOSIT",
+    "KENDALA IZIN",
+    "KENDALA PERANGKAT",
+    "PELANGGAN MASIH RAGU",
+    "RNA",
+    "RUMAH KOSONG"
+  ],
+  "KENDALA SISTEM": [
+    "BELUM PI",
+    "KENDALA SISTEM"
+  ],
+  "KENDALA TEKNIS": [
+    "CROSS JALAN",
+    "KENDALA IKR/IKG",
+    "KENDALA JALUR/RUTE TARIKAN",
+    "KENDALA MATERIAL/NTE",
+    "LIMITASI ONU",
+    "ODP BANDWIDTH RADIO",
+    "ODP BELUM GO LIVE",
+    "ODP FULL",
+    "ODP GENDONG",
+    "ODP JAUH",
+    "ODP LOSS",
+    "ODP LOSS/RETI/RUSAK",
+    "ODP NODE-B",
+    "ODP RETI",
+    "ODP RUSAK",
+    "SALAH TAGGING",
+    "TIANG",
+    "TIDAK ADA ODP",
+    "UNSC"
+  ],
+  "ON PROGRESS": [
+    "MANJA H+",
+    "MANJA HI",
+    "PENDING",
+    "PROSES INSTALASI",
+    "SISA PI"
+  ],
+  "OTHERS": [
+    "CUACA/HUJAN",
+    "LAINNYA",
+    "MATI LISTRIK"
+  ]
+};
 
 interface FormData {
   nomorOrder: string;
@@ -19,6 +76,7 @@ type SubmitState = "idle" | "loading" | "success" | "error";
 
 export function SubmitFormPSPI() {
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const [formData, setFormData] = useState<FormData>({
     nomorOrder: "",
@@ -111,14 +169,8 @@ export function SubmitFormPSPI() {
       setSubmitState("success");
 
       setTimeout(() => {
-        setFormData({
-          nomorOrder: "",
-          errorCode: "",
-          subErrorCode: "",
-          keterangan: "",
-        });
-        setSubmitState("idle");
-      }, 3000);
+        router.back();
+      }, 1500);
     } catch {
       setSubmitState("error");
       setTimeout(() => setSubmitState("idle"), 3000);
@@ -158,27 +210,45 @@ export function SubmitFormPSPI() {
 
             <div className="bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl p-6 shadow-sm">
               <FormField label="ERROR CODE *" id="form-errorCode" required error={errors.errorCode}>
-                <input
-                  id="form-errorCode"
-                  type="text"
-                  className="form-input"
-                  placeholder="Your answer"
-                  value={formData.errorCode}
-                  onChange={(e) => updateField("errorCode", e.target.value)}
-                />
+                <div className="relative">
+                  <select
+                    id="form-errorCode"
+                    className="form-input appearance-none"
+                    value={formData.errorCode}
+                    onChange={(e) => {
+                      updateField("errorCode", e.target.value);
+                      updateField("subErrorCode", ""); // reset sub error code when error code changes
+                    }}
+                  >
+                    <option value="" disabled>Select Error Code</option>
+                    {Object.keys(ERROR_CODE_MAP).map(code => (
+                      <option key={code} value={code}>{code}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted pointer-events-none" />
+                </div>
               </FormField>
             </div>
 
             <div className="bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl p-6 shadow-sm">
               <FormField label="SUB ERROR CODE *" id="form-subErrorCode" required error={errors.subErrorCode}>
-                <input
-                  id="form-subErrorCode"
-                  type="text"
-                  className="form-input"
-                  placeholder="Your answer"
-                  value={formData.subErrorCode}
-                  onChange={(e) => updateField("subErrorCode", e.target.value)}
-                />
+                <div className="relative">
+                  <select
+                    id="form-subErrorCode"
+                    className="form-input appearance-none"
+                    value={formData.subErrorCode}
+                    onChange={(e) => updateField("subErrorCode", e.target.value)}
+                    disabled={!formData.errorCode}
+                  >
+                    <option value="" disabled>
+                      {formData.errorCode ? "Select Sub Error Code" : "Select Error Code first"}
+                    </option>
+                    {formData.errorCode && ERROR_CODE_MAP[formData.errorCode]?.map(sub => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted pointer-events-none" />
+                </div>
               </FormField>
             </div>
 

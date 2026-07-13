@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { FormField } from "@/components/ui/FormField";
 import { useAuth } from "@/lib/auth";
 
@@ -77,6 +77,7 @@ const IMAGE_CATEGORIES = [
 
 export function SubmitForm({ stoList }: SubmitFormProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { isLoggedIn } = useAuth();
 
   const [formData, setFormData] = useState<FormData>({
@@ -271,23 +272,8 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
       setSubmitState("success");
 
       setTimeout(() => {
-        setFormData({
-          sto: "",
-          namaTeknisi: "",
-          nikTeknisi: "",
-          mitra: "",
-          nomorOrder: "",
-          itemNotComply: "",
-          symptomKendala: "",
-          keteranganDetail: "",
-          alasanGangguanBaru: "",
-          alasanPenyelesaianLama: "",
-          evidenceStatus: "",
-          evidenceLink: "",
-        });
-        setSelectedFiles({});
-        setSubmitState("idle");
-      }, 3000);
+        router.back();
+      }, 1500);
     } catch {
       setSubmitState("error");
       setTimeout(() => setSubmitState("idle"), 3000);

@@ -119,7 +119,8 @@ export async function fetchDashboardData(
           REASON: row['REASON-TTI-IB'], EVIDENT: row['EVIDENT-TTI-IB'],
           EVIDENT2: row['EVIDEN 2-TTI-IB'] || '', EVIDENT3: row['EVIDEN 3-TTI-IB'] || '', EVIDENT4: row['EVIDEN 4-TTI-IB'] || '',
           DURASI: row['DURASI-TTI-IB'],
-          kpi: 'TTI IB'
+          kpi: 'TTI IB',
+          ORDER_TYPE: row['TYPETTI-IB']?.trim()
         });
       }
       if (row['SC-FFG-IB']) {

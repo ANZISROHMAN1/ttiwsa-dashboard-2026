@@ -18,7 +18,7 @@ import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Badge } from "@/components/ui/Badge";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { formatPercent } from "@/lib/utils";
-import type { DashboardSummary, RankingSA, KPISimulation, Ticket } from "@/types/dashboard";
+import type { DashboardSummary, RankingSA, KPISimulation, Ticket, SaldoPspiTicket, UnspecTicket } from "@/types/dashboard";
 
 ChartJS.register(
   CategoryScale,
@@ -42,6 +42,8 @@ interface DipisahViewProps {
   branchBogorIncludeBanten: KPISimulation[];
   ttiTickets: Ticket[];
   ffgTickets: Ticket[];
+  saldoPspiTickets?: SaldoPspiTicket[];
+  unspecTickets?: UnspecTicket[];
   segment: DipisahSegment;
 }
 
@@ -67,9 +69,111 @@ export function DipisahView({
   branchBogorIncludeBanten,
   ttiTickets,
   ffgTickets,
+  saldoPspiTickets = [],
+  unspecTickets = [],
   segment,
 }: DipisahViewProps) {
   const tablesRef = useRef<HTMLDivElement>(null);
+  
+  const [selectedTables, setSelectedTables] = useState<string[]>([
+    "overall", "tti", "ffg", "garansi", "pspi", "unspec"
+  ]);
+  const [ttiIbOrderTypeFilter, setTtiIbOrderTypeFilter] = useState<string>("ALL");
+  const [ttiIbStatusFilter, setTtiIbStatusFilter] = useState<"ALL" | "COMP" | "NOTC">("ALL");
+
+  const toggleTable = (table: string) => {
+    setSelectedTables(prev => 
+      prev.includes(table) ? prev.filter(t => t !== table) : [...prev, table]
+    );
+  };
+
+  const allSAs = useMemo(() => rankingSA.map(r => r.sa), [rankingSA]);
+
+  const pspiRankingData = useMemo(() => {
+    const ticketCounts = new Map<string, number>();
+    for (const sa of allSAs) {
+      if (sa && sa !== "BRANCH BOGOR") ticketCounts.set(sa, 0);
+    }
+    for (const t of saldoPspiTickets) {
+      if (t.SA) ticketCounts.set(t.SA, (ticketCounts.get(t.SA) || 0) + 1);
+    }
+    let maxTickets = 0;
+    for (const count of ticketCounts.values()) {
+      if (count > maxTickets) maxTickets = count;
+    }
+    const result = Array.from(ticketCounts.entries()).map(([sa, count]) => {
+      let score = 100;
+      if (maxTickets > 0 && count > 0) score = (1 - (count / maxTickets)) * 100;
+      return { sa, count, score };
+    });
+    result.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.count - b.count;
+    });
+    return result;
+  }, [saldoPspiTickets, allSAs]);
+
+  const unspecRankingData = useMemo(() => {
+    const ticketCounts = new Map<string, number>();
+    for (const sa of allSAs) {
+      if (sa && sa !== "BRANCH BOGOR") ticketCounts.set(sa, 0);
+    }
+    for (const t of unspecTickets) {
+      if (t.SA) ticketCounts.set(t.SA, (ticketCounts.get(t.SA) || 0) + 1);
+    }
+    let maxTickets = 0;
+    for (const count of ticketCounts.values()) {
+      if (count > maxTickets) maxTickets = count;
+    }
+    const result = Array.from(ticketCounts.entries()).map(([sa, count]) => {
+      let score = 100;
+      if (maxTickets > 0 && count > 0) score = (1 - (count / maxTickets)) * 100;
+      return { sa, count, score };
+    });
+    result.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.count - b.count;
+    });
+    return result;
+  }, [unspecTickets, allSAs]);
+
+  const ttiIbOrderTypes = useMemo(() => {
+    const types = new Set<string>();
+    ttiTickets.forEach(t => {
+      if (t.kpi === "TTI IB" && t.ORDER_TYPE) {
+        types.add(t.ORDER_TYPE.trim());
+      }
+    });
+    return Array.from(types).sort();
+  }, [ttiTickets]);
+
+  const filteredRankingSA = useMemo(() => {
+    if (segment !== "indibiz") return rankingSA;
+
+    const filteredTickets = ttiTickets.filter(t => 
+      t.kpi === "TTI IB" && 
+      (ttiIbOrderTypeFilter === "ALL" || (t.ORDER_TYPE || "").toLowerCase() === ttiIbOrderTypeFilter.toLowerCase())
+    );
+
+    if (ttiIbOrderTypeFilter === "ALL" && ttiIbStatusFilter === "ALL") return rankingSA;
+
+    return rankingSA.map(r => {
+      const saTickets = filteredTickets.filter(t => t.SA === r.sa);
+      const comply = saTickets.filter(t => t.STATUS.includes('COMP')).length;
+      const notc = saTickets.length - comply;
+      
+      let val = 100;
+      if (ttiIbStatusFilter === "COMP") {
+        val = comply;
+      } else if (ttiIbStatusFilter === "NOTC") {
+        val = notc;
+      } else {
+        val = saTickets.length > 0 ? (comply / saTickets.length) * 100 : 100;
+      }
+      
+      return { ...r, ttiIB: val };
+    });
+  }, [rankingSA, ttiTickets, segment, ttiIbOrderTypeFilter, ttiIbStatusFilter]);
 
   const config = SEGMENT_CONFIG[segment];
 
@@ -257,13 +361,34 @@ export function DipisahView({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Download */}
+      {/* Filters and Download */}
       <div>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-end gap-3 mb-4">
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 mb-4">
+          <div className="flex flex-wrap gap-2">
+             {[
+               { id: 'overall', label: 'Overall Achievement' },
+               { id: 'tti', label: config.tti.title },
+               { id: 'ffg', label: config.ffg.title },
+               { id: 'garansi', label: config.garansi.title },
+               { id: 'pspi', label: 'Saldo PS/PI' },
+               { id: 'unspec', label: 'UNSPEC' }
+             ].map(opt => (
+               <label key={opt.id} className="flex items-center gap-2 cursor-pointer text-sm font-medium text-foreground bg-[var(--surface-hover)] px-3 py-1.5 rounded-lg border border-[var(--border)] transition-colors hover:bg-[var(--border)]">
+                 <input 
+                   type="checkbox" 
+                   checked={selectedTables.includes(opt.id)} 
+                   onChange={() => toggleTable(opt.id)} 
+                   className="w-4 h-4 text-accent-blue bg-background border-[var(--border)] rounded focus:ring-accent-blue" 
+                 />
+                 {opt.label}
+               </label>
+             ))}
+          </div>
+          
           {/* Download Button */}
           <button
             onClick={handleDownloadPNG}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm shadow-emerald-500/20"
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm shadow-emerald-500/20 whitespace-nowrap"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
@@ -272,12 +397,47 @@ export function DipisahView({
           </button>
         </div>
         
-        {/* 2x2 Tables — captured for PNG download */}
+        {/* Tables — captured for PNG download */}
         <div ref={tablesRef} className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2 -m-2 bg-background">
-          <MiniRankingTable title="Overall Achievement" dataKey="achievement" data={rankingSA} />
-          <MiniRankingTable title={config.tti.title} dataKey={config.tti.key} data={rankingSA} />
-          <MiniRankingTable title={config.ffg.title} dataKey={config.ffg.key} data={rankingSA} />
-          <MiniRankingTable title={config.garansi.title} dataKey={config.garansi.key} data={rankingSA} />
+          {selectedTables.includes('overall') && <MiniRankingTable title="Overall Achievement" dataKey="achievement" data={rankingSA} />}
+          {selectedTables.includes('tti') && (
+            <MiniRankingTable 
+              title={config.tti.title} 
+              dataKey={config.tti.key} 
+              data={filteredRankingSA} 
+              isCount={segment === "indibiz" && ttiIbStatusFilter !== "ALL"}
+              invertBadge={segment === "indibiz" && ttiIbStatusFilter === "NOTC"}
+              headerAddon={
+                segment === "indibiz" && (
+                  <div className="flex items-center gap-2">
+                    <select
+                      className="text-xs font-normal bg-[var(--surface-hover)] border border-[var(--border)] text-foreground rounded px-2 py-1 outline-none focus:ring-1 focus:ring-accent-blue"
+                      value={ttiIbOrderTypeFilter}
+                      onChange={(e) => setTtiIbOrderTypeFilter(e.target.value)}
+                    >
+                      <option value="ALL">All Orders</option>
+                      {ttiIbOrderTypes.map(type => (
+                        <option key={type} value={type}>{type || "Unknown"}</option>
+                      ))}
+                    </select>
+                    <select
+                      className="text-xs font-normal bg-[var(--surface-hover)] border border-[var(--border)] text-foreground rounded px-2 py-1 outline-none focus:ring-1 focus:ring-accent-blue"
+                      value={ttiIbStatusFilter}
+                      onChange={(e) => setTtiIbStatusFilter(e.target.value as any)}
+                    >
+                      <option value="ALL">Achievement</option>
+                      <option value="COMP">Comply</option>
+                      <option value="NOTC">Non-Comply</option>
+                    </select>
+                  </div>
+                )
+              }
+            />
+          )}
+          {selectedTables.includes('ffg') && <MiniRankingTable title={config.ffg.title} dataKey={config.ffg.key} data={rankingSA} />}
+          {selectedTables.includes('garansi') && <MiniRankingTable title={config.garansi.title} dataKey={config.garansi.key} data={rankingSA} />}
+          {selectedTables.includes('pspi') && <MiniRankingTable title="Saldo PS/PI" dataKey="score" data={pspiRankingData} />}
+          {selectedTables.includes('unspec') && <MiniRankingTable title="UNSPEC" dataKey="score" data={unspecRankingData} />}
         </div>
       </div>
 
@@ -326,19 +486,22 @@ export function DipisahView({
   );
 }
 
-function MiniRankingTable({ title, dataKey, data }: { title: string, dataKey: keyof RankingSA, data: RankingSA[] }) {
+function MiniRankingTable({ title, dataKey, data, headerAddon, isCount = false, invertBadge = false }: { title: string, dataKey: string, data: any[], headerAddon?: React.ReactNode, isCount?: boolean, invertBadge?: boolean }) {
   const sorted = [...data].sort((a, b) => (b[dataKey] as number) - (a[dataKey] as number));
   
   return (
     <div className="glass-card p-4 flex flex-col">
-      <h3 className="text-sm font-bold text-foreground mb-3 uppercase tracking-wider">{title}</h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">{title}</h3>
+        {headerAddon}
+      </div>
       <div className="overflow-x-auto border border-[var(--border)] rounded-lg bg-background">
         <table className="w-full text-left text-xs whitespace-nowrap">
           <thead className="bg-[#111827] text-white">
             <tr>
               <th className="px-3 py-2 text-center w-10">#</th>
               <th className="px-3 py-2 font-semibold">SERVICE AREA</th>
-              <th className="px-3 py-2 font-semibold text-center">SCORE</th>
+              <th className="px-3 py-2 font-semibold text-center">{isCount ? "TOTAL" : "SCORE"}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border)]">
@@ -346,15 +509,22 @@ function MiniRankingTable({ title, dataKey, data }: { title: string, dataKey: ke
               const val = r[dataKey] as number;
               const medals = ["🥇", "🥈", "🥉"];
               const rankDisplay = i < 3 ? medals[i] : (i + 1);
-              const isAchieve = val >= 90; // rough threshold
+              
+              let badgeVar: "default" | "danger" | "info" = "default";
+              if (isCount) {
+                if (invertBadge) badgeVar = val > 0 ? "danger" : "default";
+                else badgeVar = val > 0 ? "default" : "danger";
+              } else {
+                badgeVar = val >= 90 ? "default" : "danger";
+              }
 
               return (
                 <tr key={r.sa} className="hover:bg-[var(--surface-hover)]">
                   <td className="px-3 py-2 text-center text-foreground-muted">{rankDisplay}</td>
                   <td className="px-3 py-2 font-medium text-foreground">{r.sa}</td>
                   <td className="px-3 py-2 text-center font-mono">
-                    <Badge variant={isAchieve ? "default" : "danger"} className="text-[10px] py-0.5">
-                      {formatPercent(val)}
+                    <Badge variant={badgeVar} className="text-[10px] py-0.5">
+                      {isCount ? val : formatPercent(val)}
                     </Badge>
                   </td>
                 </tr>
