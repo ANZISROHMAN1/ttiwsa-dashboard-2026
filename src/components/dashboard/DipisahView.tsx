@@ -398,7 +398,7 @@ export function DipisahView({
         </div>
         
         {/* Tables — captured for PNG download */}
-        <div ref={tablesRef} className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2 -m-2 bg-background">
+        <div ref={tablesRef} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 p-2 -m-2 bg-background">
           {selectedTables.includes('overall') && <MiniRankingTable title="Overall Achievement" dataKey="achievement" data={rankingSA} />}
           {selectedTables.includes('tti') && (
             <MiniRankingTable 
