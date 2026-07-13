@@ -48,6 +48,24 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
   const [drillDownType, setDrillDownType] = useState<SymptomTab>("tti-ffg");
   // PSPI/Unspec drill-down search
   const [pspiUnspecSearch, setPspiUnspecSearch] = useState("");
+  // Telegram sending state
+  const [isSendingTelegram, setIsSendingTelegram] = useState(false);
+
+  const handleSendTelegram = async () => {
+    try {
+      setIsSendingTelegram(true);
+      const res = await fetch("/api/telegram/send-manual", {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed to send");
+      alert("Manual report sent to Telegram!");
+    } catch (err) {
+      console.error(err);
+      alert("Error sending report to Telegram");
+    } finally {
+      setIsSendingTelegram(false);
+    }
+  };
 
 
 
@@ -289,7 +307,7 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
         t.SA?.toUpperCase().includes(q) ||
         t.sto?.toUpperCase().includes(q) ||
         t.sc_orderid?.toUpperCase().includes(q) ||
-        t.nd?.toUpperCase().includes(q) ||
+        String(t.nd || "").toUpperCase().includes(q) ||
         t.last_status?.toUpperCase().includes(q) ||
         t.KETERANGAN?.toUpperCase().includes(q)
       );
@@ -663,6 +681,20 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
             />
             Need Update
           </label>
+          
+          {isLoggedIn && (
+            <button
+              onClick={handleSendTelegram}
+              disabled={isSendingTelegram}
+              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm shadow-blue-500/20 whitespace-nowrap disabled:opacity-50"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+              {isSendingTelegram ? "Sending..." : "Send Telegram"}
+            </button>
+          )}
         </div>
       </div>
 

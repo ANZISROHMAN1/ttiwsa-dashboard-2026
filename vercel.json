@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/daily-report",
       "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/not-comply-report",
+      "schedule": "0 1,9 * * *"
     }
   ]
 }
