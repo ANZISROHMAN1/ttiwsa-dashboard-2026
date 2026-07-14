@@ -81,7 +81,8 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
           "FFG Indihome": "GARANSI IH",
           "TTI 1x24 Indibiz": "TTI IB",
           "TTR FFG Indibiz": "FFG IB",
-          "FFG Indibiz": "GARANSI IB"
+          "FFG Indibiz": "GARANSI IB",
+          "Ticket yang sudah UPDATE": "UPDATED"
         };
         
         const internalKpi = reverseLabels[selectedKpiCard] || selectedKpiCard;
@@ -470,21 +471,51 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
             <table className="w-full text-left border-collapse min-w-[900px]">
               <thead>
                 <tr className="bg-[var(--surface-hover)] border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted">
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">SA</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">STO</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">SC</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">STATUS</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">SYMTOM</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">REASON</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">EVIDENT</th>
-                  <th className="px-5 py-3 font-medium whitespace-nowrap">DURASI</th>
+                  {selectedKpiCard === "Ticket yang sudah UPDATE" ? (
+                    <>
+                      <th className="px-5 py-3 font-medium whitespace-nowrap">Timestamp</th>
+                      <th className="px-5 py-3 font-medium whitespace-nowrap">STO</th>
+                      <th className="px-5 py-3 font-medium whitespace-nowrap">NOMOR ORDER / NOMOR TIKET INCIDENT</th>
+                      <th className="px-5 py-3 font-medium whitespace-nowrap">NAMA TEKNISI</th>
+                      <th className="px-5 py-3 font-medium whitespace-nowrap">NIK TEKNISI</th>
+                      <th className="px-5 py-3 font-medium whitespace-nowrap">MITRA</th>
+                      <th className="px-5 py-3 font-medium whitespace-nowrap">ITEM NOT COMPLY</th>
+                      <th className="px-5 py-3 font-medium whitespace-nowrap">SYMTOM KENDALA</th>
+                      <th className="px-5 py-3 font-medium whitespace-nowrap">KETERANGAN DETAIL KENDALA</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="px-5 py-3 font-medium whitespace-nowrap">SA</th>
+                      <th className="px-5 py-3 font-medium whitespace-nowrap">STO</th>
+                      <th className="px-5 py-3 font-medium whitespace-nowrap">SC</th>
+                      <th className="px-5 py-3 font-medium whitespace-nowrap">STATUS</th>
+                      <th className="px-5 py-3 font-medium whitespace-nowrap">SYMTOM</th>
+                      <th className="px-5 py-3 font-medium whitespace-nowrap">REASON</th>
+                      <th className="px-5 py-3 font-medium whitespace-nowrap">EVIDENT</th>
+                      <th className="px-5 py-3 font-medium whitespace-nowrap">DURASI</th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)] text-sm">
                 {drillDownTickets.map((t, idx) => (
                   <tr key={idx} className="hover:bg-[var(--surface-hover)] transition-colors">
-                    <td className="px-5 py-3 whitespace-nowrap">{t.SA}</td>
-                    <td className="px-5 py-3 whitespace-nowrap">{t.STO}</td>
+                    {selectedKpiCard === "Ticket yang sudah UPDATE" ? (
+                      <>
+                        <td className="px-5 py-3 whitespace-nowrap">{t.TIMESTAMP || "-"}</td>
+                        <td className="px-5 py-3 whitespace-nowrap">{t.STO}</td>
+                        <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.SC}</td>
+                        <td className="px-5 py-3 whitespace-nowrap">{t.NAMA_TEKNISI || "-"}</td>
+                        <td className="px-5 py-3 whitespace-nowrap font-mono">{t.NIK_TEKNISI || "-"}</td>
+                        <td className="px-5 py-3 whitespace-nowrap">{t.MITRA || "-"}</td>
+                        <td className="px-5 py-3 whitespace-nowrap">{t.ITEM_NOT_COMPLY || "-"}</td>
+                        <td className="px-5 py-3 min-w-[200px]">{t.SYMTOM || "-"}</td>
+                        <td className="px-5 py-3 min-w-[200px] text-foreground-muted">{t.REASON || "-"}</td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-5 py-3 whitespace-nowrap">{t.SA}</td>
+                        <td className="px-5 py-3 whitespace-nowrap">{t.STO}</td>
                     <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.SC}</td>
                     <td className="px-5 py-3 whitespace-nowrap">
                       <Badge variant={t.STATUS.includes("-COMP") ? "default" : "danger"}>
@@ -494,7 +525,7 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
                     <td className="px-5 py-3 min-w-[200px]">
                       {t.NULL_GDOC ? (
                         <Link
-                          href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}&symptomKendala=${encodeURIComponent(t.SYMTOM || "")}&keteranganDetail=${encodeURIComponent(t.REASON || "")}`}
+                          href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}&symptomKendala=${encodeURIComponent(t.SYMTOM || "")}&keteranganDetail=${encodeURIComponent(t.REASON || "")}&namaTeknisi=${encodeURIComponent(t.NAMA_TEKNISI || "")}&nikTeknisi=${encodeURIComponent(t.NIK_TEKNISI || "")}&mitra=${encodeURIComponent(t.MITRA || "")}`}
                           className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition-colors"
                         >
                           UPDATE REASON
@@ -521,13 +552,13 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
                           {isLoggedIn && (
                             <div className="flex items-center gap-2">
                               <Link
-                                href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}&evidenceStatus=ACCEPT&symptomKendala=${encodeURIComponent(t.SYMTOM || "")}&keteranganDetail=${encodeURIComponent(t.REASON || "")}&evidenceLink=${encodeURIComponent(t.EVIDENT || "")}`}
+                                href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}&evidenceStatus=ACCEPT&symptomKendala=${encodeURIComponent(t.SYMTOM || "")}&keteranganDetail=${encodeURIComponent(t.REASON || "")}&evidenceLink=${encodeURIComponent(t.EVIDENT || "")}&namaTeknisi=${encodeURIComponent(t.NAMA_TEKNISI || "")}&nikTeknisi=${encodeURIComponent(t.NIK_TEKNISI || "")}&mitra=${encodeURIComponent(t.MITRA || "")}`}
                                 className="flex-1 text-center inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors border border-emerald-500/20"
                               >
                                 Accept
                               </Link>
                               <Link
-                                href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}&evidenceStatus=REJECT&symptomKendala=${encodeURIComponent(t.SYMTOM || "")}&keteranganDetail=${encodeURIComponent(t.REASON || "")}&evidenceLink=${encodeURIComponent(t.EVIDENT || "")}`}
+                                href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent(t.STATUS.startsWith('TTI') ? 'TTI NOT COMPLY' : 'FFG atau TTR FFG NOT COMPLY')}&evidenceStatus=REJECT&symptomKendala=${encodeURIComponent(t.SYMTOM || "")}&keteranganDetail=${encodeURIComponent(t.REASON || "")}&evidenceLink=${encodeURIComponent(t.EVIDENT || "")}&namaTeknisi=${encodeURIComponent(t.NAMA_TEKNISI || "")}&nikTeknisi=${encodeURIComponent(t.NIK_TEKNISI || "")}&mitra=${encodeURIComponent(t.MITRA || "")}`}
                                 className="flex-1 text-center inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-colors border border-rose-500/20"
                               >
                                 Reject
@@ -542,6 +573,8 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
                       )}
                     </td>
                     <td className="px-5 py-3 whitespace-nowrap font-mono">{t.DURASI}</td>
+                      </>
+                    )}
                   </tr>
                 ))}
                 {drillDownTickets.length === 0 && (
@@ -759,6 +792,30 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
             No KPI simulation data available for this area.
           </div>
         )}
+        
+        {/* Ticket yang sudah UPDATE Custom Card */}
+        <div
+          onClick={() => setSelectedKpiCard(selectedKpiCard === "Ticket yang sudah UPDATE" ? null : "Ticket yang sudah UPDATE")}
+          className={`glass-card p-5 border-l-4 cursor-pointer transition-all duration-200 border-l-emerald-500 ${selectedKpiCard === "Ticket yang sudah UPDATE" ? "ring-2 ring-primary scale-[1.02] shadow-xl" : "hover:scale-[1.01]"}`}
+        >
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="font-semibold text-foreground text-sm tracking-wide">
+              Ticket yang sudah UPDATE
+            </h3>
+            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+          </div>
+          <div className="flex justify-between items-end mb-4">
+            <div>
+              <div className="text-xs text-foreground-muted mb-1">Total Tickets</div>
+              <div className="text-2xl font-bold font-mono text-emerald-400">
+                {tickets.filter(t => t.kpi === 'UPDATED').length}
+              </div>
+            </div>
+          </div>
+          <div className="text-sm px-3 py-2 rounded-md font-medium bg-emerald-500/10 text-emerald-400">
+            TICKETS SUDAH UPDATE
+          </div>
+        </div>
       </div>
 
       {/* Symptom Breakdown Tabs + Content */}
@@ -927,7 +984,7 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
               <div className="p-0">
                 {/* === TTI/FFG Symptom Table === */}
                 {symptomTab === "tti-ffg" && (
-                  <table className="w-full text-left border-collapse">
+                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted bg-[var(--surface)]">
                         <th className="px-5 py-3 font-medium">Symptom</th>

@@ -1,4 +1,4 @@
-import { API_BASE_URL, SALDO_PSPI_API_URL, UNSPEC_API_URL, KPI_TARGET } from "./constants";
+import { API_BASE_URL, SALDO_PSPI_API_URL, UNSPEC_API_URL, EVIDENCE_API_URL, KPI_TARGET } from "./constants";
 import type { DashboardData, SaldoPspiTicket, UnspecTicket, KPISimulation, TTITicket, FFGTicket, RankingSA, RankingSTO, DashboardSummary, Resume } from "@/types/dashboard";
 
 // ─── API Error ──────────────────────────────────────────────────────────────
@@ -19,14 +19,14 @@ export async function fetchDashboardData(
   signal?: AbortSignal
 ): Promise<DashboardData> {
   try {
-    if (!API_BASE_URL || !SALDO_PSPI_API_URL || !UNSPEC_API_URL) {
+    if (!API_BASE_URL || !SALDO_PSPI_API_URL || !UNSPEC_API_URL || !EVIDENCE_API_URL) {
       throw new ApiError(
-        "API URLs are not configured. Please ensure NEXT_PUBLIC_TTIWSA_API_URL, NEXT_PUBLIC_PSPI_API_URL, and UNSPEC_API_URL are set in your environment variables.",
+        "API URLs are not configured. Please ensure NEXT_PUBLIC_TTIWSA_API_URL, NEXT_PUBLIC_PSPI_API_URL, UNSPEC_API_URL, and 4_EVIDEN_API_BARU are set in your environment variables.",
         500
       );
     }
 
-    const [response, saldoResponse, unspecResponse] = await Promise.all([
+    const [response, saldoResponse, unspecResponse, evidenceResponse] = await Promise.all([
       fetch(API_BASE_URL, {
         signal,
         next: { revalidate: 0 },
@@ -36,6 +36,10 @@ export async function fetchDashboardData(
         next: { revalidate: 0 },
       }),
       fetch(UNSPEC_API_URL, {
+        signal,
+        next: { revalidate: 0 },
+      }),
+      fetch(EVIDENCE_API_URL, {
         signal,
         next: { revalidate: 0 },
       })
@@ -53,6 +57,10 @@ export async function fetchDashboardData(
       console.error(`Unspec API returned ${unspecResponse.status}: ${unspecResponse.statusText}`);
     }
 
+    if (!evidenceResponse.ok) {
+      console.error(`Evidence API returned ${evidenceResponse.status}: ${evidenceResponse.statusText}`);
+    }
+
     const rawData = await response.json();
     
     let saldoPspiTickets: SaldoPspiTicket[] = [];
@@ -65,10 +73,53 @@ export async function fetchDashboardData(
       unspecTickets = await unspecResponse.json();
     }
 
+    let evidenceData: any[] = [];
+    if (evidenceResponse.ok) {
+      evidenceData = await evidenceResponse.json();
+    }
+    const evidenceMap = new Map<string, any>();
+    for (const ev of evidenceData) {
+      const sc = ev["NOMOR ORDER / NOMOR TIKET INCIDENT"];
+      if (sc) evidenceMap.set(sc, ev);
+    }
+
+    const getMergedEvidence = (sc: string, ttiwsaEvidence: string) => {
+      const evList: string[] = [];
+      if (ttiwsaEvidence && ttiwsaEvidence.trim()) evList.push(ttiwsaEvidence.trim());
+      
+      let teknisi = "";
+      let nik = "";
+      let mitra = "";
+
+      const newEv = evidenceMap.get(sc);
+      if (newEv) {
+        if (newEv["EVIDENCE 1"]) evList.push(newEv["EVIDENCE 1"]);
+        if (newEv["EVIDENCE 2"]) evList.push(newEv["EVIDENCE 2"]);
+        if (newEv["EVIDENCE 3"]) evList.push(newEv["EVIDENCE 3"]);
+        if (newEv["EVIDENCE 4"]) evList.push(newEv["EVIDENCE 4"]);
+        
+        teknisi = newEv["NAMA TEKNISI"] || "";
+        nik = String(newEv["NIK TEKNISI"] || "");
+        mitra = newEv["MITRA"] || "";
+      }
+      
+      return {
+        EVIDENT: evList[0] || "",
+        EVIDENT2: evList[1] || "",
+        EVIDENT3: evList[2] || "",
+        EVIDENT4: evList[3] || "",
+        NAMA_TEKNISI: teknisi,
+        NIK_TEKNISI: nik,
+        MITRA: mitra,
+        isUpdated: !!newEv
+      };
+    };
+
     const internalTti: (TTITicket & { kpi: string })[] = [];
     const internalFfg: (FFGTicket & { kpi: string })[] = [];
     const psIhList: { sa: string; sto: string; jml: number }[] = [];
     const psIbList: { sa: string; sto: string; jml: number }[] = [];
+    const matchedSCs = new Set<string>();
     
     let totalNullGdoc = 0;
     let ti_ih_notc = 0;
@@ -80,62 +131,82 @@ export async function fetchDashboardData(
 
     for (const row of rawData) {
       if (row['SC-TTI-IH']) {
+        matchedSCs.add(String(row['SC-TTI-IH']).trim());
         const isNullGdoc = row['SYMTOM-TTI-IH']?.trim() === 'NULL GDOC' || row['REASON-TTI-IH']?.trim() === 'NULL GDOC';
         if (isNullGdoc) totalNullGdoc++;
         if (row['STATUS-TTI-IH'] === 'TTI-NOTC') ti_ih_notc++;
+        const evMerged = getMergedEvidence(row['SC-TTI-IH'], row['EVIDENT-TTI-IH']);
         internalTti.push({
           SA: row['SA-TTI-IH'], STO: row['STO-TTI-IH'], SC: row['SC-TTI-IH'],
           STATUS: row['STATUS-TTI-IH'] as any, SYMTOM: row['SYMTOM-TTI-IH']?.trim(),
           NULL_GDOC: isNullGdoc,
-          REASON: row['REASON-TTI-IH'], EVIDENT: row['EVIDENT-TTI-IH'],
-          EVIDENT2: row['EVIDEN 2-TTI-IH'] || '', EVIDENT3: row['EVIDEN 3-TTI-IH'] || '', EVIDENT4: row['EVIDEN 4-TTI-IH'] || '',
+          REASON: row['REASON-TTI-IH'], 
+          EVIDENT: evMerged.EVIDENT,
+          EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4,
+          NAMA_TEKNISI: evMerged.NAMA_TEKNISI, NIK_TEKNISI: evMerged.NIK_TEKNISI, MITRA: evMerged.MITRA,
           DURASI: row['DURASI-TTI-IH'],
-          kpi: 'TTI IH'
+          kpi: 'TTI IH',
+          isUpdated: evMerged.isUpdated
         });
       }
       if (row['SC-FFG-IH']) {
+        matchedSCs.add(String(row['SC-FFG-IH']).trim());
         const isNullGdoc = row['SYMTOM-FFG-IH']?.trim() === 'NULL GDOC' || row['REASON-FFG-IH']?.trim() === 'NULL GDOC';
         if (isNullGdoc) totalNullGdoc++;
         if (row['STATUS-FFG-IH'] === 'TTR-COMP') ffg_ih_comp++;
         if (row['STATUS-FFG-IH'] === 'TTR-NOTC') ffg_ih_notc++;
+        const evMerged = getMergedEvidence(row['SC-FFG-IH'], row['EVIDENT-FFG-IH']);
         internalFfg.push({
           SA: row['SA-FFG-IH'], STO: row['STO-FFG-IH'], SC: row['SC-FFG-IH'],
           STATUS: row['STATUS-FFG-IH'] as any, SYMTOM: row['SYMTOM-FFG-IH']?.trim(),
           NULL_GDOC: isNullGdoc,
-          REASON: row['REASON-FFG-IH'], EVIDENT: row['EVIDENT-FFG-IH'],
-          EVIDENT2: row['EVIDEN 2-FFG-IH'] || '', EVIDENT3: row['EVIDEN 3-FFG-IH'] || '', EVIDENT4: row['EVIDEN 4-FFG-IH'] || '',
+          REASON: row['REASON-FFG-IH'], 
+          EVIDENT: evMerged.EVIDENT,
+          EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4,
+          NAMA_TEKNISI: evMerged.NAMA_TEKNISI, NIK_TEKNISI: evMerged.NIK_TEKNISI, MITRA: evMerged.MITRA,
           DURASI: row['DURASI-FFG-IH'],
-          kpi: 'FFG IH'
+          kpi: 'FFG IH',
+          isUpdated: evMerged.isUpdated
         });
       }
       if (row['SC-TTI-IB']) {
+        matchedSCs.add(String(row['SC-TTI-IB']).trim());
         const isNullGdoc = row['SYMTOM-TTI-IB']?.trim() === 'NULL GDOC' || row['REASON-TTI-IB']?.trim() === 'NULL GDOC';
         if (isNullGdoc) totalNullGdoc++;
         if (row['STATUS-TTI-IB'] === 'TTI-NOTC') ti_ib_notc++;
+        const evMerged = getMergedEvidence(row['SC-TTI-IB'], row['EVIDENT-TTI-IB']);
         internalTti.push({
           SA: row['SA-TTI-IB'], STO: row['STO-TTI-IB'], SC: row['SC-TTI-IB'],
           STATUS: row['STATUS-TTI-IB'] as any, SYMTOM: row['SYMTOM-TTI-IB']?.trim(),
           NULL_GDOC: isNullGdoc,
-          REASON: row['REASON-TTI-IB'], EVIDENT: row['EVIDENT-TTI-IB'],
-          EVIDENT2: row['EVIDEN 2-TTI-IB'] || '', EVIDENT3: row['EVIDEN 3-TTI-IB'] || '', EVIDENT4: row['EVIDEN 4-TTI-IB'] || '',
+          REASON: row['REASON-TTI-IB'], 
+          EVIDENT: evMerged.EVIDENT,
+          EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4,
+          NAMA_TEKNISI: evMerged.NAMA_TEKNISI, NIK_TEKNISI: evMerged.NIK_TEKNISI, MITRA: evMerged.MITRA,
           DURASI: row['DURASI-TTI-IB'],
           kpi: 'TTI IB',
-          ORDER_TYPE: row['TYPETTI-IB']?.trim()
+          ORDER_TYPE: row['TYPETTI-IB']?.trim(),
+          isUpdated: evMerged.isUpdated
         });
       }
       if (row['SC-FFG-IB']) {
+        matchedSCs.add(String(row['SC-FFG-IB']).trim());
         const isNullGdoc = row['SYMTOM-FFG-IB']?.trim() === 'NULL GDOC' || row['REASON-FFG-IB']?.trim() === 'NULL GDOC';
         if (isNullGdoc) totalNullGdoc++;
         if (row['STATUS-FFG-IB'] === 'TTR-COMP') ffg_ib_comp++;
         if (row['STATUS-FFG-IB'] === 'TTR-NOTC') ffg_ib_notc++;
+        const evMerged = getMergedEvidence(row['SC-FFG-IB'], row['EVIDENT-FFG-IB']);
         internalFfg.push({
           SA: row['SA-FFG-IB'], STO: row['STO-FFG-IB'], SC: row['SC-FFG-IB'],
           STATUS: row['STATUS-FFG-IB'] as any, SYMTOM: row['SYMTOM-FFG-IB']?.trim(),
           NULL_GDOC: isNullGdoc,
-          REASON: row['REASON-FFG-IB'], EVIDENT: row['EVIDENT-FFG-IB'],
-          EVIDENT2: row['EVIDEN 2-FFG-IB'] || '', EVIDENT3: row['EVIDEN 3-FFG-IB'] || '', EVIDENT4: row['EVIDEN 4-FFG-IB'] || '',
+          REASON: row['REASON-FFG-IB'], 
+          EVIDENT: evMerged.EVIDENT,
+          EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4,
+          NAMA_TEKNISI: evMerged.NAMA_TEKNISI, NIK_TEKNISI: evMerged.NIK_TEKNISI, MITRA: evMerged.MITRA,
           DURASI: row['DURASI-FFG-IB'],
-          kpi: 'FFG IB'
+          kpi: 'FFG IB',
+          isUpdated: evMerged.isUpdated
         });
       }
       if (row['PS-SA-IH']) {
@@ -143,6 +214,34 @@ export async function fetchDashboardData(
       }
       if (row['PS-SA-IB']) {
         psIbList.push({ sa: row['PS-SA-IB'], sto: row['PS-STO-IB'], jml: Number(row['Jml PS-IB']) || 0 });
+      }
+    }
+
+    for (const ev of evidenceData) {
+      const rawSc = ev["NOMOR ORDER / NOMOR TIKET INCIDENT"];
+      const sc = rawSc ? String(rawSc).trim() : null;
+      if (sc && !matchedSCs.has(sc)) {
+        internalTti.push({
+          SA: "UNKNOWN",
+          STO: ev["STO"] || "UNKNOWN",
+          SC: sc,
+          STATUS: "UPDATED-COMP" as any,
+          SYMTOM: ev["SYMTOM KENDALA"] || "SUDAH UPDATE",
+          NULL_GDOC: false,
+          REASON: ev["KETERANGAN DETAIL KENDALA"] || "",
+          EVIDENT: ev["EVIDENCE 1"] || "",
+          EVIDENT2: ev["EVIDENCE 2"] || "",
+          EVIDENT3: ev["EVIDENCE 3"] || "",
+          EVIDENT4: ev["EVIDENCE 4"] || "",
+          NAMA_TEKNISI: ev["NAMA TEKNISI"] || "",
+          NIK_TEKNISI: String(ev["NIK TEKNISI"] || ""),
+          MITRA: ev["MITRA"] || "",
+          DURASI: 0,
+          kpi: 'UPDATED',
+          TIMESTAMP: ev["Timestamp"] || "",
+          ITEM_NOT_COMPLY: ev["ITEM NOT COMPLY"] || "",
+          isUpdated: true
+        });
       }
     }
 

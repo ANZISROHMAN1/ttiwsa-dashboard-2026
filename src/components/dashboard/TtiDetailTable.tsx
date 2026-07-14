@@ -10,9 +10,10 @@ import { Search } from "lucide-react";
 
 interface TtiDetailTableProps {
   tickets: TTITicket[];
+  isUpdatedView?: boolean;
 }
 
-export function TtiDetailTable({ tickets }: TtiDetailTableProps) {
+export function TtiDetailTable({ tickets, isUpdatedView }: TtiDetailTableProps) {
   const { isLoggedIn } = useAuth();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -163,31 +164,61 @@ export function TtiDetailTable({ tickets }: TtiDetailTableProps) {
           <table className="w-full text-left border-collapse min-w-[900px]">
             <thead>
               <tr className="bg-[var(--surface-hover)] border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted">
-                <th className="px-5 py-3 font-medium whitespace-nowrap">SA</th>
-                <th className="px-5 py-3 font-medium whitespace-nowrap">STO</th>
-                <th className="px-5 py-3 font-medium whitespace-nowrap">SC</th>
-                <th className="px-5 py-3 font-medium whitespace-nowrap">STATUS</th>
-                <th className="px-5 py-3 font-medium whitespace-nowrap">SYMTOM</th>
-                <th className="px-5 py-3 font-medium whitespace-nowrap">REASON</th>
-                <th className="px-5 py-3 font-medium whitespace-nowrap">EVIDENT</th>
-                <th className="px-5 py-3 font-medium whitespace-nowrap">DURASI</th>
+                {isUpdatedView ? (
+                  <>
+                    <th className="px-5 py-3 font-medium whitespace-nowrap">Timestamp</th>
+                    <th className="px-5 py-3 font-medium whitespace-nowrap">STO</th>
+                    <th className="px-5 py-3 font-medium whitespace-nowrap">NOMOR ORDER / NOMOR TIKET INCIDENT</th>
+                    <th className="px-5 py-3 font-medium whitespace-nowrap">NAMA TEKNISI</th>
+                    <th className="px-5 py-3 font-medium whitespace-nowrap">NIK TEKNISI</th>
+                    <th className="px-5 py-3 font-medium whitespace-nowrap">MITRA</th>
+                    <th className="px-5 py-3 font-medium whitespace-nowrap">ITEM NOT COMPLY</th>
+                    <th className="px-5 py-3 font-medium whitespace-nowrap">SYMTOM KENDALA</th>
+                    <th className="px-5 py-3 font-medium whitespace-nowrap">KETERANGAN DETAIL KENDALA</th>
+                  </>
+                ) : (
+                  <>
+                    <th className="px-5 py-3 font-medium whitespace-nowrap">SA</th>
+                    <th className="px-5 py-3 font-medium whitespace-nowrap">STO</th>
+                    <th className="px-5 py-3 font-medium whitespace-nowrap">SC</th>
+                    <th className="px-5 py-3 font-medium whitespace-nowrap">STATUS</th>
+                    <th className="px-5 py-3 font-medium whitespace-nowrap">SYMTOM</th>
+                    <th className="px-5 py-3 font-medium whitespace-nowrap">REASON</th>
+                    <th className="px-5 py-3 font-medium whitespace-nowrap">EVIDENT</th>
+                    <th className="px-5 py-3 font-medium whitespace-nowrap">DURASI</th>
+                  </>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)] text-sm">
               {filteredTickets.slice(0, visibleCount).map((t, idx) => (
                 <tr key={idx} className="hover:bg-[var(--surface-hover)] transition-colors">
-                  <td className="px-5 py-3 whitespace-nowrap">{t.SA}</td>
+                  {isUpdatedView ? (
+                    <>
+                      <td className="px-5 py-3 whitespace-nowrap">{t.TIMESTAMP || "-"}</td>
+                      <td className="px-5 py-3 whitespace-nowrap">{t.STO}</td>
+                      <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.SC}</td>
+                      <td className="px-5 py-3 whitespace-nowrap">{t.NAMA_TEKNISI || "-"}</td>
+                      <td className="px-5 py-3 whitespace-nowrap font-mono">{t.NIK_TEKNISI || "-"}</td>
+                      <td className="px-5 py-3 whitespace-nowrap">{t.MITRA || "-"}</td>
+                      <td className="px-5 py-3 whitespace-nowrap">{t.ITEM_NOT_COMPLY || "-"}</td>
+                      <td className="px-5 py-3 min-w-[200px]">{t.SYMTOM || "-"}</td>
+                      <td className="px-5 py-3 min-w-[200px] text-foreground-muted">{t.REASON || "-"}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-5 py-3 whitespace-nowrap">{t.SA}</td>
                   <td className="px-5 py-3 whitespace-nowrap">{t.STO}</td>
                   <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.SC}</td>
                   <td className="px-5 py-3 whitespace-nowrap">
-                    <Badge variant={t.STATUS === "TTI-COMP" ? "default" : "danger"}>
+                    <Badge variant={t.STATUS.includes("-COMP") ? "default" : "danger"}>
                       {t.STATUS}
                     </Badge>
                   </td>
                   <td className="px-5 py-3 min-w-[200px]">
                     {t.NULL_GDOC ? (
                       <Link
-                        href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent('TTI NOT COMPLY')}`}
+                        href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent('TTI NOT COMPLY')}&namaTeknisi=${encodeURIComponent(t.NAMA_TEKNISI || "")}&nikTeknisi=${encodeURIComponent(t.NIK_TEKNISI || "")}&mitra=${encodeURIComponent(t.MITRA || "")}`}
                         className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition-colors"
                       >
                         UPDATE REASON
@@ -214,13 +245,13 @@ export function TtiDetailTable({ tickets }: TtiDetailTableProps) {
                           {isLoggedIn && (
                             <div className="flex items-center gap-2">
                               <Link
-                                href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent('TTI NOT COMPLY')}&evidenceStatus=ACCEPT`}
+                                href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent('TTI NOT COMPLY')}&evidenceStatus=ACCEPT&namaTeknisi=${encodeURIComponent(t.NAMA_TEKNISI || "")}&nikTeknisi=${encodeURIComponent(t.NIK_TEKNISI || "")}&mitra=${encodeURIComponent(t.MITRA || "")}`}
                                 className="flex-1 text-center inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors border border-emerald-500/20"
                               >
                                 Accept
                               </Link>
                               <Link
-                                href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent('TTI NOT COMPLY')}&evidenceStatus=REJECT`}
+                                href={`/submit/not-comply?sc=${encodeURIComponent(t.SC)}&sto=${encodeURIComponent(t.STO)}&item=${encodeURIComponent('TTI NOT COMPLY')}&evidenceStatus=REJECT&namaTeknisi=${encodeURIComponent(t.NAMA_TEKNISI || "")}&nikTeknisi=${encodeURIComponent(t.NIK_TEKNISI || "")}&mitra=${encodeURIComponent(t.MITRA || "")}`}
                                 className="flex-1 text-center inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-semibold bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-colors border border-rose-500/20"
                               >
                                 Reject
@@ -235,6 +266,8 @@ export function TtiDetailTable({ tickets }: TtiDetailTableProps) {
                     )}
                   </td>
                   <td className="px-5 py-3 whitespace-nowrap font-mono">{t.DURASI}</td>
+                    </>
+                  )}
                 </tr>
               ))}
               {filteredTickets.length === 0 && (

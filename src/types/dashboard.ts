@@ -56,7 +56,13 @@ export interface TTITicket {
   EVIDENT2?: string;
   EVIDENT3?: string;
   EVIDENT4?: string;
+  NAMA_TEKNISI?: string;
+  NIK_TEKNISI?: string;
+  MITRA?: string;
   DURASI: number | string;
+  TIMESTAMP?: string;
+  ITEM_NOT_COMPLY?: string;
+  isUpdated?: boolean;
   kpi?: string;
   ORDER_TYPE?: string;
 }
@@ -73,8 +79,14 @@ export interface FFGTicket {
   EVIDENT2?: string;
   EVIDENT3?: string;
   EVIDENT4?: string;
+  NAMA_TEKNISI?: string;
+  NIK_TEKNISI?: string;
+  MITRA?: string;
   DURASI: number | string;
   kpi?: string;
+  TIMESTAMP?: string;
+  ITEM_NOT_COMPLY?: string;
+  isUpdated?: boolean;
   ORDER_TYPE?: string;
 }
 

@@ -103,7 +103,7 @@ export const FULL_USER_MAPPING: Record<string, string> = {
 */
 
 export function formatNotComplyMessage(tickets: Ticket[]): string {
-  let message = "format japrinya \n\nREKON NOT COMPLY\n\nLink Update:\nhttps://ttiwsa-dashboard-2026.vercel.app/submit/not-comply\n\n";
+  let message = "\n\nREKON NOT COMPLY\n\nLink Update:\nhttps://ttiwsa-dashboard-2026.vercel.app/submit/not-comply\n\n";
 
   tickets.forEach(t => {
     const isTTI = t.STATUS.startsWith("TTI");

@@ -13,9 +13,9 @@ export async function GET(request: Request) {
   }
 
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TEST_CHAT_ID;
+  const chatIds = [process.env.TEST_CHAT_ID, process.env.TEST_CHAT_ID2].filter(Boolean);
 
-  if (!botToken || !chatId) {
+  if (!botToken || chatIds.length === 0) {
     return NextResponse.json({ error: "Missing Telegram config" }, { status: 500 });
   }
 
@@ -23,23 +23,28 @@ export async function GET(request: Request) {
     const data = await fetchDashboardData();
     const text = generateTelegramText(data, false);
 
-    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: text,
-        parse_mode: "Markdown",
-      }),
-    });
+    const responses = await Promise.all(
+      chatIds.map(chatId => 
+        fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: text,
+            parse_mode: "Markdown",
+          })
+        })
+      )
+    );
 
-    const telegramData = await response.json();
+    const telegramData = await Promise.all(responses.map(res => res.json()));
+    const hasError = responses.some(res => !res.ok);
 
-    if (!response.ok) {
+    if (hasError) {
       throw new Error(`Telegram API Error: ${JSON.stringify(telegramData)}`);
     }
 
-    return NextResponse.json({ success: true, message: "Automated report sent!" });
+    return NextResponse.json({ success: true, message: `Automated report sent to ${chatIds.length} chats!` });
 
   } catch (error: any) {
     console.error("Cron Error:", error);

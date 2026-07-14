@@ -18,7 +18,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // Check server side auth state on mount
     fetch("/api/auth/me")
       .then((res) => {
         if (res.ok) {
@@ -36,7 +35,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     setIsLoggedIn(false);
-    // Explicitly call the logout endpoint to clear the cookie
     fetch("/api/logout", { method: "POST" }).catch(console.error);
   };
   

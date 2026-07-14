@@ -106,8 +106,11 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
     const symptomKendala = searchParams.get("symptomKendala");
     const keteranganDetail = searchParams.get("keteranganDetail");
     const evidenceLink = searchParams.get("evidenceLink");
+    const namaTeknisi = searchParams.get("namaTeknisi");
+    const nikTeknisi = searchParams.get("nikTeknisi");
+    const mitra = searchParams.get("mitra");
 
-    if (sc || sto || item || evidenceStatus || symptomKendala || keteranganDetail || evidenceLink) {
+    if (sc || sto || item || evidenceStatus || symptomKendala || keteranganDetail || evidenceLink || namaTeknisi || nikTeknisi || mitra) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData((prev) => ({
         ...prev,
@@ -118,6 +121,9 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
         ...(symptomKendala ? { symptomKendala } : {}),
         ...(keteranganDetail ? { keteranganDetail } : {}),
         ...(evidenceLink ? { evidenceLink } : {}),
+        ...(namaTeknisi ? { namaTeknisi } : {}),
+        ...(nikTeknisi ? { nikTeknisi } : {}),
+        ...(mitra ? { mitra } : {}),
       }));
     }
   }, [searchParams]);

@@ -23,8 +23,8 @@ export async function GET(request: Request) {
     const data = await fetchDashboardData();
     const allTickets: Ticket[] = [...data.ttiTickets, ...data.ffgTickets];
 
-    // Filter tickets that need update and are NOT COMPLY
-    const needUpdateTickets = allTickets.filter(t => t.NULL_GDOC === true && t.STATUS.includes("-NOTC"));
+    // Filter tickets that need update and are NOT COMPLY, but exclude those that have been updated (isUpdated: true)
+    const needUpdateTickets = allTickets.filter(t => t.NULL_GDOC === true && t.STATUS.includes("-NOTC") && !t.isUpdated);
 
     // Group by STO
     const groupedBySTO = needUpdateTickets.reduce((acc, ticket) => {

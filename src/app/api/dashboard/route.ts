@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   try {
     const data = await fetchDashboardData(request.signal);
+    console.log("UPDATED tickets count:", data.ttiTickets.filter(t => t.kpi === 'UPDATED').length);
     return NextResponse.json(data);
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {

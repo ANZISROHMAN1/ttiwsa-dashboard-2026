@@ -25,21 +25,18 @@ export function formatDuration(value: number | string | undefined): string {
 
 // ─── Color Helpers ──────────────────────────────────────────────────────────
 
-/** Returns a CSS class name based on performance achievement level */
 export function getAchievementColor(value: number): string {
   if (value >= THRESHOLD.EXCELLENT) return "text-emerald";
   if (value >= THRESHOLD.GOOD) return "text-amber";
   return "text-rose";
 }
 
-/** Returns a CSS class for the background badge variant */
 export function getAchievementBg(value: number): string {
   if (value >= THRESHOLD.EXCELLENT) return "bg-emerald";
   if (value >= THRESHOLD.GOOD) return "bg-amber";
   return "bg-rose";
 }
 
-/** Returns both text and bg classes */
 export function getAchievementClasses(value: number): {
   text: string;
   bg: string;
