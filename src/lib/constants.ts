@@ -4,7 +4,7 @@ export const SUBMIT_ENDPOINT_URL = process.env.SUBMIT_API_URL || "";
 export const API_BASE_URL = process.env.TTIWSA_API_URL || "";
 export const SALDO_PSPI_API_URL = process.env.PSPI_API_URL || "";
 export const UNSPEC_API_URL = process.env.UNSPEC_API_URL || "";
-export const EVIDENCE_API_URL = process.env["4_EVIDEN_API_BARU"] || "";
+export const EVIDENCE_API_URL = process.env.EMPAT_EVIDEN_API_BARU || "";
 export const REPORT_IH_EASTERN_API_URL = process.env.API_BARU_REPORT_IH_EASTERN || "";
 export const REPORT_ALL_EASTERN_API_URL = process.env.API_BARU_REPORT_ALL_EASTERN || "";
 

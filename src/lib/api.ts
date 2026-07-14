@@ -21,7 +21,7 @@ export async function fetchDashboardData(
   try {
     if (!API_BASE_URL || !SALDO_PSPI_API_URL || !UNSPEC_API_URL || !EVIDENCE_API_URL) {
       throw new ApiError(
-        "API URLs are not configured. Please ensure NEXT_PUBLIC_TTIWSA_API_URL, NEXT_PUBLIC_PSPI_API_URL, UNSPEC_API_URL, and 4_EVIDEN_API_BARU are set in your environment variables.",
+        "API URLs are not configured. Please ensure NEXT_PUBLIC_TTIWSA_API_URL, NEXT_PUBLIC_PSPI_API_URL, UNSPEC_API_URL, and EMPAT_EVIDEN_API_BARU are set in your environment variables.",
         500
       );
     }
