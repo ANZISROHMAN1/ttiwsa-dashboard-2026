@@ -100,11 +100,15 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
         <nav className="px-3 py-4 space-y-1">
           {NAV_ITEMS.map((item) => {
             const hasSubItems = item.subItems && item.subItems.length > 0;
-            const isDropdownOpen = openDropdowns[item.label] || (hasSubItems && pathname.startsWith(item.href));
+            const isSubItemActive = hasSubItems && item.subItems!.some(
+              (sub) => sub.href === pathname || (sub.href !== "/" && pathname.startsWith(sub.href))
+            );
+            const isDropdownOpen = openDropdowns[item.label] || isSubItemActive;
 
             const isActive =
               pathname === item.href ||
-              (item.href !== "/" && pathname.startsWith(item.href));
+              (item.href !== "/" && pathname.startsWith(item.href)) ||
+              isSubItemActive;
 
             const navContent = (
               <>

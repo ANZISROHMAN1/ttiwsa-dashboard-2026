@@ -22,14 +22,26 @@ export function Header({
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
 
-  // Find current page title
-  const currentNav = NAV_ITEMS.find(
-    (item) =>
-      pathname === item.href ||
-      (item.href !== "/" && pathname.startsWith(item.href))
-  );
-  const pageTitle = currentNav?.label || "Overview";
-  const pageDescription = currentNav?.description || "Dashboard summary";
+  // Find current page title (check sub-items too)
+  let pageTitle = "Overview";
+  let pageDescription = "Dashboard summary";
+  for (const item of NAV_ITEMS) {
+    if (pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))) {
+      pageTitle = item.label;
+      pageDescription = item.description;
+      break;
+    }
+    if (item.subItems) {
+      const sub = item.subItems.find(
+        (s) => s.href === pathname || (s.href !== "/" && pathname.startsWith(s.href))
+      );
+      if (sub) {
+        pageTitle = sub.label;
+        pageDescription = sub.description;
+        break;
+      }
+    }
+  }
 
   return (
     <header

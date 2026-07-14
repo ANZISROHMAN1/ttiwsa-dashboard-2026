@@ -4,6 +4,7 @@ export const SUBMIT_ENDPOINT_URL = process.env.SUBMIT_API_URL || "";
 export const API_BASE_URL = process.env.TTIWSA_API_URL || "";
 export const SALDO_PSPI_API_URL = process.env.PSPI_API_URL || "";
 export const UNSPEC_API_URL = process.env.UNSPEC_API_URL || "";
+export const REPORT_IH_EASTERN_API_URL = process.env.API_BARU_REPORT_IH_EASTERN || "";
 
 /** Auto-refresh interval in milliseconds (5 minutes) */
 export const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
@@ -44,6 +45,10 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/",
     icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
     description: "Dashboard summary",
+    subItems: [
+      { label: "KPI Dashboard", href: "/", description: "Main KPI overview" },
+      { label: "Report IH Eastern", href: "/report-ih-eastern", description: "District performance report" },
+    ],
   },
   {
     label: "Performance",
