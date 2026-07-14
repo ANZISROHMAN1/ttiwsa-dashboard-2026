@@ -35,7 +35,8 @@ export async function POST(request: Request) {
       }
 
       try {
-        const secretKey = process.env.JWT_SECRET || "default_dev_secret_please_change_in_prod";
+        const secretKey = process.env.JWT_SECRET;
+        if (!secretKey) throw new Error("JWT_SECRET is missing from environment variables");
         const secret = new TextEncoder().encode(secretKey);
         await jwtVerify(token, secret);
       } catch (err) {

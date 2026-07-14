@@ -2,12 +2,30 @@ import { NextResponse } from "next/server";
 import { fetchDashboardData } from "@/lib/api";
 import { USER_MAPPING, CHAT_IDS, formatNotComplyMessage } from "@/lib/telegramConfig";
 import { Ticket } from "@/types/dashboard";
+import { jwtVerify } from "jose";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    const cookieHeader = request.headers.get("cookie") || "";
+    const match = cookieHeader.match(/(?:^|;\s*)auth_token=([^;]*)/);
+    const token = match ? match[1] : null;
+
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    try {
+      const secretKey = process.env.JWT_SECRET;
+      if (!secretKey) throw new Error("JWT_SECRET is missing from environment variables");
+      const secret = new TextEncoder().encode(secretKey);
+      await jwtVerify(token, secret);
+    } catch (err) {
+      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    }
+
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
 
     if (!botToken) {

@@ -18,20 +18,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("admin_logged_in");
-    if (saved === "true") {
-      setIsLoggedIn(true);
-    }
+    // Check server side auth state on mount
+    fetch("/api/auth/me")
+      .then((res) => {
+        if (res.ok) {
+          setIsLoggedIn(true);
+        } else {
+          setIsLoggedIn(false);
+        }
+      })
+      .catch(() => setIsLoggedIn(false));
   }, []);
 
   const login = () => {
     setIsLoggedIn(true);
-    localStorage.setItem("admin_logged_in", "true");
   };
 
   const logout = () => {
     setIsLoggedIn(false);
-    localStorage.removeItem("admin_logged_in");
+    // Explicitly call the logout endpoint to clear the cookie
+    fetch("/api/logout", { method: "POST" }).catch(console.error);
   };
   
   return (

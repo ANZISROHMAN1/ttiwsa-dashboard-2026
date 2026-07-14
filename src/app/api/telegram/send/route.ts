@@ -1,7 +1,25 @@
 import { NextResponse } from "next/server";
+import { jwtVerify } from "jose";
 
 export async function POST(request: Request) {
   try {
+    const cookieHeader = request.headers.get("cookie") || "";
+    const match = cookieHeader.match(/(?:^|;\s*)auth_token=([^;]*)/);
+    const token = match ? match[1] : null;
+
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    try {
+      const secretKey = process.env.JWT_SECRET;
+      if (!secretKey) throw new Error("JWT_SECRET is missing from environment variables");
+      const secret = new TextEncoder().encode(secretKey);
+      await jwtVerify(token, secret);
+    } catch (err) {
+      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    }
+
     const { text } = await request.json();
 
     if (!text) {

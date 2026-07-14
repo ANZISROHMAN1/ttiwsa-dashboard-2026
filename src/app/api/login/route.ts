@@ -1,39 +1,63 @@
 import { NextResponse } from "next/server";
 import { SignJWT } from "jose";
+import bcrypt from "bcryptjs";
+import { Redis } from "@upstash/redis";
 
-const rateLimitMap = new Map<string, { attempts: number; lockoutUntil: number }>();
+const redis =
+  process.env.UPSTASH_REDIS_REST_URL
+    ? new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+      })
+    : null;
+
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
 
 export async function POST(request: Request) {
   try {
     const ip = request.headers.get("x-forwarded-for") || "unknown";
-    
-    const record = rateLimitMap.get(ip);
-    if (record && record.lockoutUntil > Date.now()) {
-      const remainingMinutes = Math.ceil((record.lockoutUntil - Date.now()) / 60000);
-      return NextResponse.json(
-        { success: false, message: `Too many failed attempts. Try again in ${remainingMinutes} minutes.` },
-        { status: 429 }
-      );
+    const rateLimitKey = `rate_limit:login:${ip}`;
+
+    let currentAttempts = 0;
+
+    if (redis) {
+      const record = await redis.get<{ attempts: number }>(rateLimitKey);
+      if (record) {
+        currentAttempts = record.attempts;
+        if (currentAttempts >= MAX_ATTEMPTS) {
+          const ttl = await redis.ttl(rateLimitKey);
+          const remainingMinutes = Math.ceil(ttl / 60);
+          return NextResponse.json(
+            { success: false, message: `Too many failed attempts. Try again in ${remainingMinutes} minutes.` },
+            { status: 429 }
+          );
+        }
+      }
     }
 
     const body = await request.json();
     const { username, password } = body;
 
     const validUsername = process.env.ADMIN_USERNAME;
-    const validPassword = process.env.ADMIN_PASSWORD;
+    const validPasswordHash = process.env.ADMIN_PASSWORD_HASH;
 
-    if (!validUsername || !validPassword) {
-      console.error("ADMIN_USERNAME or ADMIN_PASSWORD is not set in environment variables.");
+    if (!validUsername || !validPasswordHash) {
+      console.error("ADMIN_USERNAME or ADMIN_PASSWORD_HASH is not set in environment variables.");
       return NextResponse.json({ success: false, message: "Server configuration error" }, { status: 500 });
     }
 
-    if (username === validUsername && password === validPassword) {
+    // Compare with bcrypt
+    const passwordMatch = await bcrypt.compare(password, validPasswordHash);
 
-      rateLimitMap.delete(ip);
+    if (username === validUsername && passwordMatch) {
+      // Clear rate limit on success
+      if (redis) {
+        await redis.del(rateLimitKey);
+      }
 
-      const secretKey = process.env.JWT_SECRET || "default_dev_secret_please_change_in_prod";
+      const secretKey = process.env.JWT_SECRET;
+      if (!secretKey) throw new Error("JWT_SECRET is missing from environment variables");
       const secret = new TextEncoder().encode(secretKey);
       
       const jwt = await new SignJWT({ role: "admin", user: username })
@@ -56,16 +80,14 @@ export async function POST(request: Request) {
 
       return response;
     } else {
-      const currentAttempts = record ? record.attempts + 1 : 1;
-      const lockoutUntil = currentAttempts >= MAX_ATTEMPTS 
-        ? Date.now() + LOCKOUT_MINUTES * 60000 
-        : 0;
-        
-      rateLimitMap.set(ip, { attempts: currentAttempts, lockoutUntil });
+      if (redis) {
+        await redis.set(rateLimitKey, { attempts: currentAttempts + 1 }, { ex: LOCKOUT_MINUTES * 60 });
+      }
 
       return NextResponse.json({ success: false, message: "Invalid username or password" }, { status: 401 });
     }
   } catch (error) {
+    console.error("Login Error:", error);
     return NextResponse.json({ success: false, message: "Bad request" }, { status: 400 });
   }
 }
