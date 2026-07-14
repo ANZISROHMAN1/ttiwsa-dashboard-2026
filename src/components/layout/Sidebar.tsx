@@ -32,7 +32,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         <Link href="/" className="flex items-center gap-3 group">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
               <img 
-                src="/testsayyid.jpg" 
+                src="/logoTelkom.png" 
                 alt="Logo" 
                 className="w-full h-full object-cover"
               />

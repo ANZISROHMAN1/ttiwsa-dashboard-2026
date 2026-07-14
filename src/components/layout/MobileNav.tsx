@@ -59,7 +59,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
               <img 
-                src="/testsayyid.jpg" 
+                src="/logoTelkom.png" 
                 alt="Logo" 
                 className="w-full h-full object-cover"
               />
