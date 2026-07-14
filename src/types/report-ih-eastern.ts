@@ -82,9 +82,21 @@ export const METRIC_CONFIGS: MetricConfig[] = [
   { key: "ttrCompManja3Jam", label: "TTR Manja 3h", shortLabel: "Manja" },
   { key: "ttr36Jam", label: "TTR 36 Jam", shortLabel: "TTR 36" },
   { key: "tti3x24Jam", label: "TTI 3x24 Jam", shortLabel: "TTI 3x24" },
-  { key: "ffg", label: "FFG", shortLabel: "FFG" },
-  { key: "ttrFfg", label: "TTR FFG", shortLabel: "TTR FFG" },
+  { key: "ffg", label: "Fulfillment Guarantee", shortLabel: "FFG" },
+  { key: "ttrFfg", label: "TTR Fulfillment Guarantee", shortLabel: "TTR FFG" },
 ];
+
+export const WSA_TARGETS: Record<keyof MetricSet, number> = {
+  serviceAvailability: 98.52,
+  assuranceGuarantee: 91.71,
+  ttrCompDiamond3Jam: 95.25,
+  ttrCompPlatinum6Jam: 95.00,
+  ttrCompManja3Jam: 94.79,
+  ttr36Jam: 85.00,
+  tti3x24Jam: 93.31,
+  ffg: 98.29,
+  ttrFfg: 80.81,
+};
 
 // ─── Trend color helpers ────────────────────────────────────────────────────
 

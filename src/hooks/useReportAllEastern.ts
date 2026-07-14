@@ -1,0 +1,64 @@
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
+import type { FrameworkData } from "@/types/report-all-eastern";
+
+interface UseReportAllEasternReturn {
+  data: FrameworkData[] | null;
+  isLoading: boolean;
+  error: string | null;
+  refetch: () => void;
+}
+
+/**
+ * Client-side hook for fetching Report All Eastern data (framework data).
+ */
+export function useReportAllEastern(): UseReportAllEasternReturn {
+  const [data, setData] = useState<FrameworkData[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const fetchData = useCallback(async () => {
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/report-all-eastern", {
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `API error: ${res.status}`);
+      }
+      const result = await res.json();
+      if (!controller.signal.aborted) {
+        setData(result);
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      const message =
+        err instanceof Error ? err.message : "An unexpected error occurred";
+      if (!controller.signal.aborted) {
+        setError(message);
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setIsLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, [fetchData]);
+
+  return { data, isLoading, error, refetch: fetchData };
+}
