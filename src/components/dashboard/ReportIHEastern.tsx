@@ -29,13 +29,13 @@ function TrendIcon({ trend }: { trend: string }) {
   const c = getTrendColor(trend);
   
   let icon = "";
-  if (trend === "🟢") icon = "👍";
+  if (trend === "🟢") icon = "↑";
   else if (trend === "🟡") icon = "=";
-  else if (trend === "🔴") icon = "👎";
+  else if (trend === "🔴") icon = "↓";
 
   return (
     <span
-      className={cn("inline-block shrink-0 text-xs font-bold leading-none", c.text)}
+      className={cn("inline-block shrink-0 text-base font-black leading-none drop-shadow-sm", c.text)}
       title={
         trend === "🟢"
           ? "Better than yesterday"
