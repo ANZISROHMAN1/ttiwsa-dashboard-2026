@@ -38,10 +38,10 @@ function TrendIcon({ trend }: { trend: string }) {
       className={cn("inline-block shrink-0 text-base font-black leading-none drop-shadow-sm", c.text)}
       title={
         trend === "🟢"
-          ? "Better than yesterday"
+          ? "Better dari kemarin"
           : trend === "🔴"
-          ? "Worse than yesterday"
-          : "Similar to yesterday"
+          ? "Turun dari kemarin"
+          : "Nilai dekat/Sama dari kemarin"
       }
     >
       {icon}

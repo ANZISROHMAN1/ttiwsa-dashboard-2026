@@ -276,7 +276,7 @@ export async function fetchDashboardData(
     const allSAs = Array.from(new Set([
       ...internalTti.map(t => t.SA), ...internalFfg.map(t => t.SA),
       ...psIhList.map(p => p.sa), ...psIbList.map(p => p.sa)
-    ])).filter(Boolean);
+    ])).filter(sa => sa && sa.toUpperCase() !== "UNKNOWN");
 
     const rankingSA: RankingSA[] = allSAs.map(sa => {
       const ttiIh = getMetric(internalTti.filter(t => t.SA === sa), 'TTI IH', KPI_TARGET["TTI_IH"]).achievement;
@@ -292,7 +292,7 @@ export async function fetchDashboardData(
     const allSTOs = Array.from(new Set([
       ...internalTti.map(t => t.STO), ...internalFfg.map(t => t.STO),
       ...psIhList.map(p => p.sto), ...psIbList.map(p => p.sto)
-    ])).filter(Boolean);
+    ])).filter(sto => sto && sto.toUpperCase() !== "UNKNOWN");
 
     const rankingSTO: RankingSTO[] = allSTOs.map(sto => {
       const ttiIh = getMetric(internalTti.filter(t => t.STO === sto), 'TTI IH', KPI_TARGET["TTI_IH"]).achievement;

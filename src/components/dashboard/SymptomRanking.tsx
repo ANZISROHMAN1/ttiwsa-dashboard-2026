@@ -253,10 +253,14 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
 
     base.forEach((t) => {
       const sto = t.STO || "UNKNOWN";
-      stoCount[sto] = (stoCount[sto] || 0) + 1;
+      if (sto.toUpperCase() !== "UNKNOWN") {
+        stoCount[sto] = (stoCount[sto] || 0) + 1;
+      }
       if (t.NULL_GDOC) {
         const sa = t.SA || "UNKNOWN";
-        nullGdocPerSA[sa] = (nullGdocPerSA[sa] || 0) + 1;
+        if (sa.toUpperCase() !== "UNKNOWN") {
+          nullGdocPerSA[sa] = (nullGdocPerSA[sa] || 0) + 1;
+        }
       }
     });
 

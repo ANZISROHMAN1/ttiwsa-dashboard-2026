@@ -48,10 +48,12 @@ export function FfgDetailTable({ tickets }: FfgDetailTableProps) {
       const sto = t.STO || "UNKNOWN";
       const symptom = t.SYMTOM || "UNKNOWN";
 
-      if (t.NULL_GDOC) {
+      if (t.NULL_GDOC && sa.toUpperCase() !== "UNKNOWN") {
         nullGdocPerSA[sa] = (nullGdocPerSA[sa] || 0) + 1;
       }
-      stoCount[sto] = (stoCount[sto] || 0) + 1;
+      if (sto.toUpperCase() !== "UNKNOWN") {
+        stoCount[sto] = (stoCount[sto] || 0) + 1;
+      }
       symCount[symptom] = (symCount[symptom] || 0) + 1;
     });
 

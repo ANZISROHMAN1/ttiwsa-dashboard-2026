@@ -81,7 +81,8 @@ export function DipisahView({
   const [selectedTables, setSelectedTables] = useState<string[]>([
     "overall", "tti", "ffg", "garansi", "pspi", "unspec"
   ]);
-  const [ttiIbOrderTypeFilter, setTtiIbOrderTypeFilter] = useState<string>("ALL");
+  const [ttiIbOrderTypeFilter, setTtiIbOrderTypeFilter] = useState<string[]>([]);
+  const [isOrderTypeDropdownOpen, setIsOrderTypeDropdownOpen] = useState(false);
   const [ttiIbStatusFilter, setTtiIbStatusFilter] = useState<"ALL" | "COMP" | "NOTC">("ALL");
   const [isSendingTelegram, setIsSendingTelegram] = useState(false);
 
@@ -171,13 +172,21 @@ export function DipisahView({
   }, [unspecTickets, allSAs]);
 
   const ttiIbOrderTypes = useMemo(() => {
-    const types = new Set<string>();
+    const typeCounts = new Map<string, number>();
+    let allCount = 0;
     ttiTickets.forEach(t => {
-      if (t.kpi === "TTI IB" && t.ORDER_TYPE) {
-        types.add(t.ORDER_TYPE.trim());
+      if (t.kpi === "TTI IB") {
+        allCount++;
+        if (t.ORDER_TYPE) {
+          const type = t.ORDER_TYPE.trim();
+          typeCounts.set(type, (typeCounts.get(type) || 0) + 1);
+        }
       }
     });
-    return Array.from(types).sort();
+    return {
+      allCount,
+      types: Array.from(typeCounts.entries()).map(([type, count]) => ({ type, count })).sort((a, b) => a.type.localeCompare(b.type))
+    };
   }, [ttiTickets]);
 
   const filteredRankingSA = useMemo(() => {
@@ -185,10 +194,10 @@ export function DipisahView({
 
     const filteredTickets = ttiTickets.filter(t => 
       t.kpi === "TTI IB" && 
-      (ttiIbOrderTypeFilter === "ALL" || (t.ORDER_TYPE || "").toLowerCase() === ttiIbOrderTypeFilter.toLowerCase())
+      (ttiIbOrderTypeFilter.length === 0 || ttiIbOrderTypeFilter.includes((t.ORDER_TYPE || "").trim()))
     );
 
-    if (ttiIbOrderTypeFilter === "ALL" && ttiIbStatusFilter === "ALL") return rankingSA;
+    if (ttiIbOrderTypeFilter.length === 0 && ttiIbStatusFilter === "ALL") return rankingSA;
 
     return rankingSA.map(r => {
       const saTickets = filteredTickets.filter(t => t.SA === r.sa);
@@ -207,6 +216,21 @@ export function DipisahView({
       return { ...r, ttiIB: val };
     });
   }, [rankingSA, ttiTickets, segment, ttiIbOrderTypeFilter, ttiIbStatusFilter]);
+
+  const ttiIbFilteredTicketsCount = useMemo(() => {
+    if (segment !== "indibiz") return 0;
+    let filtered = ttiTickets.filter(t => t.kpi === "TTI IB");
+    
+    if (ttiIbOrderTypeFilter.length > 0) {
+      filtered = filtered.filter(t => ttiIbOrderTypeFilter.includes((t.ORDER_TYPE || "").trim()));
+    }
+    
+    if (ttiIbStatusFilter !== "ALL") {
+      filtered = filtered.filter(t => t.STATUS.includes(ttiIbStatusFilter));
+    }
+    
+    return filtered.length;
+  }, [ttiTickets, segment, ttiIbOrderTypeFilter, ttiIbStatusFilter]);
 
   const config = SEGMENT_CONFIG[segment];
 
@@ -452,7 +476,16 @@ export function DipisahView({
           {selectedTables.includes('overall') && <MiniRankingTable title="Overall Achievement" dataKey="achievement" data={rankingSA} />}
           {selectedTables.includes('tti') && (
             <MiniRankingTable 
-              title={config.tti.title} 
+              title={
+                <div className="flex items-center gap-2">
+                  <span>{config.tti.title}</span>
+                  {segment === "indibiz" && (
+                    <span className="text-xs bg-[var(--surface-hover)] border border-[var(--border)] text-foreground-muted px-2 py-0.5 rounded-full normal-case tracking-normal font-medium">
+                      {ttiIbFilteredTicketsCount} Ticket
+                    </span>
+                  )}
+                </div>
+              }
               dataKey={config.tti.key} 
               data={filteredRankingSA} 
               isCount={segment === "indibiz" && ttiIbStatusFilter !== "ALL"}
@@ -460,16 +493,61 @@ export function DipisahView({
               headerAddon={
                 segment === "indibiz" && (
                   <div className="flex items-center gap-2">
-                    <select
-                      className="text-xs font-normal bg-[var(--surface-hover)] border border-[var(--border)] text-foreground rounded px-2 py-1 outline-none focus:ring-1 focus:ring-accent-blue"
-                      value={ttiIbOrderTypeFilter}
-                      onChange={(e) => setTtiIbOrderTypeFilter(e.target.value)}
-                    >
-                      <option value="ALL">All Orders</option>
-                      {ttiIbOrderTypes.map(type => (
-                        <option key={type} value={type}>{type || "Unknown"}</option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <button 
+                        onClick={() => setIsOrderTypeDropdownOpen(!isOrderTypeDropdownOpen)}
+                        className="text-xs font-normal bg-[var(--surface-hover)] border border-[var(--border)] text-foreground rounded px-2 py-1 flex items-center justify-between min-w-[110px] outline-none focus:ring-1 focus:ring-accent-blue text-left"
+                      >
+                        <span className="truncate max-w-[90px]">
+                          {ttiIbOrderTypeFilter.length === 0 ? "All Orders" : `${ttiIbOrderTypeFilter.length} Selected`}
+                        </span>
+                        <svg className="w-3 h-3 ml-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                      </button>
+                      
+                      {isOrderTypeDropdownOpen && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setIsOrderTypeDropdownOpen(false)}></div>
+                          <div className="absolute top-full left-0 mt-1 w-56 bg-[var(--surface-hover)] border border-[var(--border)] rounded shadow-xl z-50 py-1 flex flex-col max-h-[250px] overflow-y-auto">
+                            <label className="flex items-center px-3 py-1.5 hover:bg-[var(--border)] cursor-pointer text-xs transition-colors">
+                              <input 
+                                type="checkbox" 
+                                className="mr-2 rounded border-[var(--border)] text-accent-blue focus:ring-accent-blue bg-background"
+                                checked={ttiIbOrderTypeFilter.length === 0}
+                                onChange={() => {
+                                  setTtiIbOrderTypeFilter([]);
+                                  setIsOrderTypeDropdownOpen(false);
+                                }}
+                              />
+                              <div className="flex justify-between w-full items-center">
+                                <span className="font-medium text-foreground">All Orders</span>
+                                <span className="text-foreground-muted ml-2 bg-background px-1.5 py-0.5 rounded-md text-[10px] border border-[var(--border)]">{ttiIbOrderTypes.allCount}</span>
+                              </div>
+                            </label>
+                            <div className="h-px bg-[var(--border)] my-1"></div>
+                            {ttiIbOrderTypes.types.map(item => (
+                              <label key={item.type} className="flex items-center px-3 py-1.5 hover:bg-[var(--border)] cursor-pointer text-xs transition-colors">
+                                <input 
+                                  type="checkbox" 
+                                  className="mr-2 rounded border-[var(--border)] text-accent-blue focus:ring-accent-blue bg-background"
+                                  checked={ttiIbOrderTypeFilter.includes(item.type)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setTtiIbOrderTypeFilter(prev => [...prev, item.type]);
+                                    } else {
+                                      setTtiIbOrderTypeFilter(prev => prev.filter(t => t !== item.type));
+                                    }
+                                  }}
+                                />
+                                <div className="flex justify-between w-full items-center">
+                                  <span className="text-foreground truncate pr-2">{item.type || "Unknown"}</span>
+                                  <span className="text-foreground-muted ml-2 bg-background px-1.5 py-0.5 rounded-md text-[10px] border border-[var(--border)] whitespace-nowrap">{item.count}</span>
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
                     <select
                       className="text-xs font-normal bg-[var(--surface-hover)] border border-[var(--border)] text-foreground rounded px-2 py-1 outline-none focus:ring-1 focus:ring-accent-blue"
                       value={ttiIbStatusFilter}
@@ -536,13 +614,13 @@ export function DipisahView({
   );
 }
 
-function MiniRankingTable({ title, dataKey, data, headerAddon, isCount = false, invertBadge = false }: { title: string, dataKey: string, data: any[], headerAddon?: React.ReactNode, isCount?: boolean, invertBadge?: boolean }) {
+function MiniRankingTable({ title, dataKey, data, headerAddon, isCount = false, invertBadge = false }: { title: React.ReactNode, dataKey: string, data: any[], headerAddon?: React.ReactNode, isCount?: boolean, invertBadge?: boolean }) {
   const sorted = [...data].sort((a, b) => (b[dataKey] as number) - (a[dataKey] as number));
   
   return (
     <div className="glass-card p-4 flex flex-col">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">{title}</h3>
+        <h3 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center">{title}</h3>
         {headerAddon}
       </div>
       <div className="overflow-x-auto border border-[var(--border)] rounded-lg bg-background">
