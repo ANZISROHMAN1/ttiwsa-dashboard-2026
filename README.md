@@ -52,7 +52,7 @@ Modul notifikasi interaktif via Telegram (`/api/telegram/send`) beroperasi denga
 
 ---
 
-## 4. Keamanan Tingkat Lanjut (Enterprise-Grade)
+## 4. Keamanan
 
 Keamanan tidak dapat dikompromikan. Sistem ini memberlakukan parameter berikut secara kaku:
 
