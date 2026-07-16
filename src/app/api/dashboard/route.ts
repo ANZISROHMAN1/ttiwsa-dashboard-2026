@@ -5,8 +5,11 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    const data = await fetchDashboardData(request.signal);
-    console.log("UPDATED tickets count:", data.ttiTickets.filter(t => t.kpi === 'UPDATED').length);
+    const url = new URL(request.url);
+    const basic = url.searchParams.get('basic') === 'true';
+    
+    const data = await fetchDashboardData(request.signal, basic);
+    console.log(`Dashboard data fetched (basic: ${basic}). UPDATED tickets count:`, data.ttiTickets.filter(t => t.kpi === 'UPDATED').length);
     return NextResponse.json(data);
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {

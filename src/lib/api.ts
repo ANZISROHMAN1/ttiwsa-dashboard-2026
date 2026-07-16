@@ -16,7 +16,8 @@ export class ApiError extends Error {
 // ─── Fetch Dashboard Data ───────────────────────────────────────────────────
 
 export async function fetchDashboardData(
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  basic: boolean = false
 ): Promise<DashboardData> {
   try {
     if (!API_BASE_URL || !SALDO_PSPI_API_URL || !UNSPEC_API_URL || !EVIDENCE_API_URL) {
@@ -31,15 +32,15 @@ export async function fetchDashboardData(
         signal,
         next: { revalidate: 0 },
       }),
-      fetch(SALDO_PSPI_API_URL, {
+      basic ? Promise.resolve({ ok: true, json: async () => [] } as any) : fetch(SALDO_PSPI_API_URL, {
         signal,
         next: { revalidate: 0 },
       }),
-      fetch(UNSPEC_API_URL, {
+      basic ? Promise.resolve({ ok: true, json: async () => [] } as any) : fetch(UNSPEC_API_URL, {
         signal,
         next: { revalidate: 0 },
       }),
-      fetch(EVIDENCE_API_URL, {
+      basic ? Promise.resolve({ ok: true, json: async () => [] } as any) : fetch(EVIDENCE_API_URL, {
         signal,
         next: { revalidate: 0 },
       })
@@ -274,7 +275,8 @@ export async function fetchDashboardData(
     };
 
     const allSAs = Array.from(new Set([
-      ...internalTti.map(t => t.SA), ...internalFfg.map(t => t.SA),
+      ...internalTti.filter(t => t.kpi.startsWith('TTI')).map(t => t.SA), 
+      ...internalFfg.filter(t => t.kpi.startsWith('FFG')).map(t => t.SA),
       ...psIhList.map(p => p.sa), ...psIbList.map(p => p.sa)
     ])).filter(sa => sa && sa.toUpperCase() !== "UNKNOWN");
 
@@ -290,7 +292,8 @@ export async function fetchDashboardData(
     }).sort((a, b) => b.achievement - a.achievement);
 
     const allSTOs = Array.from(new Set([
-      ...internalTti.map(t => t.STO), ...internalFfg.map(t => t.STO),
+      ...internalTti.filter(t => t.kpi.startsWith('TTI')).map(t => t.STO), 
+      ...internalFfg.filter(t => t.kpi.startsWith('FFG')).map(t => t.STO),
       ...psIhList.map(p => p.sto), ...psIbList.map(p => p.sto)
     ])).filter(sto => sto && sto.toUpperCase() !== "UNKNOWN");
 

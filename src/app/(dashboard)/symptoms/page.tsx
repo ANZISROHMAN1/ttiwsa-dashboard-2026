@@ -1,11 +1,11 @@
 "use client";
 
-import { useDashboard } from "../layout";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { KpiAnalysis } from "@/components/dashboard/SymptomRanking";
 import { PageSkeleton } from "@/components/ui/Skeleton";
 
 export default function SymptomsPage() {
-  const { data, isLoading } = useDashboard();
+  const { data, isLoading } = useDashboardData(false);
 
   if (isLoading || !data) {
     return <PageSkeleton />;
