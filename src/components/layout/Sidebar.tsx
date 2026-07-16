@@ -40,7 +40,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           {!collapsed && (
             <div className="animate-fade-in">
               <span className="font-semibold text-sm text-foreground tracking-tight">
-                TTIWSA
+                WOC COLLAB 2026
               </span>
               <span className="block text-[10px] text-foreground-muted leading-none mt-0.5">
                 KPI Dashboard

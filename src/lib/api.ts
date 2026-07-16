@@ -22,7 +22,7 @@ export async function fetchDashboardData(
   try {
     if (!API_BASE_URL || !SALDO_PSPI_API_URL || !UNSPEC_API_URL || !EVIDENCE_API_URL) {
       throw new ApiError(
-        "API URLs are not configured. Please ensure NEXT_PUBLIC_TTIWSA_API_URL, NEXT_PUBLIC_PSPI_API_URL, UNSPEC_API_URL, and EMPAT_EVIDEN_API_BARU are set in your environment variables.",
+        "API URLs are not configured. Please ensure API are set in your environment variables.",
         500
       );
     }
@@ -49,7 +49,7 @@ export async function fetchDashboardData(
     if (!response.ok) {
       throw new ApiError(`API returned ${response.status}: ${response.statusText}`, response.status);
     }
-    
+
     if (!saldoResponse.ok) {
       console.error(`Saldo API returned ${saldoResponse.status}: ${saldoResponse.statusText}`);
     }
@@ -63,7 +63,7 @@ export async function fetchDashboardData(
     }
 
     const rawData = await response.json();
-    
+
     let saldoPspiTickets: SaldoPspiTicket[] = [];
     if (saldoResponse.ok) {
       saldoPspiTickets = await saldoResponse.json();
@@ -87,7 +87,7 @@ export async function fetchDashboardData(
     const getMergedEvidence = (sc: string, ttiwsaEvidence: string) => {
       const evList: string[] = [];
       if (ttiwsaEvidence && ttiwsaEvidence.trim()) evList.push(ttiwsaEvidence.trim());
-      
+
       let teknisi = "";
       let nik = "";
       let mitra = "";
@@ -98,12 +98,12 @@ export async function fetchDashboardData(
         if (newEv["EVIDENCE 2"]) evList.push(newEv["EVIDENCE 2"]);
         if (newEv["EVIDENCE 3"]) evList.push(newEv["EVIDENCE 3"]);
         if (newEv["EVIDENCE 4"]) evList.push(newEv["EVIDENCE 4"]);
-        
+
         teknisi = newEv["NAMA TEKNISI"] || "";
         nik = String(newEv["NIK TEKNISI"] || "");
         mitra = newEv["MITRA"] || "";
       }
-      
+
       return {
         EVIDENT: evList[0] || "",
         EVIDENT2: evList[1] || "",
@@ -121,7 +121,7 @@ export async function fetchDashboardData(
     const psIhList: { sa: string; sto: string; jml: number }[] = [];
     const psIbList: { sa: string; sto: string; jml: number }[] = [];
     const matchedSCs = new Set<string>();
-    
+
     let totalNullGdoc = 0;
     let ti_ih_notc = 0;
     let ti_ib_notc = 0;
@@ -141,7 +141,7 @@ export async function fetchDashboardData(
           SA: row['SA-TTI-IH'], STO: row['STO-TTI-IH'], SC: row['SC-TTI-IH'],
           STATUS: row['STATUS-TTI-IH'] as any, SYMTOM: row['SYMTOM-TTI-IH']?.trim(),
           NULL_GDOC: isNullGdoc,
-          REASON: row['REASON-TTI-IH'], 
+          REASON: row['REASON-TTI-IH'],
           EVIDENT: evMerged.EVIDENT,
           EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4,
           NAMA_TEKNISI: evMerged.NAMA_TEKNISI, NIK_TEKNISI: evMerged.NIK_TEKNISI, MITRA: evMerged.MITRA,
@@ -161,7 +161,7 @@ export async function fetchDashboardData(
           SA: row['SA-FFG-IH'], STO: row['STO-FFG-IH'], SC: row['SC-FFG-IH'],
           STATUS: row['STATUS-FFG-IH'] as any, SYMTOM: row['SYMTOM-FFG-IH']?.trim(),
           NULL_GDOC: isNullGdoc,
-          REASON: row['REASON-FFG-IH'], 
+          REASON: row['REASON-FFG-IH'],
           EVIDENT: evMerged.EVIDENT,
           EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4,
           NAMA_TEKNISI: evMerged.NAMA_TEKNISI, NIK_TEKNISI: evMerged.NIK_TEKNISI, MITRA: evMerged.MITRA,
@@ -180,7 +180,7 @@ export async function fetchDashboardData(
           SA: row['SA-TTI-IB'], STO: row['STO-TTI-IB'], SC: row['SC-TTI-IB'],
           STATUS: row['STATUS-TTI-IB'] as any, SYMTOM: row['SYMTOM-TTI-IB']?.trim(),
           NULL_GDOC: isNullGdoc,
-          REASON: row['REASON-TTI-IB'], 
+          REASON: row['REASON-TTI-IB'],
           EVIDENT: evMerged.EVIDENT,
           EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4,
           NAMA_TEKNISI: evMerged.NAMA_TEKNISI, NIK_TEKNISI: evMerged.NIK_TEKNISI, MITRA: evMerged.MITRA,
@@ -201,7 +201,7 @@ export async function fetchDashboardData(
           SA: row['SA-FFG-IB'], STO: row['STO-FFG-IB'], SC: row['SC-FFG-IB'],
           STATUS: row['STATUS-FFG-IB'] as any, SYMTOM: row['SYMTOM-FFG-IB']?.trim(),
           NULL_GDOC: isNullGdoc,
-          REASON: row['REASON-FFG-IB'], 
+          REASON: row['REASON-FFG-IB'],
           EVIDENT: evMerged.EVIDENT,
           EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4,
           NAMA_TEKNISI: evMerged.NAMA_TEKNISI, NIK_TEKNISI: evMerged.NIK_TEKNISI, MITRA: evMerged.MITRA,
@@ -275,7 +275,7 @@ export async function fetchDashboardData(
     };
 
     const allSAs = Array.from(new Set([
-      ...internalTti.filter(t => t.kpi.startsWith('TTI')).map(t => t.SA), 
+      ...internalTti.filter(t => t.kpi.startsWith('TTI')).map(t => t.SA),
       ...internalFfg.filter(t => t.kpi.startsWith('FFG')).map(t => t.SA),
       ...psIhList.map(p => p.sa), ...psIbList.map(p => p.sa)
     ])).filter(sa => sa && sa.toUpperCase() !== "UNKNOWN");
@@ -292,7 +292,7 @@ export async function fetchDashboardData(
     }).sort((a, b) => b.achievement - a.achievement);
 
     const allSTOs = Array.from(new Set([
-      ...internalTti.filter(t => t.kpi.startsWith('TTI')).map(t => t.STO), 
+      ...internalTti.filter(t => t.kpi.startsWith('TTI')).map(t => t.STO),
       ...internalFfg.filter(t => t.kpi.startsWith('FFG')).map(t => t.STO),
       ...psIhList.map(p => p.sto), ...psIbList.map(p => p.sto)
     ])).filter(sto => sto && sto.toUpperCase() !== "UNKNOWN");

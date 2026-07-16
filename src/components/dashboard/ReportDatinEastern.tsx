@@ -9,7 +9,17 @@ import type {
   MetricData,
   MetricKey,
 } from "@/types/report-ih-eastern";
-import { METRIC_CONFIGS, getTrendColor, WSA_TARGETS } from "@/types/report-ih-eastern";
+import { getTrendColor } from "@/types/report-ih-eastern";
+
+const DATIN_METRIC_CONFIGS = [
+  { key: "complianceDatinK2", label: "Compliance Datin K2", shortLabel: "K2" },
+  { key: "complianceDatinK3", label: "Compliance Datin K3", shortLabel: "K3" },
+];
+
+const DATIN_TARGETS: Record<string, number> = {
+  complianceDatinK2: 95.00,
+  complianceDatinK3: 92.00,
+};
 
 import { Trophy, Medal, Crown, Target, ThumbsUp } from "lucide-react";
 import { Doughnut } from "react-chartjs-2";
@@ -59,8 +69,10 @@ function MetricPill({
   metric: MetricData;
   metricKey: keyof MetricSet;
 }) {
+  if (!metric) return null;
+
   const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real).replace(',', '.'));
-  const target = WSA_TARGETS[metricKey] || 0;
+  const target = DATIN_TARGETS[metricKey] || 0;
   const isAchieved = !isNaN(realVal) && realVal >= target;
 
   const realDisplay =
@@ -93,8 +105,16 @@ function MetricPill({
 
 /** Metric cell inside the STO table */
 function MetricCell({ metric, metricKey }: { metric: MetricData; metricKey: keyof MetricSet }) {
+  if (!metric) {
+    return (
+      <td className="px-3 py-3 whitespace-nowrap text-center text-foreground-muted text-sm">
+        -
+      </td>
+    );
+  }
+
   const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real).replace(',', '.'));
-  const target = WSA_TARGETS[metricKey] || 0;
+  const target = DATIN_TARGETS[metricKey] || 0;
   const isAchieved = !isNaN(realVal) && realVal >= target;
 
   const realDisplay =
@@ -190,12 +210,12 @@ function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
   const [expanded, setExpanded] = useState(false);
 
   // Count how many metrics achieved their target for the SA summary
-  const targetCounts = METRIC_CONFIGS.reduce(
+  const targetCounts = DATIN_METRIC_CONFIGS.reduce(
     (acc, mc) => {
-      const metric = sa.summary[mc.key];
+      const metric = (sa.summary as any)[mc.key];
       if (!metric) return acc;
       const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real).replace(',', '.'));
-      const target = WSA_TARGETS[mc.key] || 0;
+      const target = DATIN_TARGETS[mc.key] || 0;
       if (!isNaN(realVal)) {
         if (realVal >= target) acc.achieved++;
         else acc.notAchieved++;
@@ -262,12 +282,12 @@ function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
       {/* SA Summary Metrics Row */}
       <div className="px-5 pb-4">
         <div className="flex flex-wrap gap-2">
-          {METRIC_CONFIGS.map((mc) => (
+          {DATIN_METRIC_CONFIGS.map((mc) => (
             <MetricPill
               key={mc.key}
               label={mc.shortLabel}
-              metric={sa.summary[mc.key]}
-              metricKey={mc.key}
+              metric={(sa.summary as any)[mc.key]}
+              metricKey={mc.key as any}
             />
           ))}
         </div>
@@ -283,7 +303,7 @@ function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
                   <th className="px-4 py-3 font-semibold whitespace-nowrap sticky left-0 bg-[var(--surface-hover)] z-10">
                     STO
                   </th>
-                  {METRIC_CONFIGS.map((mc) => (
+                  {DATIN_METRIC_CONFIGS.map((mc) => (
                     <th
                       key={mc.key}
                       className="px-3 py-3 font-semibold whitespace-nowrap text-center"
@@ -304,11 +324,11 @@ function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
                         {sto.sto}
                       </span>
                     </td>
-                    {METRIC_CONFIGS.map((mc) => (
+                    {DATIN_METRIC_CONFIGS.map((mc) => (
                       <MetricCell
                         key={mc.key}
-                        metric={sto[mc.key as keyof typeof sto] as MetricData}
-                        metricKey={mc.key}
+                        metric={(sto as any)[mc.key] as MetricData}
+                        metricKey={mc.key as any}
                       />
                     ))}
                   </tr>
@@ -324,27 +344,17 @@ function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-interface ReportIHEasternProps {
+interface ReportDatinEasternProps {
   data: DistrictData[];
 }
 
-export function ReportIHEastern({ data }: ReportIHEasternProps) {
+export function ReportDatinEastern({ data }: ReportDatinEasternProps) {
   const [activeDistrict, setActiveDistrict] = useState(0);
 
   const district = data[activeDistrict];
   if (!district) return null;
 
-  const WSA_TARGETS: Record<keyof MetricSet, number> = {
-    serviceAvailability: 98.52,
-    assuranceGuarantee: 91.71,
-    ttrCompDiamond3Jam: 95.25,
-    ttrCompPlatinum6Jam: 95.00,
-    ttrCompManja3Jam: 94.79,
-    ttr36Jam: 85.00,
-    tti3x24Jam: 93.31,
-    ffg: 98.29,
-    ttrFfg: 80.81,
-  };
+
 
   // ─── Score Calculations ───────────────────────────────────────────────────
   function getSaScore(sa: ServiceAreaData) {
@@ -352,11 +362,11 @@ export function ReportIHEastern({ data }: ReportIHEasternProps) {
     let thumbsUp = 0;
     const metrics: { label: string; value: number }[] = [];
 
-    METRIC_CONFIGS.forEach((mc) => {
-      const metric = sa.summary[mc.key];
+    DATIN_METRIC_CONFIGS.forEach((mc) => {
+      const metric = (sa.summary as any)[mc.key];
       if (!metric) return;
       const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real).replace(',', '.'));
-      const target = WSA_TARGETS[mc.key] || 0;
+      const target = DATIN_TARGETS[mc.key] || 0;
 
       if (!isNaN(realVal)) {
         if (realVal >= target) {
@@ -398,7 +408,7 @@ export function ReportIHEastern({ data }: ReportIHEasternProps) {
     d.serviceAreas.forEach((sa) => {
       const score = getSaScore(sa);
       totalAchieved += score.achieved;
-      totalMetrics += 9;
+      totalMetrics += DATIN_METRIC_CONFIGS.length;
     });
     const percentage =
       totalMetrics > 0 ? (totalAchieved / totalMetrics) * 100 : 0;
@@ -464,13 +474,13 @@ export function ReportIHEastern({ data }: ReportIHEasternProps) {
     0
   );
 
-  const averages = METRIC_CONFIGS.map(mc => {
+  const averages = DATIN_METRIC_CONFIGS.map(mc => {
     const sum = district.serviceAreas.reduce((acc, sa) => {
-      const real = sa.summary[mc.key]?.real || 0;
+      const real = (sa.summary as any)[mc.key]?.real || 0;
       return acc + (typeof real === 'number' ? real : parseFloat(String(real).replace(',', '.')) || 0);
     }, 0);
     const avg = district.serviceAreas.length > 0 ? sum / district.serviceAreas.length : 0;
-    const target = WSA_TARGETS[mc.key] || 0;
+    const target = DATIN_TARGETS[mc.key] || 0;
     const diff = avg - target;
     return { label: mc.shortLabel, avg, target, diff };
   });
@@ -484,7 +494,7 @@ export function ReportIHEastern({ data }: ReportIHEasternProps) {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">
-            Report IH Eastern
+            Report EBIS Eastern
           </h1>
           <p className="text-sm text-foreground-muted mt-1">
             Fulfillment & Assurance performance by district, service area, and
@@ -652,7 +662,7 @@ export function ReportIHEastern({ data }: ReportIHEasternProps) {
                     <div className="text-[10px] text-foreground-muted font-semibold uppercase tracking-wider mb-1 flex items-center justify-center gap-1.5">
                       <Target className="w-3 h-3 text-blue-400" /> Targets
                     </div>
-                    <div className="text-lg font-bold text-blue-400">{districtBestSA.achieved} <span className="text-[10px] text-foreground-muted">/ 9</span></div>
+                    <div className="text-lg font-bold text-blue-400">{districtBestSA.achieved} <span className="text-[10px] text-foreground-muted">/ 2</span></div>
                   </div>
                   <div className="bg-[var(--surface)] rounded-lg p-3 border border-[var(--border)] text-center flex flex-col justify-center">
                     <div className="text-[10px] text-foreground-muted font-semibold uppercase tracking-wider mb-1 flex items-center justify-center gap-1.5">
@@ -763,14 +773,14 @@ export function ReportIHEastern({ data }: ReportIHEasternProps) {
               <tr>
                 <th className="px-4 py-3 font-semibold">Service Area</th>
                 <th className="px-4 py-3 font-semibold">STO</th>
-                {METRIC_CONFIGS.map(mc => (
+                {DATIN_METRIC_CONFIGS.map(mc => (
                   <th key={mc.key} className="px-4 py-3 font-semibold text-center" colSpan={6}>{mc.shortLabel}</th>
                 ))}
               </tr>
               <tr className="border-b border-[var(--border)] text-xs text-foreground-muted bg-[var(--surface-hover)]/30">
                 <th className="px-4 py-2"></th>
                 <th className="px-4 py-2"></th>
-                {METRIC_CONFIGS.map(mc => (
+                {DATIN_METRIC_CONFIGS.map(mc => (
                   <Fragment key={mc.key}>
                     <th className="px-4 py-2 text-center border-l border-[var(--border)]/50">Real</th>
                     <th className="px-4 py-2 text-center border-l border-[var(--border)]/50">Target</th>
@@ -788,9 +798,9 @@ export function ReportIHEastern({ data }: ReportIHEasternProps) {
                   <tr key={sto.sto} className="hover:bg-[var(--surface-hover)]/50 transition-colors">
                     <td className="px-4 py-2">{sa.serviceArea}</td>
                     <td className="px-4 py-2 font-medium">{sto.sto}</td>
-                    {METRIC_CONFIGS.map(mc => {
+                    {DATIN_METRIC_CONFIGS.map(mc => {
                       const m = (sto as any)[mc.key];
-                      const target = WSA_TARGETS[mc.key];
+                      const target = DATIN_TARGETS[mc.key];
                       return (
                         <Fragment key={mc.key}>
                           <td className="px-4 py-2 text-center border-l border-[var(--border)]/50">{m?.real ?? '-'}</td>

@@ -296,11 +296,25 @@ export function DipisahView({
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed.x !== null) {
+              label += Number(context.parsed.x).toFixed(2) + '%';
+            }
+            return label;
+          }
+        }
+      },
       datalabels: {
         color: "#fff",
         anchor: "end" as const,
         align: "start" as const,
-        formatter: (value: number) => `${value}%`,
+        formatter: (value: number) => `${Number(value).toFixed(2)}%`,
         font: { weight: "bold" as const },
       },
     },
@@ -334,11 +348,25 @@ export function DipisahView({
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed.y !== null) {
+              label += Number(context.parsed.y).toFixed(2) + '%';
+            }
+            return label;
+          }
+        }
+      },
       datalabels: {
         color: "#1f2937",
         anchor: "end" as const,
         align: "top" as const,
-        formatter: (value: number) => `${value.toFixed(2)}%`,
+        formatter: (value: number) => `${Number(value).toFixed(2)}%`,
         font: { weight: "bold" as const, size: 10 },
       },
     },

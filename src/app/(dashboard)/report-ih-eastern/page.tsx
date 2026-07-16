@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { useReportIHEastern } from "@/hooks/useReportIHEastern";
 import { useReportAllEastern } from "@/hooks/useReportAllEastern";
+import { useReportEbis } from "@/hooks/useReportEbis";
+import { useReportDatin } from "@/hooks/useReportDatin";
 import { ReportIHEastern } from "@/components/dashboard/ReportIHEastern";
+import { ReportEbisEastern } from "@/components/dashboard/ReportEbisEastern";
+import { ReportDatinEastern } from "@/components/dashboard/ReportDatinEastern";
 import { FrameworkDataTable } from "@/components/dashboard/FrameworkDataTable";
 import { PageSkeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
@@ -47,6 +51,26 @@ function WsaView() {
   return <ReportIHEastern data={data} />;
 }
 
+function EbisView() {
+  const { data, isLoading, error, refetch } = useReportEbis();
+
+  if (isLoading) return <PageSkeleton />;
+  if (error) return <ErrorState error={error} refetch={refetch} />;
+  if (!data || data.length === 0) return <EmptyState />;
+
+  return <ReportEbisEastern data={data} />;
+}
+
+function DatinView() {
+  const { data, isLoading, error, refetch } = useReportDatin();
+
+  if (isLoading) return <PageSkeleton />;
+  if (error) return <ErrorState error={error} refetch={refetch} />;
+  if (!data || data.length === 0) return <EmptyState />;
+
+  return <ReportDatinEastern data={data} />;
+}
+
 function FrameworkView({ category }: { category: FrameworkCategory }) {
   const { data, isLoading, error, refetch } = useReportAllEastern();
 
@@ -82,6 +106,10 @@ export default function ReportIHEasternPage() {
 
       {activeCategory === "WSA" ? (
         <WsaView />
+      ) : activeCategory === "EBIS" ? (
+        <EbisView />
+      ) : activeCategory === "OLO" ? (
+        <DatinView />
       ) : (
         <FrameworkView category={activeCategory} />
       )}

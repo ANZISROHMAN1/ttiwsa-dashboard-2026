@@ -7,6 +7,8 @@ export const UNSPEC_API_URL = process.env.UNSPEC_API_URL || "";
 export const EVIDENCE_API_URL = process.env.EMPAT_EVIDEN_API_BARU || "";
 export const REPORT_IH_EASTERN_API_URL = process.env.API_BARU_REPORT_IH_EASTERN || "";
 export const REPORT_ALL_EASTERN_API_URL = process.env.API_BARU_REPORT_ALL_EASTERN || "";
+export const EBIS_API_URL = process.env.EBIS_API || "";
+export const DATIN_API_URL = process.env.DATIN_API || "";
 
 /** Auto-refresh interval in milliseconds (5 minutes) */
 export const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
