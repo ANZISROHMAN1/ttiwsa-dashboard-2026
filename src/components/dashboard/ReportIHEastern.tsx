@@ -792,8 +792,8 @@ export function ReportIHEastern({ data }: ReportIHEasternProps) {
               <tr>
                 <th className="px-4 py-3 font-semibold">Service Area</th>
                 <th className="px-4 py-3 font-semibold">STO</th>
-                {METRIC_CONFIGS.map(mc => (
-                  <th key={mc.key} className="px-4 py-3 font-semibold text-center" colSpan={4}>
+                {METRIC_CONFIGS.map((mc, idx) => (
+                  <th key={mc.key} className={cn("px-4 py-3 font-semibold text-center", idx !== 0 && "border-l-2 border-[var(--border)]")} colSpan={4}>
                     <div>{mc.shortLabel}</div>
                     <div className="text-[10px] font-normal text-foreground-muted mt-0.5 whitespace-nowrap">
                       Target: {WSA_TARGETS[mc.key]}%
@@ -804,12 +804,12 @@ export function ReportIHEastern({ data }: ReportIHEasternProps) {
               <tr className="border-b border-[var(--border)] text-xs text-foreground-muted bg-[var(--surface-hover)]/30">
                 <th className="px-4 py-2"></th>
                 <th className="px-4 py-2"></th>
-                {METRIC_CONFIGS.map(mc => (
+                {METRIC_CONFIGS.map((mc, idx) => (
                   <Fragment key={mc.key}>
-                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/50">Real</th>
-                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/50">H-1</th>
-                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/50">Ach</th>
-                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/50">Trend</th>
+                    <th className={cn("px-4 py-2 text-center", idx !== 0 && "border-l-2 border-[var(--border)]")}>Real</th>
+                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/30">H-1</th>
+                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/30">Ach</th>
+                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/30">Trend</th>
                   </Fragment>
                 ))}
               </tr>
@@ -820,18 +820,20 @@ export function ReportIHEastern({ data }: ReportIHEasternProps) {
                   <tr key={sto.sto} className="hover:bg-[var(--surface-hover)]/50 transition-colors">
                     <td className="px-4 py-2">{sa.serviceArea}</td>
                     <td className="px-4 py-2 font-medium">{sto.sto}</td>
-                    {METRIC_CONFIGS.map(mc => {
+                    {METRIC_CONFIGS.map((mc, idx) => {
                       const m = (sto as any)[mc.key];
                       return (
                         <Fragment key={mc.key}>
-                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/50">{m?.real ?? '-'}</td>
-                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/50">
+                          <td className={cn("px-4 py-2 text-center", idx !== 0 && "border-l-2 border-[var(--border)]")}>
+                            {m?.real != null ? (typeof m.real === 'number' ? m.real.toFixed(2) + '%' : String(m.real).endsWith('%') ? m.real : m.real + '%') : '-'}
+                          </td>
+                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/30">
                             {typeof m?.h1 === 'number' ? m.h1.toFixed(2) + '%' : (m?.h1 ?? '-')}
                           </td>
-                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/50">
+                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/30">
                             {typeof m?.ach === 'number' ? (m.ach * 100).toFixed(2) + '%' : (m?.ach ?? '-')}
                           </td>
-                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/50">{m?.trend ?? '-'}</td>
+                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/30">{m?.trend ?? '-'}</td>
                         </Fragment>
                       )
                     })}

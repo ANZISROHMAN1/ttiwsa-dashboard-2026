@@ -808,21 +808,21 @@ export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
               <tr>
                 <th className="px-4 py-3 font-semibold">Service Area</th>
                 <th className="px-4 py-3 font-semibold">STO</th>
-                {EBIS_METRIC_CONFIGS.map(mc => (
-                  <th key={mc.key} className="px-4 py-3 font-semibold text-center" colSpan={6}>{mc.shortLabel}</th>
+                {EBIS_METRIC_CONFIGS.map((mc, idx) => (
+                  <th key={mc.key} className={cn("px-4 py-3 font-semibold text-center", idx !== 0 && "border-l-2 border-[var(--border)]")} colSpan={6}>{mc.shortLabel}</th>
                 ))}
               </tr>
               <tr className="border-b border-[var(--border)] text-xs text-foreground-muted bg-[var(--surface-hover)]/30">
                 <th className="px-4 py-2"></th>
                 <th className="px-4 py-2"></th>
-                {EBIS_METRIC_CONFIGS.map(mc => (
+                {EBIS_METRIC_CONFIGS.map((mc, idx) => (
                   <Fragment key={mc.key}>
-                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/50">Real</th>
-                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/50">Target</th>
-                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/50">Ach</th>
-                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/50">Trend</th>
-                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/50">Comply</th>
-                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/50">Not Comply</th>
+                    <th className={cn("px-4 py-2 text-center", idx !== 0 && "border-l-2 border-[var(--border)]")}>Real</th>
+                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/30">Target</th>
+                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/30">Ach</th>
+                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/30">Trend</th>
+                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/30">Comply</th>
+                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/30">Not Comply</th>
                   </Fragment>
                 ))}
               </tr>
@@ -833,19 +833,21 @@ export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
                   <tr key={sto.sto} className="hover:bg-[var(--surface-hover)]/50 transition-colors">
                     <td className="px-4 py-2">{sa.serviceArea}</td>
                     <td className="px-4 py-2 font-medium">{sto.sto}</td>
-                    {EBIS_METRIC_CONFIGS.map(mc => {
+                    {EBIS_METRIC_CONFIGS.map((mc, idx) => {
                       const m = (sto as any)[mc.key];
                       const target = EBIS_TARGETS[mc.key];
                       return (
                         <Fragment key={mc.key}>
-                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/50">{m?.real ?? '-'}</td>
-                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/50">{target ?? '-'}</td>
-                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/50">
+                          <td className={cn("px-4 py-2 text-center", idx !== 0 && "border-l-2 border-[var(--border)]")}>
+                            {m?.real != null ? (typeof m.real === 'number' ? m.real.toFixed(2) + '%' : String(m.real).endsWith('%') ? m.real : m.real + '%') : '-'}
+                          </td>
+                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/30">{target ?? '-'}</td>
+                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/30">
                             {typeof m?.ach === 'number' ? (m.ach * 100).toFixed(2) + '%' : (m?.ach ?? '-')}
                           </td>
-                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/50">{m?.trend ?? '-'}</td>
-                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/50">{m?.comply ?? '-'}</td>
-                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/50">{m?.notCmply ?? '-'}</td>
+                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/30">{m?.trend ?? '-'}</td>
+                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/30">{m?.comply ?? '-'}</td>
+                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/30">{m?.notCmply ?? '-'}</td>
                         </Fragment>
                       )
                     })}
