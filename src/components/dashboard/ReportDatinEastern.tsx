@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Fragment } from "react";
+import { useState, Fragment, useRef } from "react";
 import { cn } from "@/lib/utils";
 import type {
   DistrictData,
@@ -21,7 +21,8 @@ const DATIN_TARGETS: Record<string, number> = {
   complianceDatinK3: 92.00,
 };
 
-import { Trophy, Medal, Crown, Target, ThumbsUp } from "lucide-react";
+import { Trophy, Medal, Crown, Target, ThumbsUp, Download } from "lucide-react";
+import { toPng } from "html-to-image";
 import { Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -350,6 +351,25 @@ interface ReportDatinEasternProps {
 
 export function ReportDatinEastern({ data }: ReportDatinEasternProps) {
   const [activeDistrict, setActiveDistrict] = useState(0);
+  const tableRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadPNG = async () => {
+    if (!tableRef.current) return;
+    try {
+      const dataUrl = await toPng(tableRef.current, {
+        cacheBust: true,
+        style: {
+          backgroundColor: "#ffffff", // White background for the exported image
+        },
+      });
+      const link = document.createElement("a");
+      link.download = `OLO-Raw-Data-${new Date().toISOString().split("T")[0]}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Failed to download image", err);
+    }
+  };
 
   const district = data[activeDistrict];
   if (!district) return null;
@@ -765,8 +785,17 @@ export function ReportDatinEastern({ data }: ReportDatinEasternProps) {
       </div>
 
       {/* Raw Data Table */}
-      <div className="glass-card p-5 mt-10">
-        <h3 className="text-lg font-bold text-foreground mb-4">Raw Data Table</h3>
+      <div className="glass-card p-5 mt-10" ref={tableRef}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-foreground">Raw Data Table</h3>
+          <button
+            onClick={handleDownloadPNG}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 hover:text-blue-300 transition-colors border border-blue-500/20"
+          >
+            <Download className="w-4 h-4" />
+            Download PNG
+          </button>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-[var(--surface-hover)] border-b border-[var(--border)]">
@@ -806,7 +835,7 @@ export function ReportDatinEastern({ data }: ReportDatinEasternProps) {
                           <td className="px-4 py-2 text-center border-l border-[var(--border)]/50">{m?.real ?? '-'}</td>
                           <td className="px-4 py-2 text-center border-l border-[var(--border)]/50">{target ?? '-'}</td>
                           <td className="px-4 py-2 text-center border-l border-[var(--border)]/50">
-                            {typeof m?.ach === 'number' ? m.ach.toFixed(2) + '%' : (m?.ach ?? '-')}
+                            {typeof m?.ach === 'number' ? (m.ach * 100).toFixed(2) + '%' : (m?.ach ?? '-')}
                           </td>
                           <td className="px-4 py-2 text-center border-l border-[var(--border)]/50">{m?.trend ?? '-'}</td>
                           <td className="px-4 py-2 text-center border-l border-[var(--border)]/50">{m?.comply ?? '-'}</td>
