@@ -48,6 +48,36 @@ export async function POST(request: Request) {
                 }).catch(err => console.error("Failed to send welcome message:", err));
               }
             }
+          } else if (payload.message.text === "/stop") {
+            const existingChatId = await redis.get(`telegram:user:@${username}`);
+            const botToken = process.env.TELEGRAM_BOT_TOKEN;
+            
+            if (existingChatId) {
+              await redis.del(`telegram:user:@${username}`);
+              console.log(`Unregistered user: @${username}`);
+              
+              if (botToken) {
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chat_id: chatId,
+                    text: `🛑 Anda telah berhenti menerima notifikasi "Not Comply". Ketik /report untuk registrasi kembali.`,
+                  }),
+                }).catch(err => console.error("Failed to send stop message:", err));
+              }
+            } else {
+              if (botToken) {
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chat_id: chatId,
+                    text: `ℹ️ Anda belum terdaftar. Ketik /report untuk registrasi.`,
+                  }),
+                }).catch(err => console.error("Failed to send not registered message:", err));
+              }
+            }
           }
         } else {
           console.warn(`Unauthorized Telegram registration attempt from: @${username}`);
