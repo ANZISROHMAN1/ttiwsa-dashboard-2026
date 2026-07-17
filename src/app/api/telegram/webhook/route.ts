@@ -21,8 +21,20 @@ export async function POST(request: Request) {
           await redis.set(`telegram:user:@${username}`, chatId.toString());
           console.log(`Registered authorized user: @${username} with chatId: ${chatId}`);
           
-          // Optionally, we could send a welcome message back to the user here using the bot token,
-          // but dropping silently is fine as well.
+          // Send a welcome message if they typed /report
+          if (payload.message.text === "/report") {
+            const botToken = process.env.TELEGRAM_BOT_TOKEN;
+            if (botToken) {
+              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  text: `✅ Successfully registered! You will now receive "Not Comply" alerts.`,
+                }),
+              }).catch(err => console.error("Failed to send welcome message:", err));
+            }
+          }
         } else {
           console.warn(`Unauthorized Telegram registration attempt from: @${username}`);
         }
