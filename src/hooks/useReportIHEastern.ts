@@ -68,7 +68,15 @@ export function useReportIHEastern(): UseReportIHEasternReturn {
 
   useEffect(() => {
     fetchData();
+
+    // Listen to global refresh (triggered by Header button)
+    const handleGlobalRefresh = () => {
+      fetchData();
+    };
+    window.addEventListener("global-refresh", handleGlobalRefresh);
+
     return () => {
+      window.removeEventListener("global-refresh", handleGlobalRefresh);
       abortControllerRef.current?.abort();
     };
   }, [fetchData]);

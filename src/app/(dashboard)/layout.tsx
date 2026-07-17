@@ -51,6 +51,13 @@ export default function DashboardLayout({
     setMobileNavOpen(false);
   }, []);
 
+  const handleGlobalRefresh = useCallback(() => {
+    // 1. Refetch the main dashboard data
+    dashboardData.refetch();
+    // 2. Dispatch a global event so other pages (like Kawal 65 PI) can listen and refetch their own hooks
+    window.dispatchEvent(new CustomEvent('global-refresh'));
+  }, [dashboardData]);
+
   const sidebarWidth = isDesktop
     ? sidebarCollapsed
       ? "var(--sidebar-collapsed-width)"
@@ -76,7 +83,7 @@ export default function DashboardLayout({
         <Header
           lastUpdated={dashboardData.lastUpdated}
           isLoading={dashboardData.isLoading}
-          onRefresh={dashboardData.refetch}
+          onRefresh={handleGlobalRefresh}
           onMenuToggle={handleMenuToggle}
         />
 

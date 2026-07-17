@@ -57,7 +57,15 @@ export function useReportDatin() {
 
   useEffect(() => {
     fetchReport();
+
+    // Listen to global refresh (triggered by Header button)
+    const handleGlobalRefresh = () => {
+      fetchReport();
+    };
+    window.addEventListener("global-refresh", handleGlobalRefresh);
+
     return () => {
+      window.removeEventListener("global-refresh", handleGlobalRefresh);
       abortControllerRef.current?.abort();
     };
   }, [fetchReport]);
