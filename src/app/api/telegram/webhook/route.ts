@@ -17,22 +17,36 @@ export async function POST(request: Request) {
       if (chatId && username) {
         // Only save if the user is in our FULL_USER_MAPPING whitelist
         if (isUserWhitelisted(username)) {
-          // Save mapped in Redis
-          await redis.set(`telegram:user:@${username}`, chatId.toString());
-          console.log(`Registered authorized user: @${username} with chatId: ${chatId}`);
-          
-          // Send a welcome message if they typed /report
           if (payload.message.text === "/report") {
+            const existingChatId = await redis.get(`telegram:user:@${username}`);
             const botToken = process.env.TELEGRAM_BOT_TOKEN;
-            if (botToken) {
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  chat_id: chatId,
-                  text: `✅ Successfully registered! You will now receive "Not Comply" alerts.`,
-                }),
-              }).catch(err => console.error("Failed to send welcome message:", err));
+            
+            if (existingChatId) {
+              if (botToken) {
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chat_id: chatId,
+                    text: `ℹ️ Anda sudah registrasi, tidak perlu /report lagi.`,
+                  }),
+                }).catch(err => console.error("Failed to send already registered message:", err));
+              }
+            } else {
+              // Save mapped in Redis
+              await redis.set(`telegram:user:@${username}`, chatId.toString());
+              console.log(`Registered authorized user: @${username} with chatId: ${chatId}`);
+              
+              if (botToken) {
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chat_id: chatId,
+                    text: `✅ Successfully registered! You will now receive "Not Comply" alerts.`,
+                  }),
+                }).catch(err => console.error("Failed to send welcome message:", err));
+              }
             }
           }
         } else {
