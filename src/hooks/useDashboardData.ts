@@ -15,7 +15,7 @@ interface UseDashboardDataReturn {
  * Custom hook for fetching and auto-refreshing dashboard data.
  * Handles loading states, errors, and race conditions via AbortController.
  */
-export function useDashboardData(basic: boolean = true): UseDashboardDataReturn {
+export function useDashboardData(basic: boolean = false): UseDashboardDataReturn {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
