@@ -4,6 +4,13 @@ import { isUserWhitelisted } from "@/lib/telegramConfig";
 
 export async function POST(request: Request) {
   try {
+    // Secure the webhook using Telegram's secret token header
+    const secretToken = request.headers.get("x-telegram-bot-api-secret-token");
+    if (process.env.TELEGRAM_WEBHOOK_SECRET && secretToken !== process.env.TELEGRAM_WEBHOOK_SECRET) {
+      console.warn("Rejected webhook request due to invalid secret token.");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const payload = await request.json();
 
     // Telegram sends the message inside 'message'
