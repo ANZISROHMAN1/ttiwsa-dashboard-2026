@@ -37,7 +37,19 @@ export function useReportEbis(): UseReportEbisReturn {
       }
       const result = await res.json();
       if (!controller.signal.aborted) {
-        setData(result);
+        let parsedData = result;
+        
+        // Filter out junk Service Areas (e.g., merged Google Sheet headers)
+        if (Array.isArray(parsedData)) {
+          parsedData = parsedData.map((district: DistrictData) => ({
+            ...district,
+            serviceAreas: district.serviceAreas?.filter(
+              (sa) => !sa.serviceArea.toUpperCase().includes("KPI WISA")
+            ) || []
+          }));
+        }
+        
+        setData(parsedData);
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;

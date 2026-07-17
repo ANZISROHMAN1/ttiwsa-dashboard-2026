@@ -24,11 +24,19 @@ export function useReportDatin() {
       const json = await res.json();
       
       if (!controller.signal.aborted) {
-        const parsedData = Array.isArray(json) 
+        let parsedData = Array.isArray(json) 
           ? json 
           : Array.isArray(json?.value) 
             ? json.value 
             : [];
+            
+        // Filter out junk Service Areas (e.g., merged Google Sheet headers)
+        parsedData = parsedData.map((district: DistrictData) => ({
+          ...district,
+          serviceAreas: district.serviceAreas?.filter(
+            (sa) => !sa.serviceArea.toUpperCase().includes("KPI WISA")
+          ) || []
+        }));
             
         setData(parsedData);
       }

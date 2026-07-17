@@ -9,6 +9,7 @@ export const CHAT_IDS: Record<string, string> = {
 // ==========================================
 // TEST MAPPING: Distributed equally (33.3% each) among 3 test IDs
 // ==========================================
+/*
 export const USER_MAPPING: Record<string, string> = {
   // @sayyidfaqihhh (13 STOs)
   "BOO": "@sayyidfaqihhh",
@@ -55,52 +56,63 @@ export const USER_MAPPING: Record<string, string> = {
   "CMO": "@bzandryrenaldy",
   "PLG": "@bzandryrenaldy"
 };
+*/
 
 // ==========================================
 // FULL MAPPING BACKUP (Uncomment when going live)
 // ==========================================
-/*
 export const FULL_USER_MAPPING: Record<string, string> = {
-  "BOO": "@dwiviyanto @Sll_bersyukur @Sherinaviola",
-  "PAG": "@Yusup1995 @Yuse0006",
-  "CPS": "@Yusup1995 @Yuse0006",
-  "CWI": "@Inoskyblue @IanNurdiansyah23",
-  "CSR": "@Inoskyblue @IanNurdiansyah23",
-  "CRI": "@Inoskyblue @IanNurdiansyah23",
-  "CJU": "@Inoskyblue @IanNurdiansyah23",
-  "PLR": "@hanya_sementaraaa @er_permana",
-  "KLU": "@hanya_sementaraaa @er_permana",
-  "JPK": "@hanya_sementaraaa @er_permana",
-  "CKB": "@hanya_sementaraaa @er_permana",
-  "CCR": "@hanya_sementaraaa @er_permana",
-  "CBD": "@hanya_sementaraaa @er_permana",
-  "BGL": "@hanya_sementaraaa @er_permana",
-  "TJH": "@hrriasman @Selly_Sheza_Zafran",
-  "CBI": "@hrriasman @Selly_Sheza_Zafran",
-  "BJD": "@hrriasman @Selly_Sheza_Zafran",
-  "JGL": "@BPS906141 @ariopangestu",
-  "CLS": "@BPS906141 @ariopangestu",
-  "CAU": "@BPS906141 @ariopangestu",
-  "LWL": "@Bodoamattttt @Masya_alloh",
-  "LBI": "@Bodoamattttt @Masya_alloh",
-  "JSA": "@Bodoamattttt @Masya_alloh",
-  "DMG": "@Bodoamattttt @Masya_alloh",
-  "CGD": "@Bodoamattttt @Masya_alloh",
-  "GPI": "@SVXR11 @BocahKentirrr",
-  "CSN": "@SVXR11 @BocahKentirrr",
-  "KHL": "@Mumpuni @BroMike87",
-  "SPL": "@Pratamaa91 @Denhamdi",
-  "PAR": "@Pratamaa91 @Denhamdi",
-  "CSE": "@Pratamaa91 @Denhamdi",
-  "STL": "@C_Ruswandi_7 @deni_les",
-  "PMU": "@C_Ruswandi_7 @deni_les",
-  "CTR": "@C_Ruswandi_7 @deni_les",
-  "SKB": "@DaniSkb @elfaathin",
-  "SGN": "@DaniSkb @elfaathin",
-  "NLD": "@DaniSkb @elfaathin",
-  "CMO": "@DaniSkb @elfaathin"
+  "BOO": "@dwiviyanto @Sll_bersyukur @Sherinaviola @sayyidfaqihhh",
+  "PAG": "@Yusup1995 @Yuse0006 @sayyidfaqihhh",
+  "CPS": "@Yusup1995 @Yuse0006 @sayyidfaqihhh",
+  "CWI": "@Inoskyblue @IanNurdiansyah23 @sayyidfaqihhh",
+  "CSR": "@Inoskyblue @IanNurdiansyah23 @sayyidfaqihhh",
+  "CRI": "@Inoskyblue @IanNurdiansyah23 @sayyidfaqihhh",
+  "CJU": "@Inoskyblue @IanNurdiansyah23 @sayyidfaqihhh",
+  "PLR": "@hanya_sementaraaa @er_permana @sayyidfaqihhh",
+  "KLU": "@hanya_sementaraaa @er_permana @sayyidfaqihhh",
+  "JPK": "@hanya_sementaraaa @er_permana @sayyidfaqihhh",
+  "CKB": "@hanya_sementaraaa @er_permana @sayyidfaqihhh",
+  "CCR": "@hanya_sementaraaa @er_permana @sayyidfaqihhh",
+  "CBD": "@hanya_sementaraaa @er_permana @sayyidfaqihhh",
+  "BGL": "@hanya_sementaraaa @er_permana @sayyidfaqihhh",
+  "TJH": "@hrriasman @Selly_Sheza_Zafran @sayyidfaqihhh",
+  "CBI": "@hrriasman @Selly_Sheza_Zafran @sayyidfaqihhh",
+  "BJD": "@hrriasman @Selly_Sheza_Zafran @sayyidfaqihhh",
+  "JGL": "@BPS906141 @ariopangestu @sayyidfaqihhh",
+  "CLS": "@BPS906141 @ariopangestu @sayyidfaqihhh",
+  "CAU": "@BPS906141 @ariopangestu @sayyidfaqihhh",
+  "LWL": "@Bodoamattttt @Masya_alloh @sayyidfaqihhh",
+  "LBI": "@Bodoamattttt @Masya_alloh @sayyidfaqihhh",
+  "JSA": "@Bodoamattttt @Masya_alloh @sayyidfaqihhh",
+  "DMG": "@Bodoamattttt @Masya_alloh @sayyidfaqihhh",
+  "CGD": "@Bodoamattttt @Masya_alloh @sayyidfaqihhh",
+  "GPI": "@SVXR11 @BocahKentirrr @sayyidfaqihhh",
+  "CSN": "@SVXR11 @BocahKentirrr @sayyidfaqihhh",
+  "KHL": "@Mumpuni @BroMike87 @sayyidfaqihhh",
+  "SPL": "@Pratamaa91 @Denhamdi @sayyidfaqihhh",
+  "PAR": "@Pratamaa91 @Denhamdi @sayyidfaqihhh",
+  "CSE": "@Pratamaa91 @Denhamdi @sayyidfaqihhh",
+  "STL": "@C_Ruswandi_7 @deni_les @sayyidfaqihhh",
+  "PMU": "@C_Ruswandi_7 @deni_les @sayyidfaqihhh",
+  "CTR": "@C_Ruswandi_7 @deni_les @sayyidfaqihhh",
+  "SKB": "@DaniSkb @elfaathin @sayyidfaqihhh",
+  "SGN": "@DaniSkb @elfaathin @sayyidfaqihhh",
+  "NLD": "@DaniSkb @elfaathin @sayyidfaqihhh",
+  "CMO": "@DaniSkb @elfaathin @sayyidfaqihhh"
 };
-*/
+
+export function isUserWhitelisted(username: string): boolean {
+  if (!username) return false;
+  const target = username.toLowerCase();
+  for (const stoUsers of Object.values(FULL_USER_MAPPING)) {
+    const users = stoUsers.split(" ").map(u => u.toLowerCase());
+    if (users.includes(`@${target}`) || users.includes(target)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 export function formatNotComplyMessage(tickets: Ticket[]): string {
   let message = "\n\nREKON NOT COMPLY\n\nLink Update:\nhttps://ttiwsa-dashboard-2026.vercel.app/submit/not-comply\n\n";
