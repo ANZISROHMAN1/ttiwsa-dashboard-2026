@@ -37,6 +37,20 @@ export async function POST(request: Request) {
           }
         } else {
           console.warn(`Unauthorized Telegram registration attempt from: @${username}`);
+          
+          if (payload.message.text === "/report") {
+            const botToken = process.env.TELEGRAM_BOT_TOKEN;
+            if (botToken) {
+              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  text: `❌ Unauthorized. Your username (@${username}) is not registered in the STO database.`,
+                }),
+              }).catch(err => console.error("Failed to send unauthorized message:", err));
+            }
+          }
         }
       }
     }
