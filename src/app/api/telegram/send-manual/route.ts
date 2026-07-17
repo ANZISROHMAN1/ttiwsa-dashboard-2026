@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { fetchDashboardData } from "@/lib/api";
-import { USER_MAPPING, CHAT_IDS, formatNotComplyMessage } from "@/lib/telegramConfig";
+import { FULL_USER_MAPPING, formatNotComplyMessage } from "@/lib/telegramConfig";
+import { redis } from "@/lib/redis";
 import { Ticket } from "@/types/dashboard";
 import { jwtVerify } from "jose";
 
@@ -57,12 +58,17 @@ export async function POST(request: Request) {
       const text = formatNotComplyMessage(tickets);
 
       // Get users for this STO
-      const mappedUsers = USER_MAPPING[sto] || "";
+      const mappedUsers = FULL_USER_MAPPING[sto] || "";
       const usernames = new Set(mappedUsers.split(" ").filter(Boolean));
 
       for (const username of usernames) {
-        const chatId = CHAT_IDS[username];
-        if (!chatId) continue;
+        // Fetch Chat ID dynamically from Upstash Redis
+        const chatId = await redis.get(`telegram:user:${username}`);
+        
+        if (!chatId) {
+          console.warn(`Could not find Chat ID for user ${username} in Redis`);
+          continue;
+        }
 
         const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           method: "POST",
