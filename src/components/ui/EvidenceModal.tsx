@@ -3,9 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 
+export interface EvidenceItem {
+  url: string;
+  label: string;
+}
+
 interface EvidenceModalProps {
-  /** Array of evidence URLs (up to 4). Empty/falsy items are filtered out. */
-  evidenceUrls: string[];
+  /** Array of evidence items. Empty/falsy items should be pre-filtered. */
+  evidenceList: EvidenceItem[];
   onClose: () => void;
 }
 
@@ -22,11 +27,11 @@ function getDrivePreviewUrl(url: string): string {
   return url;
 }
 
-export function EvidenceModal({ evidenceUrls, onClose }: EvidenceModalProps) {
-  // Filter to only valid URLs
-  const urls = evidenceUrls.filter((u) => u && u.startsWith("http"));
+export function EvidenceModal({ evidenceList, onClose }: EvidenceModalProps) {
+  // Filter to only valid URLs just in case
+  const items = evidenceList.filter((item) => item.url && item.url.startsWith("http"));
   const [currentIndex, setCurrentIndex] = useState(0);
-  const total = urls.length;
+  const total = items.length;
 
   const goNext = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % total);
@@ -64,6 +69,11 @@ export function EvidenceModal({ evidenceUrls, onClose }: EvidenceModalProps) {
             <h3 className="font-bold text-foreground text-lg">
               Evidence Preview
             </h3>
+            {total > 0 && (
+              <span className="text-sm text-foreground-secondary font-medium bg-[var(--surface-hover)] px-3 py-1 rounded-md">
+                {items[currentIndex].label}
+              </span>
+            )}
             {total > 1 && (
               <span className="text-sm text-foreground-muted font-medium bg-[var(--surface-hover)] px-3 py-1 rounded-full">
                 {currentIndex + 1} / {total}
@@ -94,7 +104,7 @@ export function EvidenceModal({ evidenceUrls, onClose }: EvidenceModalProps) {
         <div className="relative flex-1 min-h-0">
           <iframe
             key={currentIndex}
-            src={getDrivePreviewUrl(urls[currentIndex])}
+            src={getDrivePreviewUrl(items[currentIndex].url)}
             className="w-full h-full rounded-lg border border-[var(--border)] bg-white"
             allow="autoplay"
           />
@@ -147,7 +157,7 @@ export function EvidenceModal({ evidenceUrls, onClose }: EvidenceModalProps) {
         {/* Dot Indicators */}
         {total > 1 && (
           <div className="flex items-center justify-center gap-2 mt-3">
-            {urls.map((_, i) => (
+            {items.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrentIndex(i)}

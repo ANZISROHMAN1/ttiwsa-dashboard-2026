@@ -56,6 +56,9 @@ export interface TTITicket {
   EVIDENT2?: string;
   EVIDENT3?: string;
   EVIDENT4?: string;
+  EVIDENT5?: string;
+  EVIDENT6?: string;
+  EVIDENT7?: string;
   NAMA_TEKNISI?: string;
   NIK_TEKNISI?: string;
   MITRA?: string;
@@ -79,6 +82,9 @@ export interface FFGTicket {
   EVIDENT2?: string;
   EVIDENT3?: string;
   EVIDENT4?: string;
+  EVIDENT5?: string;
+  EVIDENT6?: string;
+  EVIDENT7?: string;
   NAMA_TEKNISI?: string;
   NIK_TEKNISI?: string;
   MITRA?: string;

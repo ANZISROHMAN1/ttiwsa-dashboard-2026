@@ -85,30 +85,25 @@ export async function fetchDashboardData(
     }
 
     const getMergedEvidence = (sc: string, ttiwsaEvidence: string) => {
-      const evList: string[] = [];
-      if (ttiwsaEvidence && ttiwsaEvidence.trim()) evList.push(ttiwsaEvidence.trim());
-
       let teknisi = "";
       let nik = "";
       let mitra = "";
 
       const newEv = evidenceMap.get(sc);
       if (newEv) {
-        if (newEv["EVIDENCE 1"]) evList.push(newEv["EVIDENCE 1"]);
-        if (newEv["EVIDENCE 2"]) evList.push(newEv["EVIDENCE 2"]);
-        if (newEv["EVIDENCE 3"]) evList.push(newEv["EVIDENCE 3"]);
-        if (newEv["EVIDENCE 4"]) evList.push(newEv["EVIDENCE 4"]);
-
         teknisi = newEv["NAMA TEKNISI"] || "";
         nik = String(newEv["NIK TEKNISI"] || "");
         mitra = newEv["MITRA"] || "";
       }
 
       return {
-        EVIDENT: evList[0] || "",
-        EVIDENT2: evList[1] || "",
-        EVIDENT3: evList[2] || "",
-        EVIDENT4: evList[3] || "",
+        EVIDENT: (ttiwsaEvidence && ttiwsaEvidence.trim()) || "",
+        EVIDENT2: newEv?.["EVIDENCE 1"] || "",
+        EVIDENT3: newEv?.["EVIDENCE 2"] || "",
+        EVIDENT4: newEv?.["EVIDENCE 3"] || "",
+        EVIDENT5: newEv?.["EVIDENCE 4"] || "",
+        EVIDENT6: newEv?.["BA GANGGUAN FFG PELANGGAN"] || "",
+        EVIDENT7: newEv?.["FOTO DENGAN PELANGGAN MEMEGANG BA"] || "",
         NAMA_TEKNISI: teknisi,
         NIK_TEKNISI: nik,
         MITRA: mitra,
@@ -143,7 +138,7 @@ export async function fetchDashboardData(
           NULL_GDOC: isNullGdoc,
           REASON: row['REASON-TTI-IH'],
           EVIDENT: evMerged.EVIDENT,
-          EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4,
+          EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4, EVIDENT5: evMerged.EVIDENT5, EVIDENT6: evMerged.EVIDENT6, EVIDENT7: evMerged.EVIDENT7,
           NAMA_TEKNISI: evMerged.NAMA_TEKNISI, NIK_TEKNISI: evMerged.NIK_TEKNISI, MITRA: evMerged.MITRA,
           DURASI: row['DURASI-TTI-IH'],
           kpi: 'TTI IH',
@@ -163,7 +158,7 @@ export async function fetchDashboardData(
           NULL_GDOC: isNullGdoc,
           REASON: row['REASON-FFG-IH'],
           EVIDENT: evMerged.EVIDENT,
-          EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4,
+          EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4, EVIDENT5: evMerged.EVIDENT5, EVIDENT6: evMerged.EVIDENT6, EVIDENT7: evMerged.EVIDENT7,
           NAMA_TEKNISI: evMerged.NAMA_TEKNISI, NIK_TEKNISI: evMerged.NIK_TEKNISI, MITRA: evMerged.MITRA,
           DURASI: row['DURASI-FFG-IH'],
           kpi: 'FFG IH',
@@ -182,7 +177,7 @@ export async function fetchDashboardData(
           NULL_GDOC: isNullGdoc,
           REASON: row['REASON-TTI-IB'],
           EVIDENT: evMerged.EVIDENT,
-          EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4,
+          EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4, EVIDENT5: evMerged.EVIDENT5, EVIDENT6: evMerged.EVIDENT6, EVIDENT7: evMerged.EVIDENT7,
           NAMA_TEKNISI: evMerged.NAMA_TEKNISI, NIK_TEKNISI: evMerged.NIK_TEKNISI, MITRA: evMerged.MITRA,
           DURASI: row['DURASI-TTI-IB'],
           kpi: 'TTI IB',
@@ -203,7 +198,7 @@ export async function fetchDashboardData(
           NULL_GDOC: isNullGdoc,
           REASON: row['REASON-FFG-IB'],
           EVIDENT: evMerged.EVIDENT,
-          EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4,
+          EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4, EVIDENT5: evMerged.EVIDENT5, EVIDENT6: evMerged.EVIDENT6, EVIDENT7: evMerged.EVIDENT7,
           NAMA_TEKNISI: evMerged.NAMA_TEKNISI, NIK_TEKNISI: evMerged.NIK_TEKNISI, MITRA: evMerged.MITRA,
           DURASI: row['DURASI-FFG-IB'],
           kpi: 'FFG IB',
@@ -233,7 +228,10 @@ export async function fetchDashboardData(
           EVIDENT: ev["EVIDENCE 1"] || "",
           EVIDENT2: ev["EVIDENCE 2"] || "",
           EVIDENT3: ev["EVIDENCE 3"] || "",
-          EVIDENT4: ev["EVIDENCE 4"] || "",
+          EVIDENT4: ev["EVIDENCE 3"] || "",
+          EVIDENT5: ev["EVIDENCE 4"] || "",
+          EVIDENT6: ev["BA GANGGUAN FFG PELANGGAN"] || "",
+          EVIDENT7: ev["FOTO DENGAN PELANGGAN MEMEGANG BA"] || "",
           NAMA_TEKNISI: ev["NAMA TEKNISI"] || "",
           NIK_TEKNISI: String(ev["NIK TEKNISI"] || ""),
           MITRA: ev["MITRA"] || "",

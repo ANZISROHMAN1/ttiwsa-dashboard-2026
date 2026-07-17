@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { BarChart } from "@/components/ui/BarChart";
 import { PieChart } from "@/components/ui/PieChart";
 import { Histogram } from "@/components/ui/Histogram";
-import { EvidenceModal } from "@/components/ui/EvidenceModal";
+import { EvidenceModal, type EvidenceItem } from "@/components/ui/EvidenceModal";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { aggregateSymptomsBySA, getUniqueServiceAreas, formatPercent } from "@/lib/utils";
@@ -41,7 +41,7 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
   const [globalSearch, setGlobalSearch] = useState("");
   const [globalShowOnlyNeedUpdate, setGlobalShowOnlyNeedUpdate] = useState(false);
   // Evidence preview modal
-  const [previewEvidence, setPreviewEvidence] = useState<string[] | null>(null);
+  const [previewEvidence, setPreviewEvidence] = useState<EvidenceItem[] | null>(null);
   // Symptom breakdown tab state
   const [symptomTab, setSymptomTab] = useState<SymptomTab>("tti-ffg");
   // Track which drill-down type is active
@@ -543,7 +543,15 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
                       {t.EVIDENT?.startsWith("http") ? (
                         <div className="flex flex-col gap-2">
                           <button
-                            onClick={() => setPreviewEvidence([t.EVIDENT, t.EVIDENT2 || '', t.EVIDENT3 || '', t.EVIDENT4 || ''].filter(u => u && u.startsWith('http')))}
+                            onClick={() => setPreviewEvidence([
+                              { url: t.EVIDENT, label: "EVIDENCE TTIWSA" },
+                              { url: t.EVIDENT2 || '', label: "EVIDENCE 1" },
+                              { url: t.EVIDENT3 || '', label: "EVIDENCE 2" },
+                              { url: t.EVIDENT4 || '', label: "EVIDENCE 3" },
+                              { url: t.EVIDENT5 || '', label: "EVIDENCE 4" },
+                              { url: t.EVIDENT6 || '', label: "BA GANGGUAN" },
+                              { url: t.EVIDENT7 || '', label: "FOTO PELANGGAN" }
+                            ].filter(item => item.url && item.url.startsWith('http')))}
                             className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20 transition-colors"
                           >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -666,7 +674,7 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
         {/* Evidence Preview Modal */}
         {previewEvidence && (
           <EvidenceModal
-            evidenceUrls={previewEvidence}
+            evidenceList={previewEvidence}
             onClose={() => setPreviewEvidence(null)}
           />
         )}
