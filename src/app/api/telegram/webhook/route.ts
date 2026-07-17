@@ -46,7 +46,7 @@ export async function POST(request: Request) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   chat_id: chatId,
-                  text: `❌ Unauthorized. Your username (@${username}) is not registered in the STO database.`,
+                  text: `❌ Unauthorized. Id anda (@${username}) tidak terdaftar di database`,
                 }),
               }).catch(err => console.error("Failed to send unauthorized message:", err));
             }
