@@ -178,7 +178,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      {!collapsed && (
+      {/* {!collapsed && (
         <div className="px-4 py-3 text-center border-t border-[var(--border)] animate-fade-in">
           <div className="text-[10px] text-foreground-muted leading-relaxed font-medium">
             Dashboard made by Sayyid Faqih<br />
@@ -186,7 +186,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             Since 2026
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Collapse Toggle */}
       <div className="p-3 border-t border-[var(--border)]">
