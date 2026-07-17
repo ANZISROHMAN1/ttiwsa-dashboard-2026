@@ -30,6 +30,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { useTheme } from "@/components/ThemeProvider";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -350,24 +351,55 @@ interface ReportDatinEasternProps {
 }
 
 export function ReportDatinEastern({ data }: ReportDatinEasternProps) {
+  const { theme } = useTheme();
   const [activeDistrict, setActiveDistrict] = useState(0);
   const tableRef = useRef<HTMLDivElement>(null);
 
   const handleDownloadPNG = async () => {
     if (!tableRef.current) return;
     try {
+      const scrollContainer = tableRef.current.querySelector('.overflow-x-auto') as HTMLElement;
+      const tableEl = tableRef.current.querySelector('table') as HTMLElement;
+      
+      let originalOverflow = '';
+      let originalWidth = '';
+      
+      if (scrollContainer && tableEl) {
+        originalOverflow = scrollContainer.style.overflow;
+        originalWidth = tableRef.current.style.width;
+        
+        // Force full width and visible overflow
+        scrollContainer.style.overflow = 'visible';
+        tableRef.current.style.width = `${tableEl.offsetWidth + 40}px`;
+      }
+
+      // Small delay to ensure browser paints the new dimensions before capture
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       const dataUrl = await toPng(tableRef.current, {
         cacheBust: true,
         style: {
-          backgroundColor: "#ffffff", // White background for the exported image
+          backgroundColor: "#ffffff",
         },
       });
+
+      // Restore
+      if (scrollContainer) {
+        scrollContainer.style.overflow = originalOverflow;
+        tableRef.current.style.width = originalWidth;
+      }
+
       const link = document.createElement("a");
       link.download = `OLO-Raw-Data-${new Date().toISOString().split("T")[0]}.png`;
       link.href = dataUrl;
       link.click();
     } catch (err) {
       console.error("Failed to download image", err);
+      const scrollContainer = tableRef.current?.querySelector('.overflow-x-auto') as HTMLElement;
+      if (scrollContainer) {
+        scrollContainer.style.overflow = '';
+        tableRef.current!.style.width = '';
+      }
     }
   };
 
@@ -392,7 +424,8 @@ export function ReportDatinEastern({ data }: ReportDatinEasternProps) {
         if (realVal >= target) {
           achieved++;
           // Only include in pie chart if it achieved the target (contributed to the score)
-          metrics.push({ label: mc.shortLabel, value: realVal });
+          const formattedVal = realVal % 1 === 0 ? realVal : Number(realVal.toFixed(2));
+          metrics.push({ label: mc.shortLabel, value: formattedVal });
         }
       }
       if (metric.trend === "🟢") thumbsUp++;
@@ -467,7 +500,7 @@ export function ReportDatinEastern({ data }: ReportDatinEasternProps) {
       legend: {
         position: "right" as const,
         labels: {
-          color: "rgba(255, 255, 255, 0.8)",
+          color: theme === "dark" ? "rgba(255, 255, 255, 0.8)" : "#475569",
           font: { size: 10 },
           boxWidth: 8,
           usePointStyle: true,
