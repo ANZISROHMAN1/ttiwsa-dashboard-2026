@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json(data.Data || data);
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       return NextResponse.json({ error: "Request aborted" }, { status: 499 });

@@ -819,12 +819,12 @@ export function ReportIHEastern({ data }: ReportIHEasternProps) {
             Download PNG
           </button>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-auto max-h-[70vh]">
           <table className="w-full text-sm text-left">
-            <thead className="bg-[var(--surface-hover)] border-b border-[var(--border)]">
+            <thead className="sticky top-0 z-30 bg-[var(--surface-hover)] shadow-sm shadow-black/5 ring-1 ring-[var(--border)]/50">
               <tr>
-                <th className="px-4 py-3 font-semibold sticky left-0 z-20 bg-[var(--surface-hover)] min-w-[150px] max-w-[150px]">Service Area</th>
-                <th className="px-4 py-3 font-semibold sticky left-[150px] z-20 bg-[var(--surface-hover)] min-w-[80px] max-w-[80px] shadow-[1px_0_0_0_var(--border)]">STO</th>
+                <th className="px-4 py-3 font-semibold sticky left-0 z-40 bg-[var(--surface-hover)] min-w-[150px] max-w-[150px]">Service Area</th>
+                <th className="px-4 py-3 font-semibold sticky left-[150px] z-40 bg-[var(--surface-hover)] min-w-[80px] max-w-[80px] shadow-[1px_0_0_0_var(--border)]">STO</th>
                 {METRIC_CONFIGS.map((mc, idx) => (
                   <th key={mc.key} className={cn("px-4 py-3 font-semibold text-center", idx !== 0 && "border-l-2 border-[var(--border)]")} colSpan={4}>
                     <div>{mc.shortLabel}</div>
@@ -834,9 +834,9 @@ export function ReportIHEastern({ data }: ReportIHEasternProps) {
                   </th>
                 ))}
               </tr>
-              <tr className="border-b border-[var(--border)] text-xs text-foreground-muted bg-[var(--surface-hover)]/30">
-                <th className="px-4 py-2 sticky left-0 z-20 bg-[var(--surface-hover)] min-w-[150px] max-w-[150px]"></th>
-                <th className="px-4 py-2 sticky left-[150px] z-20 bg-[var(--surface-hover)] min-w-[80px] max-w-[80px] shadow-[1px_0_0_0_var(--border)]"></th>
+              <tr className="border-b border-[var(--border)] text-xs text-foreground-muted bg-[var(--surface-hover)]/30 backdrop-blur-sm">
+                <th className="px-4 py-2 sticky left-0 z-40 bg-[var(--surface-hover)] min-w-[150px] max-w-[150px]"></th>
+                <th className="px-4 py-2 sticky left-[150px] z-40 bg-[var(--surface-hover)] min-w-[80px] max-w-[80px] shadow-[1px_0_0_0_var(--border)]"></th>
                 {METRIC_CONFIGS.map((mc, idx) => (
                   <Fragment key={mc.key}>
                     <th className={cn("px-4 py-2 text-center", idx !== 0 && "border-l-2 border-[var(--border)]")}>Real</th>
