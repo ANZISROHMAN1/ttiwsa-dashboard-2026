@@ -42,13 +42,17 @@ export async function GET(request: Request) {
     for (const [sto, tickets] of Object.entries(groupedBySTO)) {
       if (tickets.length === 0) continue; // No empty messages
 
-      const text = formatNotComplyMessage(tickets);
+      const baseText = formatNotComplyMessage(tickets, needUpdateTickets, false);
+      const overseerText = formatNotComplyMessage(tickets, needUpdateTickets, true);
 
       // Get users for this STO
       const mappedUsers = FULL_USER_MAPPING[sto] || "";
       const usernames = new Set(mappedUsers.split(" ").filter(Boolean));
 
       for (const username of usernames) {
+        const isOverseer = ["@sayyidfaqihhh", "@rasyah06", "@rizqianaputri", "@bzandryrenaldy"].includes(username.toLowerCase());
+        const text = isOverseer ? overseerText : baseText;
+
         // Fetch Chat ID dynamically from Upstash Redis
         const chatId = await redis.get(`telegram:user:${username}`);
         

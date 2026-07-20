@@ -62,44 +62,44 @@ export const USER_MAPPING: Record<string, string> = {
 // FULL MAPPING BACKUP (Uncomment when going live)
 // ==========================================
 export const FULL_USER_MAPPING: Record<string, string> = {
-  "BOO": "@dwiviyanto @Sll_bersyukur @Sherinaviola @sayyidfaqihhh",
-  "PAG": "@SVXR11 @Yuse0006 @sayyidfaqihhh",
-  "CPS": "@SVXR11 @Yuse0006 @sayyidfaqihhh",
-  "CWI": "@Yusup1995 @IanNurdiansyah23 @sayyidfaqihhh",
-  "CSR": "@Yusup1995 @IanNurdiansyah23 @sayyidfaqihhh",
-  "CRI": "@Yusup1995 @IanNurdiansyah23 @sayyidfaqihhh",
-  "CJU": "@Yusup1995 @IanNurdiansyah23 @sayyidfaqihhh",
-  "PLR": "@hanya_sementaraaa @er_permana @sayyidfaqihhh",
-  "KLU": "@hanya_sementaraaa @er_permana @sayyidfaqihhh",
-  "JPK": "@hanya_sementaraaa @er_permana @sayyidfaqihhh",
-  "CKB": "@hanya_sementaraaa @er_permana @sayyidfaqihhh",
-  "CCR": "@hanya_sementaraaa @er_permana @sayyidfaqihhh",
-  "CBD": "@hanya_sementaraaa @er_permana @sayyidfaqihhh",
-  "BGL": "@hanya_sementaraaa @er_permana @sayyidfaqihhh",
-  "TJH": "@hrriasman @Selly_Sheza_Zafran @sayyidfaqihhh",
-  "CBI": "@hrriasman @Selly_Sheza_Zafran @sayyidfaqihhh",
-  "BJD": "@hrriasman @Selly_Sheza_Zafran @sayyidfaqihhh",
-  "JGL": "@BPS906141 @ariopangestu @sayyidfaqihhh",
-  "CLS": "@BPS906141 @ariopangestu @sayyidfaqihhh",
-  "CAU": "@BPS906141 @ariopangestu @sayyidfaqihhh",
-  "LWL": "@Bodoamattttt @Masya_alloh @sayyidfaqihhh",
-  "LBI": "@Bodoamattttt @Masya_alloh @sayyidfaqihhh",
-  "JSA": "@Bodoamattttt @Masya_alloh @sayyidfaqihhh",
-  "DMG": "@Bodoamattttt @Masya_alloh @sayyidfaqihhh",
-  "CGD": "@Bodoamattttt @Masya_alloh @sayyidfaqihhh",
-  "GPI": "@BPS906141 @BocahKentirrr @sayyidfaqihhh",
-  "CSN": "@BPS906141 @BocahKentirrr @sayyidfaqihhh",
-  "KHL": "@Mumpuni @BroMike87 @sayyidfaqihhh",
-  "SPL": "@Pratamaa91 @Denhamdi @sayyidfaqihhh",
-  "PAR": "@Pratamaa91 @Denhamdi @sayyidfaqihhh",
-  "CSE": "@Pratamaa91 @Denhamdi @sayyidfaqihhh",
-  "STL": "@Inoskyblue @deni_les @sayyidfaqihhh",
-  "PMU": "@Inoskyblue @deni_les @sayyidfaqihhh",
-  "CTR": "@Inoskyblue @deni_les @sayyidfaqihhh",
-  "SKB": "@DaniSkb @elfaathin @sayyidfaqihhh",
-  "SGN": "@DaniSkb @elfaathin @sayyidfaqihhh",
-  "NLD": "@DaniSkb @elfaathin @sayyidfaqihhh",
-  "CMO": "@DaniSkb @elfaathin @sayyidfaqihhh"
+  "BOO": "@dwiviyanto @Sll_bersyukur @Sherinaviola @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "PAG": "@SVXR11 @Yuse0006 @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "CPS": "@SVXR11 @Yuse0006 @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "CWI": "@Yusup1995 @IanNurdiansyah23 @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "CSR": "@Yusup1995 @IanNurdiansyah23 @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "CRI": "@Yusup1995 @IanNurdiansyah23 @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "CJU": "@Yusup1995 @IanNurdiansyah23 @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "PLR": "@hanya_sementaraaa @er_permana @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "KLU": "@hanya_sementaraaa @er_permana @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "JPK": "@hanya_sementaraaa @er_permana @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "CKB": "@hanya_sementaraaa @er_permana @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "CCR": "@hanya_sementaraaa @er_permana @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "CBD": "@hanya_sementaraaa @er_permana @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "BGL": "@hanya_sementaraaa @er_permana @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "TJH": "@hrriasman @Selly_Sheza_Zafran @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "CBI": "@hrriasman @Selly_Sheza_Zafran @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "BJD": "@hrriasman @Selly_Sheza_Zafran @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "JGL": "@BPS906141 @ariopangestu @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "CLS": "@BPS906141 @ariopangestu @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "CAU": "@BPS906141 @ariopangestu @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "LWL": "@Bodoamattttt @Masya_alloh @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "LBI": "@Bodoamattttt @Masya_alloh @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "JSA": "@Bodoamattttt @Masya_alloh @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "DMG": "@Bodoamattttt @Masya_alloh @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "CGD": "@Bodoamattttt @Masya_alloh @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "GPI": "@BPS906141 @BocahKentirrr @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "CSN": "@BPS906141 @BocahKentirrr @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "KHL": "@Mumpuni @BroMike87 @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "SPL": "@Pratamaa91 @Denhamdi @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "PAR": "@Pratamaa91 @Denhamdi @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "CSE": "@Pratamaa91 @Denhamdi @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "STL": "@Inoskyblue @deni_les @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "PMU": "@Inoskyblue @deni_les @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "CTR": "@Inoskyblue @deni_les @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "SKB": "@DaniSkb @elfaathin @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "SGN": "@DaniSkb @elfaathin @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "NLD": "@DaniSkb @elfaathin @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy",
+  "CMO": "@DaniSkb @elfaathin @sayyidfaqihhh @Rasyah06 @rizqianaputri @bzandryrenaldy"
 };
 
 export function isUserWhitelisted(username: string): boolean {
@@ -114,7 +114,7 @@ export function isUserWhitelisted(username: string): boolean {
   return false;
 }
 
-export function formatNotComplyMessage(tickets: Ticket[]): string {
+export function formatNotComplyMessage(tickets: Ticket[], allTickets?: Ticket[], isOverseer?: boolean): string {
   let message = "\n\nREKON NOT COMPLY\n\nLink Update:\nhttps://ttiwsa-dashboard-2026.vercel.app/submit/not-comply\n\n";
 
   tickets.forEach(t => {
@@ -128,6 +128,20 @@ export function formatNotComplyMessage(tickets: Ticket[]): string {
       message += `FFG ${t.SC} ${t.STO}\n`;
     }
   });
+
+  if (isOverseer && allTickets && allTickets.length > 0) {
+    message += "\n";
+    const saCounts: Record<string, number> = {};
+    allTickets.forEach(t => {
+      const sa = t.SA || "UNKNOWN";
+      saCounts[sa] = (saCounts[sa] || 0) + 1;
+    });
+
+    const sortedSa = Object.entries(saCounts).sort((a, b) => b[1] - a[1]);
+    sortedSa.forEach(([sa, count]) => {
+      message += `${sa} : ${count} ticket\n`;
+    });
+  }
 
   return message;
 }
