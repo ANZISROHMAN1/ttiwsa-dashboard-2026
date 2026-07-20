@@ -721,7 +721,7 @@ export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
                     <div className="text-[10px] text-foreground-muted font-semibold uppercase tracking-wider mb-1 flex items-center justify-center gap-1.5">
                       <Target className="w-3 h-3 text-blue-400" /> Targets
                     </div>
-                    <div className="text-lg font-bold text-blue-400">{districtBestSA.achieved} <span className="text-[10px] text-foreground-muted">/ 9</span></div>
+                    <div className="text-lg font-bold text-blue-400">{districtBestSA.achieved} <span className="text-[10px] text-foreground-muted">/ {EBIS_METRIC_CONFIGS.length}</span></div>
                   </div>
                   <div className="bg-[var(--surface)] rounded-lg p-3 border border-[var(--border)] text-center flex flex-col justify-center">
                     <div className="text-[10px] text-foreground-muted font-semibold uppercase tracking-wider mb-1 flex items-center justify-center gap-1.5">
