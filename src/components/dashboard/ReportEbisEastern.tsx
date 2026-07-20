@@ -839,15 +839,15 @@ export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
           <table className="w-full text-sm text-left">
             <thead className="bg-[var(--surface-hover)] border-b border-[var(--border)]">
               <tr>
-                <th className="px-4 py-3 font-semibold">Service Area</th>
-                <th className="px-4 py-3 font-semibold">STO</th>
+                <th className="px-4 py-3 font-semibold sticky left-0 z-20 bg-[var(--surface-hover)] min-w-[150px] max-w-[150px]">Service Area</th>
+                <th className="px-4 py-3 font-semibold sticky left-[150px] z-20 bg-[var(--surface-hover)] min-w-[80px] max-w-[80px] shadow-[1px_0_0_0_var(--border)]">STO</th>
                 {EBIS_METRIC_CONFIGS.map((mc, idx) => (
                   <th key={mc.key} className={cn("px-4 py-3 font-semibold text-center", idx !== 0 && "border-l-2 border-[var(--border)]")} colSpan={6}>{mc.shortLabel}</th>
                 ))}
               </tr>
               <tr className="border-b border-[var(--border)] text-xs text-foreground-muted bg-[var(--surface-hover)]/30">
-                <th className="px-4 py-2"></th>
-                <th className="px-4 py-2"></th>
+                <th className="px-4 py-2 sticky left-0 z-20 bg-[var(--surface-hover)] min-w-[150px] max-w-[150px]"></th>
+                <th className="px-4 py-2 sticky left-[150px] z-20 bg-[var(--surface-hover)] min-w-[80px] max-w-[80px] shadow-[1px_0_0_0_var(--border)]"></th>
                 {EBIS_METRIC_CONFIGS.map((mc, idx) => (
                   <Fragment key={mc.key}>
                     <th className={cn("px-4 py-2 text-center", idx !== 0 && "border-l-2 border-[var(--border)]")}>Real</th>
@@ -863,9 +863,9 @@ export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
             <tbody className="divide-y divide-[var(--border)]">
               {district.serviceAreas.flatMap(sa => 
                 sa.stos.map(sto => (
-                  <tr key={sto.sto} className="hover:bg-[var(--surface-hover)]/50 transition-colors">
-                    <td className="px-4 py-2">{sa.serviceArea}</td>
-                    <td className="px-4 py-2 font-medium">{sto.sto}</td>
+                  <tr key={sto.sto} className="group hover:bg-[var(--surface-hover)]/50 transition-colors">
+                    <td className="px-4 py-2 sticky left-0 z-10 bg-[var(--surface)] group-hover:bg-[var(--surface-hover)] transition-colors min-w-[150px] max-w-[150px] truncate" title={sa.serviceArea}>{sa.serviceArea}</td>
+                    <td className="px-4 py-2 font-medium sticky left-[150px] z-10 bg-[var(--surface)] group-hover:bg-[var(--surface-hover)] transition-colors min-w-[80px] max-w-[80px] shadow-[1px_0_0_0_var(--border)]">{sto.sto}</td>
                     {EBIS_METRIC_CONFIGS.map((mc, idx) => {
                       const m = (sto as any)[mc.key];
                       const target = EBIS_TARGETS[mc.key];
