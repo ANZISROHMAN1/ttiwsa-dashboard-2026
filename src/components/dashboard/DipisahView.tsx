@@ -206,9 +206,9 @@ export function DipisahView({
       
       let val = 100;
       if (ttiIbStatusFilter === "COMP") {
-        val = comply;
+        val = saTickets.length > 0 ? (comply / saTickets.length) * 100 : 100;
       } else if (ttiIbStatusFilter === "NOTC") {
-        val = notc;
+        val = saTickets.length > 0 ? (notc / saTickets.length) * 100 : 0;
       } else {
         val = saTickets.length > 0 ? (comply / saTickets.length) * 100 : 100;
       }
@@ -217,20 +217,22 @@ export function DipisahView({
     });
   }, [rankingSA, ttiTickets, segment, ttiIbOrderTypeFilter, ttiIbStatusFilter]);
 
-  const ttiIbFilteredTicketsCount = useMemo(() => {
-    if (segment !== "indibiz") return 0;
+  const ttiIbFilteredStats = useMemo(() => {
+    if (segment !== "indibiz") return { count: 0, comply: 0, notc: 0, achievement: 100, notcRate: 0 };
     let filtered = ttiTickets.filter(t => t.kpi === "TTI IB");
     
     if (ttiIbOrderTypeFilter.length > 0) {
       filtered = filtered.filter(t => ttiIbOrderTypeFilter.includes((t.ORDER_TYPE || "").trim()));
     }
     
-    if (ttiIbStatusFilter !== "ALL") {
-      filtered = filtered.filter(t => t.STATUS.includes(ttiIbStatusFilter));
-    }
-    
-    return filtered.length;
-  }, [ttiTickets, segment, ttiIbOrderTypeFilter, ttiIbStatusFilter]);
+    const count = filtered.length;
+    const comply = filtered.filter(t => t.STATUS.includes("COMP")).length;
+    const notc = count - comply;
+    const achievement = count > 0 ? (comply / count) * 100 : 100;
+    const notcRate = count > 0 ? (notc / count) * 100 : 0;
+
+    return { count, comply, notc, achievement, notcRate };
+  }, [ttiTickets, segment, ttiIbOrderTypeFilter]);
 
   const config = SEGMENT_CONFIG[segment];
 
@@ -509,14 +511,16 @@ export function DipisahView({
                   <span>{config.tti.title}</span>
                   {segment === "indibiz" && (
                     <span className="text-xs bg-[var(--surface-hover)] border border-[var(--border)] text-foreground-muted px-2 py-0.5 rounded-full normal-case tracking-normal font-medium">
-                      {ttiIbFilteredTicketsCount} Ticket
+                      {ttiIbStatusFilter === "NOTC"
+                        ? formatPercent(ttiIbFilteredStats.notcRate)
+                        : formatPercent(ttiIbFilteredStats.achievement)}
                     </span>
                   )}
                 </div>
               }
               dataKey={config.tti.key} 
               data={filteredRankingSA} 
-              isCount={segment === "indibiz" && ttiIbStatusFilter !== "ALL"}
+              isCount={false}
               invertBadge={segment === "indibiz" && ttiIbStatusFilter === "NOTC"}
               headerAddon={
                 segment === "indibiz" && (
