@@ -13,7 +13,7 @@ import { getTrendColor } from "@/types/report-ih-eastern";
 
 const EBIS_METRIC_CONFIGS = [
   { key: "fulfillmentGuarantee", label: "Fulfillment Guarantee", shortLabel: "FFG" },
-  { key: "tti3Jam", label: "TTI 3 Jam", shortLabel: "TTI" },
+  { key: "tti1X24Jam", label: "TTI 1x24 Jam", shortLabel: "TTI 1x24" },
   { key: "ttrFulfillmentGuarantee3Jam", label: "TTR FFG 3 Jam", shortLabel: "TTR FFG" },
   { key: "underspecGuarantee", label: "Underspec Guarantee", shortLabel: "Underspec" },
   { key: "psToPiRatio", label: "PS to PI Ratio", shortLabel: "PS/PI Ratio" },
