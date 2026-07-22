@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { SignJWT } from "jose";
 import bcrypt from "bcryptjs";
 import { Redis } from "@upstash/redis";
+import crypto from "crypto";
 
 const redis =
   process.env.UPSTASH_REDIS_REST_URL
@@ -14,9 +15,23 @@ const redis =
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
 
+function timingSafeCompare(a: string, b: string): boolean {
+  const bufferA = Buffer.from(a);
+  const bufferB = Buffer.from(b);
+  if (bufferA.length !== bufferB.length) {
+    crypto.timingSafeEqual(bufferA, bufferA);
+    return false;
+  }
+  return crypto.timingSafeEqual(bufferA, bufferB);
+}
+
 export async function POST(request: Request) {
   try {
-    const ip = request.headers.get("x-forwarded-for") || "unknown";
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    const ip = forwardedFor
+      ? forwardedFor.split(",")[0].trim()
+      : request.headers.get("x-real-ip") || "unknown";
+
     const rateLimitKey = `rate_limit:login:${ip}`;
 
     let currentAttempts = 0;
@@ -47,11 +62,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: "Server configuration error" }, { status: 500 });
     }
 
-    // Compare with bcrypt
-    const passwordMatch = await bcrypt.compare(password, validPasswordHash);
+    const usernameMatch = timingSafeCompare(username || "", validUsername);
+    const passwordMatch = await bcrypt.compare(password || "", validPasswordHash);
 
-    if (username === validUsername && passwordMatch) {
-      // Clear rate limit on success
+    if (usernameMatch && passwordMatch) {
       if (redis) {
         await redis.del(rateLimitKey);
       }
