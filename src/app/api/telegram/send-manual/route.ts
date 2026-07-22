@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchDashboardData } from "@/lib/api";
-import { FULL_USER_MAPPING, formatNotComplyMessage } from "@/lib/telegramConfig";
+import { FULL_USER_MAPPING, formatNotComplyMessage, OVERSEERS } from "@/lib/telegramConfig";
 import { redis } from "@/lib/redis";
 import { Ticket } from "@/types/dashboard";
 import { jwtVerify } from "jose";
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
       const usernames = new Set(mappedUsers.split(" ").filter(Boolean));
 
       for (const username of usernames) {
-        const isOverseer = ["@sayyidfaqihhh", "@rasyah06", "@rizqianaputri", "@bzandryrenaldy"].includes(username.toLowerCase());
+        const isOverseer = OVERSEERS.includes(username.toLowerCase());
         const text = isOverseer ? overseerText : baseText;
 
         // Fetch Chat ID dynamically from Upstash Redis
