@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { FormField } from "@/components/ui/FormField";
+import { getRecaptchaToken } from "@/lib/recaptcha";
 import { ChevronDown } from "lucide-react";
 
 const ERROR_CODE_MAP: Record<string, string[]> = {
@@ -138,8 +139,11 @@ export function SubmitFormUnspec() {
     setSubmitState("loading");
 
     try {
+      const recaptchaToken = await getRecaptchaToken("submit_unspec");
+
       const payload = {
         sheet: "UNSPEC-Web",
+        recaptchaToken: recaptchaToken || undefined,
         data: {
           Timestamp: (() => {
             const d = new Date();

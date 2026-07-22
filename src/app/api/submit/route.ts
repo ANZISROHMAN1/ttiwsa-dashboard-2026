@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { SUBMIT_ENDPOINT_URL } from "@/lib/constants";
+import { verifyRecaptchaToken } from "@/lib/recaptcha";
 import { jwtVerify } from "jose";
 
 export async function POST(request: Request) {
@@ -10,22 +11,34 @@ export async function POST(request: Request) {
 
     const payload = await request.text();
     let isProtectedAction = false;
+    let recaptchaToken: string | undefined = undefined;
+    let forwardPayload = payload;
 
-    // Check if the payload contains a Reject/Accept action
     try {
       const parsedPayload = JSON.parse(payload);
       if (parsedPayload.data && parsedPayload.data["REJECT/ACCEPT EVIDENCE"]) {
         isProtectedAction = true;
       }
+      if (parsedPayload.recaptchaToken) {
+        recaptchaToken = parsedPayload.recaptchaToken;
+        delete parsedPayload.recaptchaToken;
+        forwardPayload = JSON.stringify(parsedPayload);
+      }
     } catch (e) {
-      // Not JSON, just continue
+      // Ignore parse error for non-JSON payloads
     }
 
-    // If it's a protected action, strictly verify the JWT
+    if (process.env.SEC_KEY_SI_CAPTCHA) {
+      if (!recaptchaToken) {
+        return NextResponse.json({ error: "reCAPTCHA verification required" }, { status: 400 });
+      }
+      const verifyResult = await verifyRecaptchaToken(recaptchaToken);
+      if (!verifyResult.success) {
+        return NextResponse.json({ error: verifyResult.error || "reCAPTCHA verification failed" }, { status: 400 });
+      }
+    }
+
     if (isProtectedAction) {
-      // Next.js Request cookies requires parsing from headers in older versions, 
-      // but in App Router Route Handlers we can parse cookies directly from the request object or headers.
-      // Wait, request is the standard Web Request, we can get cookies from headers.
       const cookieHeader = request.headers.get("cookie") || "";
       const match = cookieHeader.match(/(?:^|;\s*)auth_token=([^;]*)/);
       const token = match ? match[1] : null;
@@ -49,7 +62,7 @@ export async function POST(request: Request) {
       headers: {
         "Content-Type": "text/plain",
       },
-      body: payload,
+      body: forwardPayload,
     });
 
     const gasText = await gasResponse.text();

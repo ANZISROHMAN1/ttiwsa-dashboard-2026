@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { FormField } from "@/components/ui/FormField";
 import { useAuth } from "@/lib/auth";
+import { getRecaptchaToken } from "@/lib/recaptcha";
 
 interface FormData {
   sto: string;
@@ -221,6 +222,8 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
     setSubmitState("loading");
 
     try {
+      const recaptchaToken = await getRecaptchaToken("submit_not_comply");
+
       // Process all selected files using the compressor
       const filePayloads = [];
       for (const category of Object.keys(selectedFiles)) {
@@ -242,6 +245,7 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
 
       const payload = {
         sheet: "EVIDENT-AREA-WEB",
+        recaptchaToken: recaptchaToken || undefined,
         data: {
           Timestamp: (() => {
             const d = new Date();
