@@ -27,6 +27,7 @@ const fetcher = async (url: string) => {
  */
 export function useDashboardData(basic: boolean = false): UseDashboardDataReturn {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isRefetching, setIsRefetching] = useState(false);
   
   const { data, error, isLoading, mutate } = useSWR<DashboardData>(
     `/api/dashboard?basic=${basic}`,
@@ -44,14 +45,20 @@ export function useDashboardData(basic: boolean = false): UseDashboardDataReturn
   }, [data]);
 
   const refetch = useCallback(async () => {
-    // To forcefully bypass server cache on manual refresh, fetch with ?refresh=true
-    const freshData = await fetcher(`/api/dashboard?basic=${basic}&refresh=true`);
-    mutate(freshData, false); // Update SWR cache without re-fetching
+    setIsRefetching(true);
+    try {
+      const freshData = await fetcher(`/api/dashboard?basic=${basic}&refresh=true`);
+      mutate(freshData, false); // Update SWR cache without re-fetching
+    } catch (err) {
+      console.error("Manual refresh failed:", err);
+    } finally {
+      setIsRefetching(false);
+    }
   }, [basic, mutate]);
 
   return {
     data: data || null,
-    isLoading,
+    isLoading: isLoading || isRefetching,
     error: error?.message || null,
     lastUpdated,
     refetch,
