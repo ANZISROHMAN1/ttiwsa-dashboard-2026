@@ -754,7 +754,207 @@ export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
         ))}
       </div>
 
-      {/* District Stats Bar */}
+      {/* ─── District Performance ─────────────────────────────────────── */}
+      {(() => {
+        const sas = district.serviceAreas;
+
+        type EbisCardDef = {
+          uiLabel: string;
+          metricKey: string;
+          target: number;
+          calc: () => number;
+        };
+
+        // Safe number extractor from MetricData (handles untyped fields)
+        const getField = (sa: ServiceAreaData, metricKey: string, field: string): number => {
+          const metric = (sa.summary as any)[metricKey];
+          if (!metric) return 0;
+          const v = metric[field];
+          return typeof v === "number" && !isNaN(v) ? v : (parseFloat(String(v)) || 0);
+        };
+
+        const sumField = (metricKey: string, field: string) =>
+          sas.reduce((acc, sa) => acc + getField(sa, metricKey, field), 0);
+
+        // Safe average of `real` percentages — ignores non-numeric and >100% outliers
+        const avgRealSafe = (metricKey: string) => {
+          let sum = 0;
+          let count = 0;
+          sas.forEach((sa) => {
+            const metric = (sa.summary as any)[metricKey];
+            if (!metric) return;
+            const v = metric.real;
+            const n = typeof v === "number" ? v : parseFloat(String(v).replace(",", "."));
+            if (!isNaN(n) && n >= 0 && n <= 100) { sum += n; count++; }
+          });
+          return count > 0 ? sum / count : 0;
+        };
+
+        const avgH1 = (metricKey: string) => {
+          let sum = 0;
+          let count = 0;
+          sas.forEach((sa) => {
+            const metric = (sa.summary as any)[metricKey];
+            if (!metric) return;
+            const v = metric.h1;
+            if (typeof v === "number" && !isNaN(v)) { sum += v; count++; }
+          });
+          return count > 0 ? sum / count : 0;
+        };
+
+        const cards: EbisCardDef[] = [
+          {
+            uiLabel: "Fulfillment",
+            metricKey: "fulfillmentGuarantee",
+            target: 93.00,
+            calc: () => avgRealSafe("fulfillmentGuarantee"),
+          },
+          {
+            uiLabel: "TTI 1X24",
+            metricKey: "tti1X24Jam",
+            target: 93.00,
+            calc: () => {
+              const c = sumField("fulfillmentGuarantee", "comply") || sumField("tti1X24Jam", "comply");
+              const nc = sumField("fulfillmentGuarantee", "notCmply") || sumField("tti1X24Jam", "notCmply");
+              const total = c + nc;
+              if (total > 0) return (c / total) * 100;
+              return avgRealSafe("tti1X24Jam");
+            },
+          },
+          {
+            uiLabel: "TTR 3 Jam",
+            metricKey: "ttrFulfillmentGuarantee3Jam",
+            target: 87.00,
+            calc: () => {
+              const c = sumField("tti1X24Jam", "comply") || sumField("ttrFulfillmentGuarantee3Jam", "comply");
+              const nc = sumField("tti1X24Jam", "notCmply") || sumField("ttrFulfillmentGuarantee3Jam", "notCmply");
+              const total = c + nc;
+              if (total > 0) return (c / total) * 100;
+              return avgRealSafe("ttrFulfillmentGuarantee3Jam");
+            },
+          },
+          {
+            uiLabel: "Underspec",
+            metricKey: "underspecGuarantee",
+            target: 99.30,
+            calc: () => {
+              const u = sumField("ttrFulfillmentGuarantee3Jam", "undrspc") || sumField("underspecGuarantee", "undrspc");
+              const t = sumField("ttrFulfillmentGuarantee3Jam", "jmlTerukur") || sumField("underspecGuarantee", "jmlTerukur");
+              if (t > 0) return ((t - u) / t) * 100;
+              return avgRealSafe("underspecGuarantee");
+            },
+          },
+          {
+            uiLabel: "PS to PI",
+            metricKey: "psToPiRatio",
+            target: 93.00,
+            calc: () => {
+              const ps = sumField("underspecGuarantee", "jmlPs") || sumField("psToPiRatio", "jmlPs");
+              const pi = sumField("underspecGuarantee", "jmlPi") || sumField("psToPiRatio", "jmlPi");
+              if (pi > 0) return (ps / pi) * 100;
+              return avgRealSafe("psToPiRatio");
+            },
+          },
+        ];
+
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5 px-1">
+              <div className="w-1 h-5 rounded-full bg-accent-blue" />
+              <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">
+                District Performance
+              </h2>
+              <span className="text-[10px] text-foreground-muted font-medium ml-1">
+                — {district.district}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {cards.map((card) => {
+                const real = card.calc();
+                const h1 = avgH1(card.metricKey);
+                const isAchieved = real >= card.target;
+                const diff = real - h1;
+
+                let trendArrow: string;
+                let trendColorCls: string;
+                if (diff > 0.005) {
+                  trendArrow = "↑";
+                  trendColorCls = "text-emerald-500";
+                } else if (diff < -0.005) {
+                  trendArrow = "↓";
+                  trendColorCls = "text-rose-500";
+                } else {
+                  trendArrow = "=";
+                  trendColorCls = "text-amber-500";
+                }
+
+                return (
+                  <div
+                    key={card.uiLabel}
+                    className={cn(
+                      "relative overflow-hidden rounded-xl border p-4 transition-all duration-200 hover:scale-[1.02] group",
+                      isAchieved
+                        ? "border-emerald-500/25 bg-emerald-500/[0.04]"
+                        : "border-rose-500/25 bg-rose-500/[0.04]"
+                    )}
+                  >
+                    {/* Subtle glow */}
+                    <div
+                      className={cn(
+                        "absolute -top-6 -right-6 w-16 h-16 rounded-full blur-2xl opacity-30 pointer-events-none transition-opacity group-hover:opacity-50",
+                        isAchieved ? "bg-emerald-500" : "bg-rose-500"
+                      )}
+                    />
+
+                    {/* Label + Target badge */}
+                    <div className="flex items-center justify-between mb-2.5 relative z-10">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-foreground-muted leading-none">
+                        {card.uiLabel}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-[9px] font-bold tabular-nums px-1.5 py-0.5 rounded-md leading-none",
+                          isAchieved
+                            ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                            : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                        )}
+                      >
+                        T: {card.target.toFixed(2)}%
+                      </span>
+                    </div>
+
+                    {/* Hero number */}
+                    <div className="relative z-10 flex items-baseline gap-1">
+                      <span className="text-[10px] font-medium text-foreground-muted leading-none">=</span>
+                      <span
+                        className={cn(
+                          "text-xl font-extrabold tabular-nums leading-none tracking-tight",
+                          isAchieved ? "text-emerald-500" : "text-rose-500"
+                        )}
+                      >
+                        {real.toFixed(2)}%
+                      </span>
+                    </div>
+
+                    {/* Trend & H-1 */}
+                    <div className="mt-2.5 flex items-center gap-1.5 relative z-10">
+                      <span className={cn("text-xs font-black leading-none", trendColorCls)}>
+                        {trendArrow}
+                      </span>
+                      <span className="text-[10px] text-foreground-muted tabular-nums">
+                        H-1: {h1.toFixed(2)}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="glass-card-sm p-4 text-center flex flex-col justify-center">
           <div className="text-3xl font-bold text-foreground">

@@ -738,6 +738,205 @@ export function ReportIHEastern({ data }: ReportIHEasternProps) {
         ))}
       </div>
 
+      {/* ─── District Performance ─────────────────────────────────────── */}
+      {(() => {
+        const sas = district.serviceAreas;
+
+        type CardDef = {
+          uiLabel: string;
+          metricKey: MetricKey;
+          calc: () => number;
+        };
+
+        // Aggregate raw counts across all SA summaries for the active district
+        const sumField = (key: MetricKey, field: "tiketGgn" | "lisPlngn" | "gaul" | "comply" | "notComply") =>
+          sas.reduce((acc, sa) => acc + (Number(sa.summary[key]?.[field]) || 0), 0);
+
+        const avgReal = (key: MetricKey) => {
+          let sum = 0;
+          let count = 0;
+          sas.forEach((sa) => {
+            const v = sa.summary[key]?.real;
+            if (v != null) {
+              const n = typeof v === "number" ? v : parseFloat(String(v).replace(",", "."));
+              if (!isNaN(n)) { sum += n; count++; }
+            }
+          });
+          return count > 0 ? sum / count : 0;
+        };
+
+        const avgH1 = (key: MetricKey) => {
+          let sum = 0;
+          let count = 0;
+          sas.forEach((sa) => {
+            const v = sa.summary[key]?.h1;
+            if (v != null && typeof v === "number" && !isNaN(v)) { sum += v; count++; }
+          });
+          return count > 0 ? sum / count : 0;
+        };
+
+        const cards: CardDef[] = [
+          {
+            uiLabel: "SA",
+            metricKey: "serviceAvailability" as MetricKey,
+            calc: () => {
+              const tg = sumField("serviceAvailability", "tiketGgn");
+              const lp = sumField("serviceAvailability", "lisPlngn");
+              return lp > 0 ? (1 - tg / lp) * 100 : 100;
+            },
+          },
+          {
+            uiLabel: "ASGAR",
+            metricKey: "assuranceGuarantee" as MetricKey,
+            calc: () => {
+              const tg = sumField("assuranceGuarantee", "tiketGgn");
+              const gl = sumField("assuranceGuarantee", "gaul");
+              return tg > 0 ? ((tg - gl) / tg) * 100 : 100;
+            },
+          },
+          {
+            uiLabel: "DIAMOND",
+            metricKey: "ttrCompDiamond3Jam" as MetricKey,
+            calc: () => {
+              const c = sumField("ttrCompDiamond3Jam", "comply");
+              const tg = sumField("ttrCompDiamond3Jam", "tiketGgn");
+              return tg > 0 ? (c / tg) * 100 : 100;
+            },
+          },
+          {
+            uiLabel: "PLATINUM",
+            metricKey: "ttrCompPlatinum6Jam" as MetricKey,
+            calc: () => {
+              const c = sumField("ttrCompPlatinum6Jam", "comply");
+              const tg = sumField("ttrCompPlatinum6Jam", "tiketGgn");
+              return tg > 0 ? (c / tg) * 100 : 100;
+            },
+          },
+          {
+            uiLabel: "MANJA",
+            metricKey: "ttrCompManja3Jam" as MetricKey,
+            calc: () => {
+              const c = sumField("ttrCompManja3Jam", "comply");
+              const tg = sumField("ttrCompManja3Jam", "tiketGgn");
+              return tg > 0 ? (c / tg) * 100 : 100;
+            },
+          },
+          {
+            uiLabel: "TTR 36",
+            metricKey: "ttr36Jam" as MetricKey,
+            calc: () => avgReal("ttr36Jam"),
+          },
+          {
+            uiLabel: "TTI 3X24",
+            metricKey: "tti3x24Jam" as MetricKey,
+            calc: () => {
+              const c = sumField("tti3x24Jam", "comply");
+              const nc = sumField("tti3x24Jam", "notComply");
+              return c + nc > 0 ? (c / (c + nc)) * 100 : 100;
+            },
+          },
+          {
+            uiLabel: "FFG",
+            metricKey: "ffg" as MetricKey,
+            calc: () => {
+              const c = sumField("ffg", "comply");
+              const nc = sumField("ffg", "notComply");
+              return c + nc > 0 ? (c / (c + nc)) * 100 : 100;
+            },
+          },
+          {
+            uiLabel: "TTR FFG",
+            metricKey: "ttrFfg" as MetricKey,
+            calc: () => avgReal("ttrFfg"),
+          },
+        ];
+
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5 px-1">
+              <div className="w-1 h-5 rounded-full bg-accent-blue" />
+              <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">
+                District Performance
+              </h2>
+              <span className="text-[10px] text-foreground-muted font-medium ml-1">
+                — {district.district}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-9 gap-2.5">
+              {cards.map((card) => {
+                const real = card.calc();
+                const h1 = avgH1(card.metricKey);
+                const target = WSA_TARGETS[card.metricKey] || 0;
+                const isAchieved = real >= target;
+                const diff = real - h1;
+
+                let trendArrow: string;
+                let trendColorCls: string;
+                if (diff > 0.005) {
+                  trendArrow = "↑";
+                  trendColorCls = "text-emerald-500";
+                } else if (diff < -0.005) {
+                  trendArrow = "↓";
+                  trendColorCls = "text-rose-500";
+                } else {
+                  trendArrow = "=";
+                  trendColorCls = "text-amber-500";
+                }
+
+                return (
+                  <div
+                    key={card.uiLabel}
+                    className={cn(
+                      "relative overflow-hidden rounded-xl border p-3.5 transition-all duration-200 hover:scale-[1.02] group",
+                      isAchieved
+                        ? "border-emerald-500/25 bg-emerald-500/[0.04]"
+                        : "border-rose-500/25 bg-rose-500/[0.04]"
+                    )}
+                  >
+                    {/* Subtle glow */}
+                    <div
+                      className={cn(
+                        "absolute -top-6 -right-6 w-16 h-16 rounded-full blur-2xl opacity-30 pointer-events-none transition-opacity group-hover:opacity-50",
+                        isAchieved ? "bg-emerald-500" : "bg-rose-500"
+                      )}
+                    />
+
+                    {/* Label */}
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-foreground-muted mb-2 leading-none relative z-10">
+                      {card.uiLabel}
+                    </div>
+
+                    {/* Hero number */}
+                    <div className="relative z-10 flex items-baseline gap-1">
+                      <span className="text-[10px] font-medium text-foreground-muted leading-none">=</span>
+                      <span
+                        className={cn(
+                          "text-lg font-extrabold tabular-nums leading-none tracking-tight",
+                          isAchieved ? "text-emerald-500" : "text-rose-500"
+                        )}
+                      >
+                        {real.toFixed(2)}%
+                      </span>
+                    </div>
+
+                    {/* Trend & H-1 */}
+                    <div className="mt-2 flex items-center gap-1.5 relative z-10">
+                      <span className={cn("text-xs font-black leading-none", trendColorCls)}>
+                        {trendArrow}
+                      </span>
+                      <span className="text-[10px] text-foreground-muted tabular-nums">
+                        H-1: {h1.toFixed(2)}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* District Stats Bar */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="glass-card-sm p-4 text-center flex flex-col justify-center">
