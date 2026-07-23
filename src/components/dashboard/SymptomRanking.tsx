@@ -50,6 +50,20 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
   const [pspiUnspecSearch, setPspiUnspecSearch] = useState("");
   // Telegram sending state
   const [isSendingTelegram, setIsSendingTelegram] = useState(false);
+  // Symptom breakdown sorting state
+  type SymptomSortField = "symptom" | "total" | "comp" | "nonc";
+  type SymptomSortDir = "asc" | "desc";
+  const [symptomSortField, setSymptomSortField] = useState<SymptomSortField>("total");
+  const [symptomSortDir, setSymptomSortDir] = useState<SymptomSortDir>("desc");
+
+  const handleSymptomSort = (field: SymptomSortField) => {
+    if (symptomSortField === field) {
+      setSymptomSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSymptomSortField(field);
+      setSymptomSortDir("desc");
+    }
+  };
 
   const handleSendTelegram = async () => {
     try {
@@ -171,6 +185,23 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
       }
     );
   }, [selectedSA, symptomsBySA]);
+
+  // Sorted symptoms based on column click (Symptom, Total, COMP, NONC)
+  const sortedSymptoms = useMemo(() => {
+    if (!selectedSymptomData.symptoms) return [];
+    return [...selectedSymptomData.symptoms].sort((a, b) => {
+      const aVal = a[symptomSortField];
+      const bVal = b[symptomSortField];
+      if (typeof aVal === "string") {
+        return symptomSortDir === "asc"
+          ? aVal.localeCompare(bVal as string)
+          : (bVal as string).localeCompare(aVal);
+      }
+      return symptomSortDir === "asc"
+        ? (aVal as number) - (bVal as number)
+        : (bVal as number) - (aVal as number);
+    });
+  }, [selectedSymptomData.symptoms, symptomSortField, symptomSortDir]);
 
   // Find KPI simulations for the selected SA
   const selectedSimulation = useMemo(() => {
@@ -998,16 +1029,56 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
                 {symptomTab === "tti-ffg" && (
                    <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted bg-[var(--surface)]">
-                        <th className="px-5 py-3 font-medium">Symptom</th>
-                        <th className="px-5 py-3 font-medium text-center">Total</th>
-                        <th className="px-5 py-3 font-medium text-center">COMP</th>
-                        <th className="px-5 py-3 font-medium text-center">NONC</th>
+                      <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wider text-foreground-muted bg-[var(--surface)] select-none">
+                        <th 
+                          onClick={() => handleSymptomSort("symptom")}
+                          className="px-5 py-3 font-medium cursor-pointer hover:text-foreground transition-colors group/th"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <span>Symptom</span>
+                            <span className="text-[10px] font-bold">
+                              {symptomSortField === "symptom" ? (symptomSortDir === "asc" ? "↑" : "↓") : "↕"}
+                            </span>
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => handleSymptomSort("total")}
+                          className="px-5 py-3 font-medium text-center cursor-pointer hover:text-foreground transition-colors group/th"
+                        >
+                          <div className="flex items-center justify-center gap-1.5">
+                            <span>Total</span>
+                            <span className="text-[10px] font-bold text-accent-blue">
+                              {symptomSortField === "total" ? (symptomSortDir === "asc" ? "↑" : "↓") : "↕"}
+                            </span>
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => handleSymptomSort("comp")}
+                          className="px-5 py-3 font-medium text-center cursor-pointer hover:text-foreground transition-colors group/th"
+                        >
+                          <div className="flex items-center justify-center gap-1.5">
+                            <span>COMP</span>
+                            <span className="text-[10px] font-bold text-emerald-500">
+                              {symptomSortField === "comp" ? (symptomSortDir === "asc" ? "↑" : "↓") : "↕"}
+                            </span>
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => handleSymptomSort("nonc")}
+                          className="px-5 py-3 font-medium text-center cursor-pointer hover:text-foreground transition-colors group/th"
+                        >
+                          <div className="flex items-center justify-center gap-1.5">
+                            <span>NONC</span>
+                            <span className="text-[10px] font-bold text-rose-500">
+                              {symptomSortField === "nonc" ? (symptomSortDir === "asc" ? "↑" : "↓") : "↕"}
+                            </span>
+                          </div>
+                        </th>
                         <th className="px-5 py-3 font-medium text-center w-10"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--border)] text-sm">
-                      {selectedSymptomData.symptoms.map((s) => (
+                      {sortedSymptoms.map((s) => (
                         <tr
                           key={s.symptom}
                           onClick={() => handleSymptomClick(s.symptom)}

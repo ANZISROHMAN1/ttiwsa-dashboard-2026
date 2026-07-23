@@ -748,6 +748,172 @@ export function ReportDatinEastern({ data }: ReportDatinEasternProps) {
         ))}
       </div>
 
+      {/* ─── District Performance ─────────────────────────────────────── */}
+      {(() => {
+        const sas = district.serviceAreas;
+
+        type DatinCardDef = {
+          uiLabel: string;
+          metricKey: string;
+          target: number;
+          calc: () => number;
+        };
+
+        const getField = (sa: ServiceAreaData, metricKey: string, field: string): number => {
+          const metric = (sa.summary as any)[metricKey];
+          if (!metric) return 0;
+          const v = metric[field];
+          return typeof v === "number" && !isNaN(v) ? v : (parseFloat(String(v)) || 0);
+        };
+
+        const sumField = (metricKey: string, field: string) =>
+          sas.reduce((acc, sa) => acc + getField(sa, metricKey, field), 0);
+
+        const avgRealSafe = (metricKey: string) => {
+          let sum = 0;
+          let count = 0;
+          sas.forEach((sa) => {
+            const metric = (sa.summary as any)[metricKey];
+            if (!metric) return;
+            const v = metric.real;
+            const n = typeof v === "number" ? v : parseFloat(String(v).replace(",", "."));
+            if (!isNaN(n) && n >= 0 && n <= 100) { sum += n; count++; }
+          });
+          return count > 0 ? sum / count : 0;
+        };
+
+        const avgH1 = (metricKey: string) => {
+          let sum = 0;
+          let count = 0;
+          sas.forEach((sa) => {
+            const metric = (sa.summary as any)[metricKey];
+            if (!metric) return;
+            const v = metric.h1;
+            if (typeof v === "number" && !isNaN(v)) { sum += v; count++; }
+          });
+          return count > 0 ? sum / count : 0;
+        };
+
+        const cards: DatinCardDef[] = [
+          {
+            uiLabel: "Compliance Datin K2",
+            metricKey: "complianceDatinK2",
+            target: 95.00,
+            calc: () => {
+              const c = sumField("complianceDatinK2", "comply");
+              const nc = sumField("complianceDatinK2", "notCmply");
+              const total = c + nc;
+              if (total > 0) return (c / total) * 100;
+              return avgRealSafe("complianceDatinK2");
+            },
+          },
+          {
+            uiLabel: "Compliance Datin K3",
+            metricKey: "complianceDatinK3",
+            target: 92.00,
+            calc: () => {
+              const c = sumField("complianceDatinK3", "comply");
+              const nc = sumField("complianceDatinK3", "notCmply");
+              const total = c + nc;
+              if (total > 0) return (c / total) * 100;
+              return avgRealSafe("complianceDatinK3");
+            },
+          },
+        ];
+
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5 px-1">
+              <div className="w-1 h-5 rounded-full bg-accent-blue" />
+              <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">
+                District Performance
+              </h2>
+              <span className="text-[10px] text-foreground-muted font-medium ml-1">
+                — {district.district}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {cards.map((card) => {
+                const real = card.calc();
+                const h1 = avgH1(card.metricKey);
+                const isAchieved = real >= card.target;
+                const diff = real - h1;
+
+                let trendArrow: string;
+                let trendColorCls: string;
+                if (diff > 0.005) {
+                  trendArrow = "↑";
+                  trendColorCls = "text-emerald-500";
+                } else if (diff < -0.005) {
+                  trendArrow = "↓";
+                  trendColorCls = "text-rose-500";
+                } else {
+                  trendArrow = "=";
+                  trendColorCls = "text-amber-500";
+                }
+
+                return (
+                  <div
+                    key={card.uiLabel}
+                    className={cn(
+                      "relative overflow-hidden rounded-xl border p-4 transition-all duration-200 hover:scale-[1.02] group",
+                      isAchieved
+                        ? "border-emerald-500/25 bg-emerald-500/[0.04]"
+                        : "border-rose-500/25 bg-rose-500/[0.04]"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "absolute -top-6 -right-6 w-16 h-16 rounded-full blur-2xl opacity-30 pointer-events-none transition-opacity group-hover:opacity-50",
+                        isAchieved ? "bg-emerald-500" : "bg-rose-500"
+                      )}
+                    />
+
+                    <div className="flex items-center justify-between mb-2.5 relative z-10">
+                      <span className="text-[11px] font-bold uppercase tracking-widest text-foreground-muted leading-none">
+                        {card.uiLabel}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-[10px] font-bold tabular-nums px-2 py-0.5 rounded-md leading-none",
+                          isAchieved
+                            ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                            : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                        )}
+                      >
+                        Target: {card.target.toFixed(2)}%
+                      </span>
+                    </div>
+
+                    <div className="relative z-10 flex items-baseline gap-1">
+                      <span className="text-[10px] font-medium text-foreground-muted leading-none">=</span>
+                      <span
+                        className={cn(
+                          "text-2xl font-extrabold tabular-nums leading-none tracking-tight",
+                          isAchieved ? "text-emerald-500" : "text-rose-500"
+                        )}
+                      >
+                        {real.toFixed(2)}%
+                      </span>
+                    </div>
+
+                    <div className="mt-2.5 flex items-center gap-1.5 relative z-10">
+                      <span className={cn("text-xs font-black leading-none", trendColorCls)}>
+                        {trendArrow}
+                      </span>
+                      <span className="text-[10px] text-foreground-muted tabular-nums">
+                        H-1: {h1.toFixed(2)}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* District Stats Bar */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="glass-card-sm p-4 text-center flex flex-col justify-center">
