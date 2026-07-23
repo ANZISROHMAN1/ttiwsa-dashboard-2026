@@ -150,8 +150,16 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
     const newErrors: FormErrors = {};
 
     if (!formData.sto) newErrors.sto = "STO is required";
-    if (!formData.namaTeknisi.trim()) newErrors.namaTeknisi = "NAMA TEKNISI is required";
-    if (!formData.nikTeknisi.trim()) newErrors.nikTeknisi = "NIK TEKNISI is required";
+    if (!formData.namaTeknisi.trim()) {
+      newErrors.namaTeknisi = "NAMA TEKNISI is required";
+    } else if (/\d/.test(formData.namaTeknisi)) {
+      newErrors.namaTeknisi = "NAMA TEKNISI hanya boleh berisi huruf";
+    }
+    if (!formData.nikTeknisi.trim()) {
+      newErrors.nikTeknisi = "NIK TEKNISI is required";
+    } else if (!/^\d+$/.test(formData.nikTeknisi.trim())) {
+      newErrors.nikTeknisi = "NIK TEKNISI hanya boleh berisi angka";
+    }
     if (!formData.mitra.trim()) newErrors.mitra = "MITRA is required";
     if (!formData.nomorOrder.trim()) newErrors.nomorOrder = "NOMOR ORDER / NOMOR TIKET INCIDENT is required";
     if (!formData.itemNotComply) newErrors.itemNotComply = "ITEM NOT COMPLY is required";
@@ -345,7 +353,10 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
                   className="form-input"
                   placeholder="Your answer"
                   value={formData.namaTeknisi}
-                  onChange={(e) => updateField("namaTeknisi", e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[0-9]/g, "");
+                    updateField("namaTeknisi", val);
+                  }}
                 />
               </FormField>
             </div>
@@ -355,10 +366,15 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
                 <input
                   id="form-nikTeknisi"
                   type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   className="form-input"
                   placeholder="Your answer"
                   value={formData.nikTeknisi}
-                  onChange={(e) => updateField("nikTeknisi", e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, "");
+                    updateField("nikTeknisi", val);
+                  }}
                 />
               </FormField>
             </div>
