@@ -7,7 +7,18 @@ declare global {
   }
 }
 
+/**
+ * Flag to control reCAPTCHA verification across all forms and API endpoints.
+ * Explicitly set to `false` to disable reCAPTCHA regardless of environment variables.
+ * Change to `true` when reCAPTCHA is ready to be re-enabled.
+ */
+export const IS_RECAPTCHA_ENABLED = false;
+
 export async function verifyRecaptchaToken(token: string): Promise<{ success: boolean; score?: number; error?: string }> {
+  if (!IS_RECAPTCHA_ENABLED) {
+    return { success: true, score: 1.0 };
+  }
+
   const secretKey = process.env.SEC_KEY_SI_CAPTCHA;
   if (!secretKey) {
     console.warn("SEC_KEY_SI_CAPTCHA is missing from environment variables");
@@ -61,6 +72,7 @@ async function loadRecaptchaScript(siteKey: string): Promise<void> {
 }
 
 export async function getRecaptchaToken(action: string = "submit"): Promise<string | null> {
+  if (!IS_RECAPTCHA_ENABLED) return null;
   if (typeof window === "undefined") return null;
 
   try {

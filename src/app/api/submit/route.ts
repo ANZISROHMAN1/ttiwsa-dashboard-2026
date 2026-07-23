@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { SUBMIT_ENDPOINT_URL } from "@/lib/constants";
-import { verifyRecaptchaToken } from "@/lib/recaptcha";
+import { verifyRecaptchaToken, IS_RECAPTCHA_ENABLED } from "@/lib/recaptcha";
 import { jwtVerify } from "jose";
 
 export async function POST(request: Request) {
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       // Ignore parse error for non-JSON payloads
     }
 
-    if (process.env.SEC_KEY_SI_CAPTCHA) {
+    if (IS_RECAPTCHA_ENABLED && process.env.SEC_KEY_SI_CAPTCHA) {
       if (!recaptchaToken) {
         return NextResponse.json({ error: "reCAPTCHA verification required" }, { status: 400 });
       }
