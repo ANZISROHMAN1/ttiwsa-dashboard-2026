@@ -5,13 +5,14 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-4.0-38B2AC?logo=tailwind-css)
 ![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-black?logo=vercel)
 ![Security](https://img.shields.io/badge/Security-Strict-red)
+![reCAPTCHA](https://img.shields.io/badge/reCAPTCHA-v3-4285F4?logo=google)
 
 ## 1. Pendahuluan
 
-Dokumen ini merupakan spesifikasi teknis definitif untuk **TTIWSA KPI Dashboard**. Dashboard ini dirancang secara khusus untuk pemantauan metrik operasional TTI, FFG, dan Garansi pada segmen Indihome serta Indibiz per area layanan (STO). Arsitektur dirancang untuk skalabilitas, keamanan tingkat tinggi, dan pemrosesan data real-time, menggunakan pendekatan serverless backend.
+Dokumen ini merupakan spesifikasi teknis definitif untuk **TTIWSA KPI Dashboard**. Dashboard ini dirancang secara khusus untuk pemantauan metrik operasional TTI, FFG, Garansi, PS/PI, Unspec, EBIS, dan DATIN pada segmen Indihome serta Indibiz per area layanan (STO). Arsitektur dirancang untuk skalabilitas, keamanan tingkat tinggi, dan pemrosesan data real-time, menggunakan pendekatan serverless backend.
 
 ### 1.1. Fitur Komprehensif: Kawal 65 KPI (Eastern Region)
-Selain metrik konvensional, dashboard ini mengintegrasikan fitur tambahan komprehensif **"Kawal 65 KPI"** yang dirancang khusus untuk memonitor dan menyeluruhi performa operasional pada 3 region utama di area Eastern: **Bogor, Bekasi, dan Karawang**. Seluruh modul pendukung (mulai dari analitik data hingga notifikasi Telegram) difokuskan secara eksklusif untuk mengawal ketat parameter kinerja di ketiga teritori krusial tersebut.
+Selain metrik konvensional, dashboard ini mengintegrasikan fitur tambahan komprehensif **"Kawal 65 KPI"** yang dirancang khusus untuk memonitor dan menyeluruhi performa operasional pada region utama di area Eastern: **Bogor, Bekasi, dan Karawang**, serta laporan terintegrasi untuk segmen **IndiHome (IH), EBIS, dan DATIN**. Seluruh modul pendukung (mulai dari analitik data hingga notifikasi Telegram) difokuskan secara eksklusif untuk mengawal ketat parameter kinerja di teritori krusial tersebut.
 
 Dokumentasi ini bersifat final, presisi, dan disusun untuk meminimalisasi pertanyaan teknis di masa mendatang (future-proof & legacy-proof).
 
@@ -25,12 +26,13 @@ Proyek ini dibangun menggunakan susunan teknologi berikut. Harap perhatikan vers
 - **Library UI:** React `19.2.4` & React DOM `19.2.4`
 - **Styling:** Tailwind CSS `v4` terintegrasi dengan PostCSS
 - **Visualisasi Data:** Chart.js `4.5.1` & `react-chartjs-2` dengan plugin DataLabels
-- **Manajemen Sesi / Keamanan:** 
+- **Manajemen Sesi / Keamanan / Proteksi Bot:** 
   - `jose` `6.2.3` (JSON Web Token yang kompatibel dengan Vercel Edge)
   - `bcryptjs` (Hashing kata sandi admin)
   - `@upstash/redis` (Rate limiting in-memory terdistribusi)
+  - **Google reCAPTCHA v3** (Verifikasi bot & skor proteksi form di `src/lib/recaptcha.ts`)
 - **Integrasi Eksternal:** 
-  - Google Apps Script (GAS) / Google Sheets (Sebagai basis data primitif / data layer)
+  - Google Apps Script (GAS) / Google Sheets (Sebagai basis data primitif / data layer untuk TTI/WSA, PS/PI, Unspec, EBIS, dan DATIN)
   - Telegram Bot API (Notifikasi otomatis via `/api/telegram/send`)
 - **Utilitas Tambahan:** `html2canvas` & `html-to-image` (Untuk ekspor laporan ke dalam format gambar)
 
@@ -39,9 +41,10 @@ Proyek ini dibangun menggunakan susunan teknologi berikut. Harap perhatikan vers
 ## 3. Topologi Sistem & Aliran Data
 
 ### 3.1. Logika Backend (Route Handlers)
-Backend beroperasi sepenuhnya secara _serverless_ melalui arsitektur Next.js Route Handlers. Terdapat dua fungsi utama:
-1. **Data Proxying (`/api/dashboard`, `/api/submit`)**: Backend bertindak sebagai proxy aman menuju antarmuka Google Apps Script (GAS) yang terhubung ke Google Sheets. Logika ini diimplementasikan untuk mencegah tereksposnya endpoint makro Google secara publik, sekaligus memberlakukan mekanisme cache pada level _Edge_.
-2. **Validasi Formulir Integrasi**: Rute seperti `/submit/not-comply`, `/submit/ps-pi`, dan `/submit/unspec` memproses payload dari klien dan mengalirkannya ke GAS. Seluruh manipulasi bukti atau penolakan (_Reject/Accept Evidence_) harus divalidasi dengan token otorisasi admin sebelum disahkan oleh backend.
+Backend beroperasi sepenuhnya secara _serverless_ melalui arsitektur Next.js Route Handlers. Terdapat beberapa fungsi utama:
+1. **Data Proxying (`/api/dashboard`, `/api/submit`)**: Backend bertindak sebagai proxy aman menuju antarmuka Google Apps Script (GAS) yang terhubung ke Google Sheets untuk data TTI/WSA, PS/PI, Unspec, EBIS, dan DATIN. Logika ini diimplementasikan untuk mencegah tereksposnya endpoint makro Google secara publik, sekaligus memberlakukan Mekanisme Cache pada level _Edge_.
+2. **Validasi Formulir Integrasi**: Rute seperti `/submit/not-comply`, `/submit/ps-pi`, dan `/submit/unspec` memproses payload dari klien dan mengalirkannya ke GAS. Seluruh manipulasi bukti atau penolakan (_Reject/Accept Evidence_) divalidasi dengan token otorisasi admin sebelum disahkan oleh backend.
+3. **Konfigurasi Proteksi reCAPTCHA (`/api/config/recaptcha`)**: Menyediakan Public Site Key reCAPTCHA secara terenkapsulasi ke sisi klien untuk inisialisasi token verifikasi sebelum pengiriman form.
 
 ### 3.2. Logika Setup & Notifikasi Telegram
 Modul notifikasi interaktif via Telegram (`/api/telegram/send`) beroperasi dengan logika keamanan tertutup:
@@ -58,9 +61,10 @@ Keamanan tidak dapat dikompromikan. Sistem ini memberlakukan parameter berikut s
 
 1. **Autentikasi Edge JWT (`/api/login`)**: Menggunakan `jose`, JWT ditandatangani pada environment Vercel Edge dan disimpan murni di cookie dengan atribut `HttpOnly`, `Secure` (saat production), dan `SameSite=Strict`.
 2. **Proteksi Brute-Force & Dictionary Attack**: Rute otentikasi diikat ke Redis (@upstash/redis). Pembatasan akses terjadi seketika setelah gagal login sebanyak 5 kali dalam periode 15 menit (lockout_minutes) berdasarkan identifikasi Header `x-forwarded-for`.
-3. **Hashing Kriptografis**: Kata sandi untuk hak akses *Admin* dienkripsi secara one-way di sisi server menggunakan *bcrypt* dengan _salt_ yang dikelola internal.
-4. **Validasi Aksi Sensitif**: Aksi memanipulasi bukti (Accept/Reject Evidence) ditolak di level proxy jika JWT Admin yang disertakan tidak valid, kedaluwarsa, atau tidak memiliki otorisasi penuh.
-5. **Konfigurasi Headers**: Penyesuaian `next.config.ts` digunakan untuk menetapkan Content Security Policy (CSP) ketat dan menghapus pengenal server (seperti `X-Powered-By`).
+3. **Google reCAPTCHA v3**: Setiap submit formulir dilindungi oleh verifikasi reCAPTCHA v3 di sisi server (`verifyRecaptchaToken`). Permintaan dengan skor di bawah 0.5 ditolak otomatis untuk mencegah automatisasi bot spamming. Fitur ini didesain agar dapat diaktifkan/dinonaktifkan secara fleksibel melalui `IS_RECAPTCHA_ENABLED` di `src/lib/recaptcha.ts`.
+4. **Hashing Kriptografis**: Kata sandi untuk hak akses *Admin* dienkripsi secara one-way di sisi server menggunakan *bcrypt* dengan _salt_ yang dikelola internal.
+5. **Validasi Aksi Sensitif**: Aksi memanipulasi bukti (Accept/Reject Evidence) ditolak di level proxy jika JWT Admin yang disertakan tidak valid, kedaluwarsa, atau tidak memiliki otorisasi penuh.
+6. **Konfigurasi Headers**: Penyesuaian `next.config.ts` digunakan untuk menetapkan Content Security Policy (CSP) ketat dan menghapus pengenal server (seperti `X-Powered-By`).
 
 ---
 
@@ -72,9 +76,10 @@ Memahami hierarki ini merupakan syarat absolut sebelum melakukan modifikasi:
 ttiwsa-dashboard-2026/
 ├── src/
 │   ├── app/
-│   │   ├── (dashboard)/        # Layout UI Dashboard utama
-│   │   │   └── submit/         # Komponen rute input form pengguna
+│   │   ├── (dashboard)/        # Layout UI Dashboard utama (KPI, Report Eastern, dsb.)
+│   │   │   └── submit/         # Komponen rute input form pengguna (not-comply, ps-pi, unspec)
 │   │   ├── api/                # Route handlers backend (REST endpoints)
+│   │   │   ├── config/         # Endpoint konfigurasi publik (recaptcha site key)
 │   │   │   ├── dashboard/      # Endpoint agregasi dari GAS
 │   │   │   ├── login/          # Endpoint validasi & redis rate limit
 │   │   │   ├── logout/         # Invalidate token sesi
@@ -83,12 +88,12 @@ ttiwsa-dashboard-2026/
 │   │   ├── globals.css         # Konfigurasi Tailwind & Global Style
 │   │   └── layout.tsx          # Konfigurasi Root Document
 │   ├── components/             # Reusable React Server/Client Components
-│   │   ├── dashboard/          # Kartu KPI, Grafik, DataTables
+│   │   ├── dashboard/          # Kartu KPI, Grafik, SymptomRanking, Report Eastern (IH, EBIS, DATIN)
 │   │   ├── layout/             # Topbar, Navbar, Interaktivitas menu
-│   │   ├── ui/                 # Atomic UI components (Histogram, PieChart, dsb)
+│   │   ├── ui/                 # Atomic UI components (Badge, BarChart, PieChart, Histogram, EvidenceModal)
 │   │   └── ThemeProvider/      # Konteks visual client-side (Dark Mode dll)
-│   ├── lib/                    # Fungsi bantu murni (Constants, auth context)
-│   └── types/                  # (Jika ada) Deklarasi tipe TypeScript global
+│   ├── lib/                    # Fungsi bantu murni (Constants, auth context, recaptcha verifier)
+│   └── types/                  # Deklarasi tipe TypeScript global (Dashboard, Ticket, KPI)
 ├── .env.local                  # Environment Configuration (TIDAK MASUK VCS)
 ├── eslint.config.mjs           # Aturan Linter
 ├── next.config.ts              # Konfigurasi Vercel/Next (Turbo, Header)
@@ -115,16 +120,37 @@ Langkah-langkah berikut bersifat tetap dan dilarang dimodifikasi tanpa penyesuai
    **PERINGATAN KRITIKAL**: Nilai variabel ini adalah *rahasia mutlak (secret)* yang tidak disertakan dalam repositori ini dan dipegang sepenuhnya secara eksklusif oleh pemilik sistem. Saat serah terima (_hand-off_), tim pengembang masa depan **HARUS** meminta variabel ini langsung dari pemilik, dan tidak dibenarkan untuk menanyakannya ke dalam sistem atau log publik.
 
    ```env
-   ADMIN_USERNAME=...          # [SECRET]
+   # Admin Auth & Session
+   ADMIN_USERNAME=...          # [SECRET] Username admin
    ADMIN_PASSWORD_HASH=...     # [SECRET] Harus dalam bentuk hash bcrypt
    JWT_SECRET=...              # [SECRET] String acak kriptografis
+
+   # Redis Rate Limiter
    UPSTASH_REDIS_REST_URL=...  # [SECRET]
    UPSTASH_REDIS_REST_TOKEN=...# [SECRET]
+
+   # Google Apps Script Endpoints
+   SUBMIT_API_URL=...          # [SECRET]
+   TTIWSA_API_URL=...          # [SECRET]
+   PSPI_API_URL=...            # [SECRET]
+   UNSPEC_API_URL=...          # [SECRET]
+   EMPAT_EVIDEN_API_BARU=...   # [SECRET]
+   API_BARU_REPORT_IH_EASTERN=...  # [SECRET]
+   API_BARU_REPORT_ALL_EASTERN=... # [SECRET]
+   EBIS_API=...                # [SECRET]
+   DATIN_API=...               # [SECRET]
+
+   # Telegram Integration
    TELEGRAM_BOT_TOKEN=...      # [SECRET]
    TEST_CHAT_ID=...            # [SECRET]
    TEST_CHAT_ID2=...           # [SECRET]
+   TELEGRAM_WEBHOOK_SECRET=... # [SECRET]
+
+   # Google reCAPTCHA v3
+   SITE_KEY_SI_CAPTCHA=...     # Public site key reCAPTCHA v3
+   SEC_KEY_SI_CAPTCHA=...      # [SECRET] Secret key reCAPTCHA v3
    ```
-   *Catatan: Segala upaya menjalankan rute login tanpa variabel lingkungan yang disediakan oleh pemilik (secara offline/terenkripsi) akan memicu HTTP 500 secara _fail-safe_.*
+   *Catatan: Segala upaya menjalankan rute login atau submit tanpa variabel lingkungan yang disediakan oleh pemilik (secara offline/terenkripsi) akan memicu HTTP 500 secara _fail-safe_.*
 
 3. **Menjalankan Server (Mode Development)**:
    ```bash
@@ -132,9 +158,10 @@ Langkah-langkah berikut bersifat tetap dan dilarang dimodifikasi tanpa penyesuai
    ```
 
 4. **Pemeriksaan Kualitas Kode**:
-   Pastikan linter tidak menampilkan galat sebelum commit.
+   Pastikan linter dan type-checker tidak menampilkan galat sebelum commit.
    ```bash
    npm run lint
+   npx tsc --noEmit
    ```
 
 ---
@@ -146,11 +173,11 @@ Sistem ini sangat dioptimalkan untuk Vercel. Penggunaan platform serverless lain
 1. Hubungkan repositori GitHub ini ke Proyek Vercel.
 2. Injeksi seluruh variabel lingkungan yang tertera pada tahap 6.2 ke dalam tab **Environment Variables** di Vercel (Pilih scope _Production_, _Preview_, & _Development_ yang sesuai).
 3. Vercel akan otomatis mengenali Next.js App Router dan melakukan kompilasi fungsi menjadi Edge/Serverless.
-4. Lakukan deploy ulang jika terdapat perubahan variabel lingkungan krusial, terutama `JWT_SECRET` atau `UPSTASH_REDIS`.
+4. Lakukan deploy ulang jika terdapat perubahan variabel lingkungan krusial, terutama `JWT_SECRET`, `UPSTASH_REDIS`, atau kunci reCAPTCHA.
 
 ---
 
 ## 8. Penutup & Pemeliharaan
 
 Dokumentasi ini ditulis untuk beroperasi tanpa pengawasan lebih lanjut.
-Setiap perubahan pada arsitektur, seperti transisi dari Redis ke basis data SQL atau penggantian penyedia identitas, harus diikuti dengan revisi total pada dokumen ini. Gunakan panduan ini secara presisi sebagai satu-satunya standar sumber kebenaran teknis (Single Source of Truth) dari TTIWSA KPI Dashboard. 
+Setiap perubahan pada arsitektur, seperti transisi dari Redis ke basis data SQL, penambahan API baru, atau penggantian penyedia identitas, harus diikuti dengan revisi total pada dokumen ini. Gunakan panduan ini secara presisi sebagai satu-satunya standar sumber kebenaran teknis (Single Source of Truth) dari TTIWSA KPI Dashboard.
