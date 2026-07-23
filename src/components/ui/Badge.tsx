@@ -2,7 +2,7 @@
 
 import { cn, getAchievementClasses, formatPercent } from "@/lib/utils";
 
-interface BadgeProps {
+interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   children: React.ReactNode;
   variant?: "default" | "success" | "warning" | "danger" | "info";
   className?: string;
@@ -16,9 +16,9 @@ const BADGE_VARIANTS = {
   info: "bg-blue-400/10 text-blue-400 ring-1 ring-blue-400/20",
 };
 
-export function Badge({ children, variant = "default", className }: BadgeProps) {
+export function Badge({ children, variant = "default", className, ...props }: BadgeProps) {
   return (
-    <span className={cn("badge", BADGE_VARIANTS[variant], className)}>
+    <span className={cn("badge", BADGE_VARIANTS[variant], className)} {...props}>
       {children}
     </span>
   );

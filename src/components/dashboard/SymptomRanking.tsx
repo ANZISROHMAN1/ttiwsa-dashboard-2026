@@ -8,9 +8,9 @@ import { Histogram } from "@/components/ui/Histogram";
 import { EvidenceModal, type EvidenceItem } from "@/components/ui/EvidenceModal";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
-import { aggregateSymptomsBySA, getUniqueServiceAreas, formatPercent } from "@/lib/utils";
+import { aggregateSymptomsBySA, getUniqueServiceAreas, formatPercent, cn } from "@/lib/utils";
 import { KPI_SIM_LABELS } from "@/lib/constants";
-import type { Ticket, KPISimulation, SaldoPspiTicket, UnspecTicket } from "@/types/dashboard";
+import type { Ticket, KPISimulation, SaldoPspiTicket, UnspecTicket, SymptomBySA } from "@/types/dashboard";
 import { CheckCircle2, AlertCircle, ChevronRight, ArrowLeft, Search } from "lucide-react";
 import Link from "next/link";
 
@@ -55,6 +55,9 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
   type SymptomSortDir = "asc" | "desc";
   const [symptomSortField, setSymptomSortField] = useState<SymptomSortField>("total");
   const [symptomSortDir, setSymptomSortDir] = useState<SymptomSortDir>("desc");
+
+  // Compliance filter state (ALL / COMP / NONC)
+  const [complianceFilter, setComplianceFilter] = useState<"ALL" | "COMP" | "NONC">("ALL");
 
   const handleSymptomSort = (field: SymptomSortField) => {
     if (symptomSortField === field) {
@@ -133,17 +136,23 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
       );
     }
 
+    if (complianceFilter === "COMP") {
+      base = base.filter((t) => t.STATUS?.includes("-COMP"));
+    } else if (complianceFilter === "NONC") {
+      base = base.filter((t) => t.STATUS?.includes("-NOTC"));
+    }
+
     if (globalShowOnlyNeedUpdate) {
       base = base.filter((t) => t.NULL_GDOC);
     }
 
     return base;
-  }, [tickets, selectedKpiCard, globalSearch, globalShowOnlyNeedUpdate]);
+  }, [tickets, selectedKpiCard, complianceFilter, globalSearch, globalShowOnlyNeedUpdate]);
 
   const symptomsBySA = useMemo(() => aggregateSymptomsBySA(filteredTickets, globalShowOnlyNeedUpdate), [filteredTickets, globalShowOnlyNeedUpdate]);
 
   // Find symptom data for the selected SA (or aggregate all if Branch Bogor)
-  const selectedSymptomData = useMemo(() => {
+  const selectedSymptomData = useMemo<SymptomBySA>(() => {
     if (selectedSA === "BRANCH BOGOR") {
       const aggregated = new Map<string, { symptom: string; total: number; comp: number; nonc: number }>();
       let totalTickets = 0;
@@ -994,14 +1003,57 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
                     </span>
                   )}
                 </h3>
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   {symptomTab === "tti-ffg" && (
                     <>
-                      <Badge variant="info">Total: {selectedSymptomData.totalTickets}</Badge>
-                      <Badge variant="default" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                      <div className="flex items-center gap-1.5 bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2.5 py-1 shadow-sm">
+                        <span className="text-[11px] font-semibold text-foreground-muted whitespace-nowrap">Filter:</span>
+                        <select
+                          id="compliance-filter-dropdown"
+                          value={complianceFilter}
+                          onChange={(e) => setComplianceFilter(e.target.value as "ALL" | "COMP" | "NONC")}
+                          className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer border-none p-0 pr-1"
+                        >
+                          <option value="ALL">ALL TICKETS</option>
+                          <option value="COMP">COMPLY ONLY</option>
+                          <option value="NONC">NOT COMPLY ONLY</option>
+                        </select>
+                      </div>
+
+                      <Badge
+                        variant="info"
+                        className="cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => setComplianceFilter("ALL")}
+                        title="Click to show all tickets"
+                      >
+                        Total: {selectedSymptomData.totalTickets}
+                      </Badge>
+                      <Badge
+                        variant="default"
+                        className={cn(
+                          "cursor-pointer hover:scale-105 transition-all",
+                          complianceFilter === "COMP"
+                            ? "bg-emerald-500 text-white font-bold ring-2 ring-emerald-400/50"
+                            : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                        )}
+                        onClick={() => setComplianceFilter(complianceFilter === "COMP" ? "ALL" : "COMP")}
+                        title="Click to strictly filter COMPLY tickets"
+                      >
                         COMP: {selectedSymptomData.totalComp}
                       </Badge>
-                      <Badge variant="danger">NONC: {selectedSymptomData.totalNonc}</Badge>
+                      <Badge
+                        variant="danger"
+                        className={cn(
+                          "cursor-pointer hover:scale-105 transition-all",
+                          complianceFilter === "NONC"
+                            ? "bg-rose-500 text-white font-bold ring-2 ring-rose-400/50"
+                            : ""
+                        )}
+                        onClick={() => setComplianceFilter(complianceFilter === "NONC" ? "ALL" : "NONC")}
+                        title="Click to strictly filter NOT COMPLY tickets"
+                      >
+                        NONC: {selectedSymptomData.totalNonc}
+                      </Badge>
                     </>
                   )}
                   {symptomTab === "pspi" && (
