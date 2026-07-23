@@ -1,10 +1,23 @@
 import { NextResponse } from "next/server";
 import { DATIN_API_URL } from "@/lib/constants";
+import { getCachedData, setCachedData } from "@/lib/redisCache";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
+    const url = new URL(request.url);
+    const refresh = url.searchParams.get('refresh') === 'true';
+    const cacheKey = "report_datin_data";
+
+    if (!refresh) {
+      const cached = await getCachedData(cacheKey);
+      if (cached) {
+        console.log("Returning cached report-datin data");
+        return NextResponse.json(cached);
+      }
+    }
+
     if (!DATIN_API_URL) {
       return NextResponse.json(
         { error: "DATIN_API is not configured" },
@@ -25,6 +38,7 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
+    await setCachedData(cacheKey, data, 60);
     return NextResponse.json(data);
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {

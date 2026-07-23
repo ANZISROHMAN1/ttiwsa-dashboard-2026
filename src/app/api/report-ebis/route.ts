@@ -1,10 +1,23 @@
 import { NextResponse } from "next/server";
 import { EBIS_API_URL } from "@/lib/constants";
+import { getCachedData, setCachedData } from "@/lib/redisCache";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
+    const url = new URL(request.url);
+    const refresh = url.searchParams.get('refresh') === 'true';
+    const cacheKey = "report_ebis_data";
+
+    if (!refresh) {
+      const cached = await getCachedData(cacheKey);
+      if (cached) {
+        console.log("Returning cached report-ebis data");
+        return NextResponse.json(cached);
+      }
+    }
+
     if (!EBIS_API_URL) {
       return NextResponse.json(
         { error: "EBIS_API is not configured" },
@@ -25,7 +38,9 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
-    return NextResponse.json(data.Data || data);
+    const finalData = data.Data || data;
+    await setCachedData(cacheKey, finalData, 60);
+    return NextResponse.json(finalData);
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       return NextResponse.json({ error: "Request aborted" }, { status: 499 });
