@@ -15,6 +15,7 @@ import type { DashboardData } from "@/types/dashboard";
 interface DashboardContextValue {
   data: DashboardData | null;
   isLoading: boolean;
+  isRefetching: boolean;
   error: string | null;
   lastUpdated: Date | null;
   refetch: () => void;
@@ -23,6 +24,7 @@ interface DashboardContextValue {
 export const DashboardContext = createContext<DashboardContextValue>({
   data: null,
   isLoading: true,
+  isRefetching: false,
   error: null,
   lastUpdated: null,
   refetch: () => {},
@@ -82,7 +84,7 @@ export default function DashboardLayout({
       >
         <Header
           lastUpdated={dashboardData.lastUpdated}
-          isLoading={dashboardData.isLoading}
+          isLoading={dashboardData.isLoading || dashboardData.isRefetching}
           onRefresh={handleGlobalRefresh}
           onMenuToggle={handleMenuToggle}
         />

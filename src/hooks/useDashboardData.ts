@@ -7,6 +7,7 @@ import type { DashboardData } from "@/types/dashboard";
 interface UseDashboardDataReturn {
   data: DashboardData | null;
   isLoading: boolean;
+  isRefetching: boolean;
   error: string | null;
   lastUpdated: Date | null;
   refetch: () => void;
@@ -58,7 +59,8 @@ export function useDashboardData(basic: boolean = false): UseDashboardDataReturn
 
   return {
     data: data || null,
-    isLoading: isLoading || isRefetching,
+    isLoading,
+    isRefetching,
     error: error?.message || null,
     lastUpdated,
     refetch,
