@@ -11,9 +11,10 @@ interface UseDashboardDataReturn {
   error: string | null;
   lastUpdated: Date | null;
   refetch: () => void;
+  refetchTarget: (target: "regular" | "pspi" | "unspec" | "all") => Promise<void>;
 }
 
-const fetcher = async (url: string) => {
+export const fetcher = async (url: string) => {
   const res = await fetch(url);
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
@@ -23,13 +24,28 @@ const fetcher = async (url: string) => {
 };
 
 /**
+ * Global helper to trigger targeted API refresh and update SWR cache.
+ */
+export async function refreshTargetApi(target: "regular" | "pspi" | "unspec" | "all") {
+  try {
+    const freshData = await fetcher(`/api/dashboard?basic=false&refreshTarget=${target}`);
+    const { mutate: globalMutate } = await import("swr");
+    globalMutate("/api/dashboard?basic=false", freshData, false);
+    globalMutate("/api/dashboard?basic=true");
+    return freshData;
+  } catch (err) {
+    console.error(`Targeted refresh for ${target} failed:`, err);
+  }
+}
+
+/**
  * Custom hook for fetching and auto-refreshing dashboard data.
  * Utilizes SWR for caching and background polling.
  */
 export function useDashboardData(basic: boolean = false): UseDashboardDataReturn {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefetching, setIsRefetching] = useState(false);
-  
+
   const { data, error, isLoading, mutate } = useSWR<DashboardData>(
     `/api/dashboard?basic=${basic}`,
     fetcher,
@@ -57,6 +73,21 @@ export function useDashboardData(basic: boolean = false): UseDashboardDataReturn
     }
   }, [basic, mutate]);
 
+  const refetchTarget = useCallback(
+    async (target: "regular" | "pspi" | "unspec" | "all") => {
+      setIsRefetching(true);
+      try {
+        const freshData = await fetcher(`/api/dashboard?basic=${basic}&refreshTarget=${target}`);
+        mutate(freshData, false);
+      } catch (err) {
+        console.error(`Targeted refresh (${target}) failed:`, err);
+      } finally {
+        setIsRefetching(false);
+      }
+    },
+    [basic, mutate]
+  );
+
   return {
     data: data || null,
     isLoading,
@@ -64,5 +95,7 @@ export function useDashboardData(basic: boolean = false): UseDashboardDataReturn
     error: error?.message || null,
     lastUpdated,
     refetch,
+    refetchTarget,
   };
 }
+

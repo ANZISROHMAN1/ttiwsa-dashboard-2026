@@ -9,20 +9,22 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const basic = url.searchParams.get('basic') === 'true';
     const refresh = url.searchParams.get('refresh') === 'true';
-    
+    const refreshTargetRaw = url.searchParams.get('refreshTarget');
+    const refreshTarget = (refreshTargetRaw as "regular" | "pspi" | "unspec" | "all" | null) || (refresh ? "all" : undefined);
+
     const cacheKey = `dashboard_data_basic_${basic}`;
-    
-    if (!refresh) {
+
+    if (!refresh && !refreshTarget) {
       const cached = await getCachedData(cacheKey);
       if (cached) {
         console.log(`Returning cached dashboard data for basic=${basic}`);
         return NextResponse.json(cached);
       }
     }
-    
-    const data = await fetchDashboardData(request.signal, basic);
-    console.log(`Dashboard data fetched (basic: ${basic}). UPDATED tickets count:`, data.ttiTickets.filter(t => t.kpi === 'UPDATED').length);
-    
+
+    const data = await fetchDashboardData(request.signal, basic, refreshTarget);
+    console.log(`Dashboard data fetched (basic: ${basic}, target: ${refreshTarget || 'all'}). UPDATED tickets count:`, data.ttiTickets.filter(t => t.kpi === 'UPDATED').length);
+
     await setCachedData(cacheKey, data, 60); // Cache for 60 seconds
     
     return NextResponse.json(data);

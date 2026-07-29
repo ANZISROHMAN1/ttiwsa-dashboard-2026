@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { FormField } from "@/components/ui/FormField";
 import { getRecaptchaToken } from "@/lib/recaptcha";
+import { refreshTargetApi } from "@/hooks/useDashboardData";
 import { ChevronDown } from "lucide-react";
 
 const ERROR_CODE_MAP: Record<string, string[]> = {
@@ -171,6 +172,9 @@ export function SubmitFormPSPI() {
       }
 
       setSubmitState("success");
+
+      // Auto-refresh ONLY the PS/PI API data
+      refreshTargetApi("pspi").catch(console.error);
 
       setTimeout(() => {
         router.back();

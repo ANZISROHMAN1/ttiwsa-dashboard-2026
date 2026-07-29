@@ -1,5 +1,6 @@
 import { API_BASE_URL, SALDO_PSPI_API_URL, UNSPEC_API_URL, EVIDENCE_API_URL, KPI_TARGET } from "./constants";
 import type { DashboardData, SaldoPspiTicket, UnspecTicket, KPISimulation, TTITicket, FFGTicket, RankingSA, RankingSTO, DashboardSummary, Resume } from "@/types/dashboard";
+import { getCachedData, setCachedData } from "./redisCache";
 
 // ─── API Error ──────────────────────────────────────────────────────────────
 
@@ -13,11 +14,35 @@ export class ApiError extends Error {
   }
 }
 
+// ─── Feed Level Caching Helper ─────────────────────────────────────────────
+
+const memoryCacheFeed = new Map<string, { data: any; timestamp: number }>();
+const FEED_TTL_MS = 60 * 1000;
+
+async function getFeedData<T>(key: string, fetcher: () => Promise<T>, forceRefresh: boolean): Promise<T> {
+  if (!forceRefresh) {
+    const redisCached = await getCachedData<T>(key);
+    if (redisCached !== null) {
+      return redisCached;
+    }
+    const memCached = memoryCacheFeed.get(key);
+    if (memCached && Date.now() - memCached.timestamp < FEED_TTL_MS) {
+      return memCached.data as T;
+    }
+  }
+
+  const fresh = await fetcher();
+  memoryCacheFeed.set(key, { data: fresh, timestamp: Date.now() });
+  await setCachedData(key, fresh, 60);
+  return fresh;
+}
+
 // ─── Fetch Dashboard Data ───────────────────────────────────────────────────
 
 export async function fetchDashboardData(
   signal?: AbortSignal,
-  basic: boolean = false
+  basic: boolean = false,
+  refreshTarget?: "regular" | "pspi" | "unspec" | "all"
 ): Promise<DashboardData> {
   try {
     if (!API_BASE_URL || !SALDO_PSPI_API_URL || !UNSPEC_API_URL || !EVIDENCE_API_URL) {
@@ -27,62 +52,70 @@ export async function fetchDashboardData(
       );
     }
 
-    const [response, saldoResponse, unspecResponse, evidenceResponse] = await Promise.all([
-      fetch(API_BASE_URL, {
-        signal,
-        next: { revalidate: 0 },
-      }),
-      basic ? Promise.resolve({ ok: true, json: async () => [] } as any) : fetch(SALDO_PSPI_API_URL, {
-        signal,
-        next: { revalidate: 0 },
-      }),
-      basic ? Promise.resolve({ ok: true, json: async () => [] } as any) : fetch(UNSPEC_API_URL, {
-        signal,
-        next: { revalidate: 0 },
-      }),
-      basic ? Promise.resolve({ ok: true, json: async () => [] } as any) : fetch(EVIDENCE_API_URL, {
-        signal,
-        next: { revalidate: 0 },
-      })
+    const refreshRegular = refreshTarget === "regular" || refreshTarget === "all";
+    const refreshPspi = refreshTarget === "pspi" || refreshTarget === "all";
+    const refreshUnspec = refreshTarget === "unspec" || refreshTarget === "all";
+
+    const [rawData, saldoPspiTickets, unspecTickets, evidenceData] = await Promise.all([
+      getFeedData(
+        "feed_raw_ttiwsa",
+        async () => {
+          const res = await fetch(API_BASE_URL, { signal, next: { revalidate: 0 } });
+          if (!res.ok) throw new ApiError(`API returned ${res.status}: ${res.statusText}`, res.status);
+          return res.json();
+        },
+        refreshRegular
+      ),
+      basic
+        ? Promise.resolve([])
+        : getFeedData<SaldoPspiTicket[]>(
+            "feed_saldo_pspi",
+            async () => {
+              const res = await fetch(SALDO_PSPI_API_URL, { signal, next: { revalidate: 0 } });
+              if (!res.ok) {
+                console.error(`Saldo API returned ${res.status}: ${res.statusText}`);
+                return [];
+              }
+              return res.json();
+            },
+            refreshPspi
+          ),
+      basic
+        ? Promise.resolve([])
+        : getFeedData<UnspecTicket[]>(
+            "feed_unspec",
+            async () => {
+              const res = await fetch(UNSPEC_API_URL, { signal, next: { revalidate: 0 } });
+              if (!res.ok) {
+                console.error(`Unspec API returned ${res.status}: ${res.statusText}`);
+                return [];
+              }
+              return res.json();
+            },
+            refreshUnspec
+          ),
+      basic
+        ? Promise.resolve([])
+        : getFeedData<any[]>(
+            "feed_evidence",
+            async () => {
+              const res = await fetch(EVIDENCE_API_URL, { signal, next: { revalidate: 0 } });
+              if (!res.ok) {
+                console.error(`Evidence API returned ${res.status}: ${res.statusText}`);
+                return [];
+              }
+              return res.json();
+            },
+            refreshRegular
+          ),
     ]);
 
-    if (!response.ok) {
-      throw new ApiError(`API returned ${response.status}: ${response.statusText}`, response.status);
-    }
-
-    if (!saldoResponse.ok) {
-      console.error(`Saldo API returned ${saldoResponse.status}: ${saldoResponse.statusText}`);
-    }
-
-    if (!unspecResponse.ok) {
-      console.error(`Unspec API returned ${unspecResponse.status}: ${unspecResponse.statusText}`);
-    }
-
-    if (!evidenceResponse.ok) {
-      console.error(`Evidence API returned ${evidenceResponse.status}: ${evidenceResponse.statusText}`);
-    }
-
-    const rawData = await response.json();
-
-    let saldoPspiTickets: SaldoPspiTicket[] = [];
-    if (saldoResponse.ok) {
-      saldoPspiTickets = await saldoResponse.json();
-    }
-
-    let unspecTickets: UnspecTicket[] = [];
-    if (unspecResponse.ok) {
-      unspecTickets = await unspecResponse.json();
-    }
-
-    let evidenceData: any[] = [];
-    if (evidenceResponse.ok) {
-      evidenceData = await evidenceResponse.json();
-    }
     const evidenceMap = new Map<string, any>();
     for (const ev of evidenceData) {
       const sc = ev["NOMOR ORDER / NOMOR TIKET INCIDENT"];
       if (sc) evidenceMap.set(sc, ev);
     }
+
 
     const getMergedEvidence = (sc: string, ttiwsaEvidence: string) => {
       let teknisi = "";

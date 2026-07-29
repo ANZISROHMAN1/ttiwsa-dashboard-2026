@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { FormField } from "@/components/ui/FormField";
 import { useAuth } from "@/lib/auth";
 import { getRecaptchaToken } from "@/lib/recaptcha";
+import { refreshTargetApi } from "@/hooks/useDashboardData";
 
 interface FormData {
   sto: string;
@@ -288,6 +289,9 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
       }
 
       setSubmitState("success");
+
+      // Auto-refresh ONLY the regular TTIWSA API data
+      refreshTargetApi("regular").catch(console.error);
 
       setTimeout(() => {
         router.back();

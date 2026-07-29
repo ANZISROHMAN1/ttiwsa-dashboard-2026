@@ -13,6 +13,19 @@ export const DATIN_API_URL = process.env.DATIN_API || "";
 /** Auto-refresh interval in milliseconds (5 minutes) */
 export const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
+export const PS_PI_SERVICE_AREAS = [
+  "GUNUNG PUTRI - CIANGSANA",
+  "CIAWI - CISARUA",
+  "BOGOR",
+  "CILEUNGSI",
+  "CIAPUS - PAGELARAN",
+  "DRAMAGA",
+  "CIBINONG",
+  "PASIR MAUNG",
+  "KEDUNG HALANG",
+  "PARUNG - SEMPLAK",
+] as const;
+
 // ─── KPI Targets (from GAS backend) ────────────────────────────────────────
 
 export const KPI_TARGET = {

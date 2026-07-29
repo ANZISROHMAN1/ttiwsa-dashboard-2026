@@ -9,7 +9,7 @@ import { EvidenceModal, type EvidenceItem } from "@/components/ui/EvidenceModal"
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { aggregateSymptomsBySA, getUniqueServiceAreas, formatPercent, cn } from "@/lib/utils";
-import { KPI_SIM_LABELS } from "@/lib/constants";
+import { KPI_SIM_LABELS, PS_PI_SERVICE_AREAS } from "@/lib/constants";
 import type { Ticket, KPISimulation, SaldoPspiTicket, UnspecTicket, SymptomBySA } from "@/types/dashboard";
 import { CheckCircle2, AlertCircle, ChevronRight, ArrowLeft, Search } from "lucide-react";
 import Link from "next/link";
@@ -27,7 +27,20 @@ interface KpiAnalysisProps {
 export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTickets = [], unspecTickets = [] }: KpiAnalysisProps) {
   const router = useRouter();
   const { isLoggedIn } = useAuth();
-  const uniqueSAs = useMemo(() => getUniqueServiceAreas(tickets), [tickets]);
+  const uniqueSAs = useMemo(() => {
+    const set = new Set<string>(PS_PI_SERVICE_AREAS);
+    getUniqueServiceAreas(tickets).forEach((sa) => {
+      if (sa && sa !== "BRANCH BOGOR" && sa !== "BOGOR (Include Banten)") set.add(sa);
+    });
+    saldoPspiTickets.forEach((t) => {
+      if (t.SA && t.SA !== "BRANCH BOGOR") set.add(t.SA);
+    });
+    unspecTickets.forEach((t) => {
+      if (t.SA && t.SA !== "BRANCH BOGOR") set.add(t.SA);
+    });
+    return Array.from(set).sort();
+  }, [tickets, saldoPspiTickets, unspecTickets]);
+
   const [selectedSA, setSelectedSA] = useState<string>("BRANCH BOGOR");
   const [selectedKpiCard, setSelectedKpiCard] = useState<string | null>(null);
 
@@ -1057,8 +1070,27 @@ export function KpiAnalysis({ tickets, kpiSimulation, branchBogor, saldoPspiTick
                     </>
                   )}
                   {symptomTab === "pspi" && (
-                    <Badge variant="info">Total: {pspiTotal}</Badge>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-1.5 shadow-sm">
+                        <span className="text-xs font-semibold text-foreground-muted whitespace-nowrap">Filter SA:</span>
+                        <select
+                          id="pspi-sa-filter-dropdown"
+                          value={selectedSA}
+                          onChange={(e) => setSelectedSA(e.target.value)}
+                          className="bg-transparent text-xs font-bold text-foreground focus:outline-none cursor-pointer border-none p-0 pr-1"
+                        >
+                          <option value="BRANCH BOGOR">BRANCH BOGOR (ALL SA)</option>
+                          {uniqueSAs.map((sa) => (
+                            <option key={sa} value={sa}>
+                              {sa}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <Badge variant="info">Total: {pspiTotal}</Badge>
+                    </div>
                   )}
+
                   {symptomTab === "unspec" && (
                     <Badge variant="info">Total: {unspecTotal}</Badge>
                   )}
