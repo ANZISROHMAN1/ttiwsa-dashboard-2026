@@ -9,6 +9,9 @@ export const REPORT_IH_EASTERN_API_URL = process.env.API_BARU_REPORT_IH_EASTERN 
 export const REPORT_ALL_EASTERN_API_URL = process.env.API_BARU_REPORT_ALL_EASTERN || "";
 export const EBIS_API_URL = process.env.EBIS_API || "";
 export const DATIN_API_URL = process.env.DATIN_API || "";
+export const REPORT_IH_TREND_API_URL = process.env.API_IH_TIGABULAN || "";
+export const REPORT_EBIS_TREND_API_URL = process.env.API_IB_TIGABULAN || "";
+export const REPORT_EBIS_ASSURANCE_API_URL = process.env.API_ASS_EBIS || "";
 
 /** Auto-refresh interval in milliseconds (5 minutes) */
 export const REFRESH_INTERVAL_MS = 5 * 60 * 1000;

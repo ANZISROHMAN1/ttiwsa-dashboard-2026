@@ -58,11 +58,36 @@ export interface ServiceAreaData {
 /** Level 1: District with child Service Areas */
 export interface DistrictData {
   district: string;
+  districtSummary: MetricSet;
   serviceAreas: ServiceAreaData[];
 }
 
 /** The full API response is an array of districts */
 export type ReportIHEasternResponse = DistrictData[];
+
+// ─── Monthly Trend Types (API_IH_TIGABULAN) ────────────────────────────────
+
+/** Monthly values per STO: { "BOO": 99.16, "CJU": "", ... } */
+export type MonthlySTOValues = Record<string, number | string>;
+
+/** Monthly data for a single parameter / district in simple trend (EBIS): { "Jan '26": { STO values }, ... } */
+export type MonthlyTrendDistrict = Record<string, MonthlySTOValues>;
+
+/** Full simple trend API response: { "Trend Bogor-Sukabumi": { months... }, ... } */
+export type MonthlyTrendResponse = Record<string, MonthlyTrendDistrict>;
+
+/** Parameter-grouped trend district (API_IH_TIGABULAN): { "sa": { "Jan '26": { STO values } }, "asgar": { ... } } */
+export type IHTrendDistrict = Record<string, MonthlyTrendDistrict>;
+
+/** Full IH trend API response: { "Trend Bogor-Sukabumi": { "sa": { months... } }, ... } */
+export type IHTrendResponse = Record<string, IHTrendDistrict>;
+
+/** Mapping from trend API district keys to report district names */
+export const TREND_DISTRICT_MAP: Record<string, string> = {
+  "Trend Bogor-Sukabumi": "BOGOR - SUKABUMI",
+  "Trend Bekasi": "BEKASI",
+  "Trend Karawang": "KARAWANG",
+};
 
 // ─── Metric display config ──────────────────────────────────────────────────
 
@@ -72,18 +97,19 @@ export interface MetricConfig {
   key: MetricKey;
   label: string;
   shortLabel: string;
+  trendKey?: string;
 }
 
 export const METRIC_CONFIGS: MetricConfig[] = [
-  { key: "serviceAvailability", label: "Service Availability", shortLabel: "SA" },
-  { key: "assuranceGuarantee", label: "Assurance Guarantee", shortLabel: "ASGAR" },
-  { key: "ttrCompDiamond3Jam", label: "TTR Diamond 3h", shortLabel: "Diamond" },
-  { key: "ttrCompPlatinum6Jam", label: "TTR Platinum 6h", shortLabel: "Platinum" },
-  { key: "ttrCompManja3Jam", label: "TTR Manja 3h", shortLabel: "Manja" },
-  { key: "ttr36Jam", label: "TTR 36 Jam", shortLabel: "TTR 36" },
-  { key: "tti3x24Jam", label: "TTI 3x24 Jam", shortLabel: "TTI 3x24" },
-  { key: "ffg", label: "Fulfillment Guarantee", shortLabel: "FFG" },
-  { key: "ttrFfg", label: "TTR Fulfillment Guarantee", shortLabel: "TTR FFG" },
+  { key: "serviceAvailability", label: "Service Availability", shortLabel: "SA", trendKey: "sa" },
+  { key: "assuranceGuarantee", label: "Assurance Guarantee", shortLabel: "ASGAR", trendKey: "asgar" },
+  { key: "ttrCompDiamond3Jam", label: "TTR Diamond 3h", shortLabel: "Diamond", trendKey: "ttr3jD" },
+  { key: "ttrCompPlatinum6Jam", label: "TTR Platinum 6h", shortLabel: "Platinum", trendKey: "ttr6jP" },
+  { key: "ttrCompManja3Jam", label: "TTR Manja 3h", shortLabel: "Manja", trendKey: "ttr3jManja" },
+  { key: "ttr36Jam", label: "TTR 36 Jam", shortLabel: "TTR 36", trendKey: "ttr36j" },
+  { key: "tti3x24Jam", label: "TTI 3x24 Jam", shortLabel: "TTI 3x24", trendKey: "tti3x24Jam" },
+  { key: "ffg", label: "Fulfillment Guarantee", shortLabel: "FFG", trendKey: "ffg" },
+  { key: "ttrFfg", label: "TTR Fulfillment Guarantee", shortLabel: "TTR FFG", trendKey: "ttrFfg" },
 ];
 
 export const WSA_TARGETS: Record<keyof MetricSet, number> = {

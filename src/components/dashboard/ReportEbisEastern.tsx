@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Fragment, useRef } from "react";
+import { useState, useMemo, Fragment, useRef } from "react";
 import { cn } from "@/lib/utils";
 import type {
   DistrictData,
@@ -8,37 +8,60 @@ import type {
   MetricSet,
   MetricData,
   MetricKey,
+  IHTrendResponse,
 } from "@/types/report-ih-eastern";
-import { getTrendColor } from "@/types/report-ih-eastern";
+import { getTrendColor, TREND_DISTRICT_MAP } from "@/types/report-ih-eastern";
 
-const EBIS_METRIC_CONFIGS = [
-  { key: "fulfillmentGuarantee", label: "Fulfillment Guarantee", shortLabel: "FFG" },
-  { key: "tti1X24Jam", label: "TTI 1x24 Jam", shortLabel: "TTI 1x24" },
-  { key: "ttrFulfillmentGuarantee3Jam", label: "TTR FFG 3 Jam", shortLabel: "TTR FFG" },
-  { key: "underspecGuarantee", label: "Underspec Guarantee", shortLabel: "Underspec" },
-  { key: "psToPiRatio", label: "PS to PI Ratio", shortLabel: "PS/PI Ratio" },
+export interface EbisMetricConfig {
+  key: string;
+  label: string;
+  shortLabel: string;
+  target: number;
+  isLowerBetter?: boolean;
+  count1?: { key: string; label: string };
+  count2?: { key: string; label: string };
+  trendKey?: string;
+}
+
+const FF_METRIC_CONFIGS: EbisMetricConfig[] = [
+  { key: "fulfillmentGuarantee", label: "Fulfillment Guarantee", shortLabel: "FFG", target: 93.00, count1: { key: "comply", label: "Comply" }, count2: { key: "notCmply", label: "Not Comply" }, trendKey: "ffg" },
+  { key: "tti1X24Jam", label: "TTI 1x24 Jam", shortLabel: "TTI 1x24", target: 93.00, count1: { key: "comply", label: "Comply" }, count2: { key: "notCmply", label: "Not Comply" }, trendKey: "tti1x24Jam" },
+  { key: "ttrFulfillmentGuarantee3Jam", label: "TTR FFG 3 Jam", shortLabel: "TTR FFG", target: 87.00, count1: { key: "jmlTerukur", label: "Jml Terukur" }, count2: { key: "undrspc", label: "Underspec" }, trendKey: "ttrFfg" },
+  { key: "underspecGuarantee", label: "Underspec Guarantee", shortLabel: "Underspec", target: 99.30, count1: { key: "jmlPs", label: "Jml PS" }, count2: { key: "jmlPi", label: "Jml PI" }, trendKey: "underspecGuarantee" },
+  { key: "psToPiRatio", label: "PS to PI Ratio", shortLabel: "PS/PI Ratio", target: 93.00, trendKey: "psToPiRatio" },
 ];
 
-const EBIS_TARGETS: Record<string, number> = {
-  fulfillmentGuarantee: 93.00,
-  tti1X24Jam: 93.00,
-  ttrFulfillmentGuarantee3Jam: 87.00,
-  underspecGuarantee: 99.30,
-  psToPiRatio: 93.00,
-};
+const ASSURANCE_METRIC_CONFIGS: EbisMetricConfig[] = [
+  { key: "qGangguan", label: "Q-Gangguan", shortLabel: "Q-Ggn", target: 2.40, isLowerBetter: true, count1: { key: "tiketGgn", label: "Tiket Ggn" }, count2: { key: "gaul", label: "Gaul" }, trendKey: "qHsi" },
+  { key: "asgarHsi", label: "ASGAR HSI", shortLabel: "ASGAR", target: 91.00, count1: { key: "comply", label: "Comply" }, count2: { key: "notComp", label: "Not Comply" }, trendKey: "asgarHsi" },
+  { key: "ttr24jRegulerIndibiz", label: "TTR 24J Reguler Indibiz", shortLabel: "TTR 24J", target: 91.00, count1: { key: "comply", label: "Comply" }, count2: { key: "notComp", label: "Not Comply" }, trendKey: "ttr24jRegulerIndibiz" },
+];
 
-import { Trophy, Medal, Crown, Target, ThumbsUp, Download } from "lucide-react";
+function isMetricAchieved(realVal: number, config?: EbisMetricConfig | null): boolean {
+  if (isNaN(realVal) || !config) return false;
+  if (config.isLowerBetter) {
+    return realVal <= config.target;
+  }
+  return realVal >= config.target;
+}
+
+import { Trophy, Medal, Crown, Target, ThumbsUp, Download, TrendingUp } from "lucide-react";
 import { toPng } from "html-to-image";
-import { Doughnut } from "react-chartjs-2";
+import { Doughnut, Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   ArcElement,
   Tooltip,
   Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Filler,
 } from "chart.js";
 import { useTheme } from "@/components/ThemeProvider";
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler);
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
@@ -71,24 +94,23 @@ function TrendIcon({ trend }: { trend: string }) {
 function MetricPill({
   label,
   metric,
-  metricKey,
+  config,
 }: {
   label: string;
   metric: MetricData;
-  metricKey: keyof MetricSet;
+  config: EbisMetricConfig;
 }) {
   if (!metric) return null;
 
-  const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real).replace(',', '.'));
-  const target = EBIS_TARGETS[metricKey] || 0;
-  const isAchieved = !isNaN(realVal) && realVal >= target;
+  const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real ?? "").replace(',', '.'));
+  const isAchieved = isMetricAchieved(realVal, config);
 
   const realDisplay =
     typeof metric.real === "number"
       ? metric.real % 1 === 0
         ? `${metric.real}%`
         : `${metric.real.toFixed(2)}%`
-      : `${metric.real}%`;
+      : metric.real != null && metric.real !== "" ? `${metric.real}%` : "-";
 
   return (
     <div
@@ -102,7 +124,7 @@ function MetricPill({
         {label}
       </span>
       <div className="flex items-center gap-1.5">
-        <TrendIcon trend={metric.trend} />
+        <TrendIcon trend={metric.trend ?? ""} />
         <span className={cn("text-sm font-bold tabular-nums", isAchieved ? "text-emerald-500" : "text-rose-500")}>
           {realDisplay}
         </span>
@@ -112,7 +134,7 @@ function MetricPill({
 }
 
 /** Metric cell inside the STO table */
-function MetricCell({ metric, metricKey }: { metric: MetricData; metricKey: keyof MetricSet }) {
+function MetricCell({ metric, config }: { metric: MetricData; config: EbisMetricConfig }) {
   if (!metric) {
     return (
       <td className="px-3 py-3 whitespace-nowrap text-center text-foreground-muted text-sm">
@@ -121,26 +143,31 @@ function MetricCell({ metric, metricKey }: { metric: MetricData; metricKey: keyo
     );
   }
 
-  const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real).replace(',', '.'));
-  const target = EBIS_TARGETS[metricKey] || 0;
-  const isAchieved = !isNaN(realVal) && realVal >= target;
+  const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real ?? "").replace(',', '.'));
+  const isAchieved = isMetricAchieved(realVal, config);
 
   const realDisplay =
     typeof metric.real === "number"
       ? metric.real % 1 === 0
         ? `${metric.real}%`
         : `${metric.real.toFixed(2)}%`
-      : `${metric.real}%`;
+      : metric.real != null && metric.real !== "" ? `${metric.real}%` : "-";
 
+  const anyMetric = metric as any;
   const hasDetail =
-    metric.comply !== undefined || metric.notComply !== undefined;
+    anyMetric.comply !== undefined || anyMetric.notComply !== undefined || anyMetric.notComp !== undefined || anyMetric.notCmply !== undefined || anyMetric.tiketGgn !== undefined || anyMetric.undrspc !== undefined || anyMetric.jmlTerukur !== undefined || anyMetric.jmlPs !== undefined || anyMetric.jmlPi !== undefined;
 
   return (
     <td className="px-3 py-3 whitespace-nowrap">
       <div className="flex flex-col items-center gap-0.5 group relative">
         <div className="flex items-center gap-1.5">
-          <TrendIcon trend={metric.trend} />
-          <span className={cn("text-sm font-semibold tabular-nums", isAchieved ? "text-emerald-500" : "text-rose-500")}>
+          <TrendIcon trend={metric.trend ?? ""} />
+          <span
+            className={cn(
+              "text-sm font-semibold tabular-nums",
+              isAchieved ? "text-emerald-500" : "text-rose-500"
+            )}
+          >
             {realDisplay}
           </span>
         </div>
@@ -148,63 +175,87 @@ function MetricCell({ metric, metricKey }: { metric: MetricData; metricKey: keyo
         {hasDetail && (
           <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-30 pointer-events-none">
             <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl p-3 text-xs whitespace-nowrap space-y-1">
-              {metric.comply !== undefined && (
+              {anyMetric.comply !== undefined && (
                 <div>
                   <span className="text-foreground-muted">Comply:</span>{" "}
-                  <span className="font-semibold text-foreground">
-                    {metric.comply}
-                  </span>
+                  <span className="font-semibold text-foreground">{anyMetric.comply}</span>
                 </div>
               )}
-              {metric.notComply !== undefined && (
+              {(anyMetric.notComply !== undefined || anyMetric.notComp !== undefined || anyMetric.notCmply !== undefined) && (
                 <div>
                   <span className="text-foreground-muted">Not Comply:</span>{" "}
                   <span className="font-semibold text-rose-400">
-                    {metric.notComply}
+                    {anyMetric.notComply ?? anyMetric.notComp ?? anyMetric.notCmply}
                   </span>
                 </div>
               )}
-              {metric.tiketGgn !== undefined && (
+              {anyMetric.tiketGgn !== undefined && (
                 <div>
                   <span className="text-foreground-muted">Tiket Ggn:</span>{" "}
-                  <span className="font-semibold text-foreground">
-                    {metric.tiketGgn}
-                  </span>
+                  <span className="font-semibold text-foreground">{anyMetric.tiketGgn}</span>
                 </div>
               )}
-              {metric.thresholdNc !== undefined && (
+              {anyMetric.gaul !== undefined && (
+                <div>
+                  <span className="text-foreground-muted">Gaul:</span>{" "}
+                  <span className="font-semibold text-rose-400">{anyMetric.gaul}</span>
+                </div>
+              )}
+              {anyMetric.jmlTerukur !== undefined && (
+                <div>
+                  <span className="text-foreground-muted">Jml Terukur:</span>{" "}
+                  <span className="font-semibold text-foreground">{anyMetric.jmlTerukur}</span>
+                </div>
+              )}
+              {anyMetric.undrspc !== undefined && (
+                <div>
+                  <span className="text-foreground-muted">Underspec:</span>{" "}
+                  <span className="font-semibold text-rose-400">{anyMetric.undrspc}</span>
+                </div>
+              )}
+              {anyMetric.jmlPs !== undefined && (
+                <div>
+                  <span className="text-foreground-muted">Jml PS:</span>{" "}
+                  <span className="font-semibold text-foreground">{anyMetric.jmlPs}</span>
+                </div>
+              )}
+              {anyMetric.jmlPi !== undefined && (
+                <div>
+                  <span className="text-foreground-muted">Jml PI:</span>{" "}
+                  <span className="font-semibold text-foreground">{anyMetric.jmlPi}</span>
+                </div>
+              )}
+              {anyMetric.thresholdNc !== undefined && (
                 <div>
                   <span className="text-foreground-muted">Threshold NC:</span>{" "}
-                  <span className="font-semibold text-foreground">
-                    {metric.thresholdNc}
-                  </span>
+                  <span className="font-semibold text-foreground">{anyMetric.thresholdNc}</span>
                 </div>
               )}
-              {metric.dev !== undefined && (
+              {anyMetric.dev !== undefined && (
                 <div>
                   <span className="text-foreground-muted">Dev:</span>{" "}
                   <span
                     className={cn(
                       "font-semibold",
-                      metric.dev > 0
+                      anyMetric.dev > 0
                         ? "text-emerald-400"
-                        : metric.dev < 0
+                        : anyMetric.dev < 0
                         ? "text-rose-400"
                         : "text-foreground"
                     )}
                   >
-                    {metric.dev > 0 ? `+${metric.dev}` : metric.dev}
+                    {anyMetric.dev > 0 ? `+${anyMetric.dev}` : anyMetric.dev}
                   </span>
                 </div>
               )}
-              <div className="border-t border-[var(--border)] pt-1 mt-1">
-                <span className="text-foreground-muted">H-1:</span>{" "}
-                <span className="font-semibold text-foreground">
-                  {typeof metric.h1 === "number"
-                    ? `${metric.h1.toFixed(2)}%`
-                    : metric.h1}
-                </span>
-              </div>
+              {anyMetric.h1 !== undefined && (
+                <div className="border-t border-[var(--border)] pt-1 mt-1">
+                  <span className="text-foreground-muted">H-1:</span>{" "}
+                  <span className="font-semibold text-foreground">
+                    {typeof anyMetric.h1 === "number" ? `${anyMetric.h1.toFixed(2)}%` : anyMetric.h1 ?? "-"}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -214,18 +265,17 @@ function MetricCell({ metric, metricKey }: { metric: MetricData; metricKey: keyo
 }
 
 /** Expandable Service Area card */
-function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
+function ServiceAreaCard({ sa, configs }: { sa: ServiceAreaData; configs: EbisMetricConfig[] }) {
   const [expanded, setExpanded] = useState(false);
 
   // Count how many metrics achieved their target for the SA summary
-  const targetCounts = EBIS_METRIC_CONFIGS.reduce(
+  const targetCounts = configs.reduce(
     (acc, mc) => {
       const metric = (sa.summary as any)[mc.key];
       if (!metric) return acc;
-      const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real).replace(',', '.'));
-      const target = EBIS_TARGETS[mc.key] || 0;
+      const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real ?? "").replace(',', '.'));
       if (!isNaN(realVal)) {
-        if (realVal >= target) acc.achieved++;
+        if (isMetricAchieved(realVal, mc)) acc.achieved++;
         else acc.notAchieved++;
       }
       return acc;
@@ -290,12 +340,12 @@ function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
       {/* SA Summary Metrics Row */}
       <div className="px-5 pb-4">
         <div className="flex flex-wrap gap-2">
-          {EBIS_METRIC_CONFIGS.map((mc) => (
+          {configs.map((mc) => (
             <MetricPill
               key={mc.key}
               label={mc.shortLabel}
               metric={(sa.summary as any)[mc.key]}
-              metricKey={mc.key as any}
+              config={mc}
             />
           ))}
         </div>
@@ -311,7 +361,7 @@ function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
                   <th className="px-4 py-3 font-semibold whitespace-nowrap sticky left-0 bg-[var(--surface-hover)] z-10">
                     STO
                   </th>
-                  {EBIS_METRIC_CONFIGS.map((mc) => (
+                  {configs.map((mc) => (
                     <th
                       key={mc.key}
                       className="px-3 py-3 font-semibold whitespace-nowrap text-center"
@@ -332,11 +382,11 @@ function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
                         {sto.sto}
                       </span>
                     </td>
-                    {EBIS_METRIC_CONFIGS.map((mc) => (
+                    {configs.map((mc) => (
                       <MetricCell
                         key={mc.key}
                         metric={(sto as any)[mc.key] as MetricData}
-                        metricKey={mc.key as any}
+                        config={mc}
                       />
                     ))}
                   </tr>
@@ -350,16 +400,319 @@ function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
   );
 }
 
+// ─── Monthly Trend Sub-component ────────────────────────────────────────────
+
+interface MonthlyEbisTrendSectionProps {
+  districtName: string;
+  trendData: IHTrendResponse | null;
+  districtServiceAreas: ServiceAreaData[];
+  configs: EbisMetricConfig[];
+  mode: "FF" | "ASSURANCE";
+}
+
+const TREND_COLORS = [
+  "rgba(16, 185, 129, 1)",   // emerald
+  "rgba(59, 130, 246, 1)",   // blue
+  "rgba(245, 158, 11, 1)",   // amber
+  "rgba(239, 68, 68, 1)",    // red
+  "rgba(168, 85, 247, 1)",   // purple
+  "rgba(249, 115, 22, 1)",   // orange
+  "rgba(20, 184, 166, 1)",   // teal
+  "rgba(236, 72, 153, 1)",   // pink
+  "rgba(99, 102, 241, 1)",   // indigo
+  "rgba(34, 197, 94, 1)",    // green
+];
+
+function MonthlyEbisTrendSection({ districtName, trendData, districtServiceAreas, configs, mode }: MonthlyEbisTrendSectionProps) {
+  const { theme } = useTheme();
+  const [selectedSA, setSelectedSA] = useState<string>("ALL");
+  const [selectedParam, setSelectedParam] = useState<string>("");
+  const [showChart, setShowChart] = useState(true);
+
+  // Automatically find active metric config (or reset when switching FF/Assurance modes)
+  const activeConfig = useMemo(() => {
+    return configs.find((mc) => mc.trendKey === selectedParam) || configs[0] || null;
+  }, [configs, selectedParam]);
+
+  const activeTrendKey = activeConfig?.trendKey || "";
+
+  const trendKey = useMemo(() => {
+    if (!trendData) return null;
+    const entry = Object.entries(TREND_DISTRICT_MAP).find(([, v]) => v === districtName);
+    return entry ? entry[0] : null;
+  }, [trendData, districtName]);
+
+  const trendDistrictData = trendData && trendKey ? trendData[trendKey] : null;
+  if (!trendDistrictData) return null;
+
+  const paramData = trendDistrictData[activeTrendKey] || null;
+
+  const allMonths = paramData ? Object.keys(paramData) : [];
+  const months = allMonths.filter((m) => {
+    const vals = Object.values(paramData?.[m] || {});
+    return vals.some((v) => v !== "" && v !== null && v !== undefined);
+  });
+
+  const stoToSA: Record<string, string> = {};
+  districtServiceAreas.forEach((sa) => {
+    sa.stos?.forEach((sto) => {
+      stoToSA[sto.sto] = sa.serviceArea;
+    });
+  });
+
+  const allSTOs = paramData && months.length > 0 ? Object.keys(paramData[months[0]] || {}) : [];
+  const filteredSTOs = selectedSA === "ALL"
+    ? allSTOs
+    : allSTOs.filter((sto) => stoToSA[sto] === selectedSA);
+
+  const saOptions = [...new Set(Object.values(stoToSA))].sort();
+
+  // Calculate dynamic suggested Y-axis range
+  const targetValue = activeConfig?.target || 90;
+  const isLowerBetter = activeConfig?.isLowerBetter || false;
+  const allNumericValues: number[] = [];
+  months.forEach((m) => {
+    filteredSTOs.forEach((sto) => {
+      const val = paramData?.[m]?.[sto];
+      if (typeof val === "number" && !isNaN(val)) {
+        allNumericValues.push(val);
+      }
+    });
+  });
+
+  const minVal = allNumericValues.length > 0 ? Math.min(...allNumericValues, targetValue) : (isLowerBetter ? 0 : 85);
+  const maxVal = allNumericValues.length > 0 ? Math.max(...allNumericValues, targetValue) : (isLowerBetter ? 10 : 101);
+  const spread = Math.max(isLowerBetter ? 1 : 2, maxVal - minVal);
+  const yMin = Math.floor(Math.max(0, minVal - spread * 0.15));
+  const yMax = Math.ceil(maxVal + spread * 0.1);
+
+  const chartData = {
+    labels: months,
+    datasets: filteredSTOs.map((sto, idx) => {
+      const color = TREND_COLORS[idx % TREND_COLORS.length];
+      return {
+        label: sto,
+        data: months.map((m) => {
+          const val = paramData?.[m]?.[sto];
+          return typeof val === "number" ? val : null;
+        }),
+        borderColor: color,
+        backgroundColor: color.replace(", 1)", ", 0.1)"),
+        borderWidth: 1.5,
+        pointRadius: 2,
+        pointHoverRadius: 5,
+        tension: 0.3,
+        spanGaps: true,
+      };
+    }),
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: "index" as const,
+      intersect: false,
+    },
+    plugins: {
+      legend: {
+        display: filteredSTOs.length <= 15,
+        position: "top" as const,
+        labels: {
+          color: theme === "dark" ? "rgba(255,255,255,0.7)" : "#475569",
+          font: { size: 10 },
+          boxWidth: 8,
+          usePointStyle: true,
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(15, 23, 42, 0.95)",
+        titleColor: "#fff",
+        bodyColor: "#fff",
+        borderColor: "rgba(255,255,255,0.1)",
+        borderWidth: 1,
+        padding: 10,
+        callbacks: {
+          label: (context: any) => ` ${context.dataset.label}: ${context.raw != null ? context.raw + '%' : 'N/A'}`,
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: theme === "dark" ? "rgba(255,255,255,0.5)" : "#94a3b8",
+          font: { size: 10 },
+        },
+        grid: {
+          color: theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
+        },
+      },
+      y: {
+        min: yMin,
+        max: yMax,
+        ticks: {
+          color: theme === "dark" ? "rgba(255,255,255,0.5)" : "#94a3b8",
+          font: { size: 10 },
+          callback: (v: any) => v + '%',
+        },
+        grid: {
+          color: theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
+        },
+      },
+    },
+  };
+
+  const getHeatColor = (val: number | string) => {
+    if (typeof val !== "number" || isNaN(val) || !activeConfig) return "";
+    const isAchieved = isMetricAchieved(val, activeConfig);
+    if (isAchieved) return "bg-emerald-500/20 text-emerald-500 font-bold";
+    const margin = activeConfig.isLowerBetter ? val - activeConfig.target : activeConfig.target - val;
+    if (margin <= (activeConfig.isLowerBetter ? 0.5 : 2)) return "bg-amber-500/15 text-amber-500 font-semibold";
+    return "bg-rose-500/15 text-rose-500 font-semibold";
+  };
+
+  return (
+    <div className="glass-card p-5 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className={cn("w-1 h-5 rounded-full", mode === "FF" ? "bg-blue-500" : "bg-teal-500")} />
+          <h2 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
+            <TrendingUp className={cn("w-4 h-4", mode === "FF" ? "text-blue-400" : "text-teal-400")} />
+            Monthly {mode === "FF" ? "Fulfillment" : "Assurance"} Trend 2026 — {activeConfig?.label}
+          </h2>
+          <span className="text-[10px] text-foreground-muted font-medium">
+            ({districtName})
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedSA}
+            onChange={(e) => setSelectedSA(e.target.value)}
+            className="text-xs bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+          >
+            <option value="ALL">All STOs ({allSTOs.length})</option>
+            {saOptions.map((sa) => (
+              <option key={sa} value={sa}>
+                {sa} ({allSTOs.filter((s) => stoToSA[s] === sa).length})
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => setShowChart((prev) => !prev)}
+            className={cn(
+              "text-xs px-3 py-1.5 rounded-lg border transition-colors font-medium",
+              showChart
+                ? (mode === "FF" ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : "bg-teal-500/10 border-teal-500/30 text-teal-400")
+                : "bg-[var(--surface)] border-[var(--border)] text-foreground-muted hover:text-foreground"
+            )}
+          >
+            {showChart ? "Chart" : "Table"}
+          </button>
+        </div>
+      </div>
+
+      {/* Parameter Selector Pills */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 no-scrollbar border-b border-[var(--border)]">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-foreground-muted mr-1 shrink-0">
+          Parameter:
+        </span>
+        {configs.map((mc) => {
+          if (!mc.trendKey) return null;
+          const isSelected = activeConfig?.key === mc.key;
+          return (
+            <button
+              key={mc.key}
+              onClick={() => setSelectedParam(mc.trendKey || "")}
+              className={cn(
+                "px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 flex items-center gap-1.5 shrink-0 border",
+                isSelected
+                  ? (mode === "FF"
+                      ? "bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/25 scale-[1.02]"
+                      : "bg-teal-600 text-white border-teal-500 shadow-md shadow-teal-500/25 scale-[1.02]")
+                  : "bg-[var(--surface)] border-[var(--border)] text-foreground-muted hover:text-foreground hover:bg-[var(--surface-hover)]"
+              )}
+            >
+              <span>{mc.shortLabel}</span>
+              {mc.target !== undefined && (
+                <span className={cn(
+                  "text-[9px] px-1.5 py-0.5 rounded-md font-mono font-bold leading-none",
+                  isSelected ? "bg-white/20 text-white" : "bg-[var(--surface-hover)] text-foreground-muted"
+                )}>
+                  T: {mc.isLowerBetter ? `≤${mc.target}%` : `≥${mc.target}%`}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {months.length === 0 ? (
+        <div className="py-12 text-center text-foreground-muted text-xs">
+          No monthly trend data recorded yet for {activeConfig?.label || "this parameter"}.
+        </div>
+      ) : showChart ? (
+        <div className="h-[320px] w-full pt-2">
+          <Line data={chartData} options={chartOptions} />
+        </div>
+      ) : (
+        <div className="overflow-x-auto pt-2">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="bg-[var(--surface-hover)] text-foreground-muted">
+                <th className="px-3 py-2.5 text-left font-semibold sticky left-0 z-10 bg-[var(--surface-hover)] min-w-[60px]">STO</th>
+                <th className="px-3 py-2.5 text-left font-semibold sticky left-[60px] z-10 bg-[var(--surface-hover)] min-w-[100px] shadow-[1px_0_0_0_var(--border)]">SA</th>
+                {months.map((m) => (
+                  <th key={m} className="px-2 py-2.5 text-center font-semibold whitespace-nowrap min-w-[65px]">{m}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border)]">
+              {filteredSTOs.map((sto) => (
+                <tr key={sto} className="hover:bg-[var(--surface-hover)]/50 transition-colors">
+                  <td className="px-3 py-2 font-bold text-foreground sticky left-0 z-10 bg-[var(--surface)] min-w-[60px]">{sto}</td>
+                  <td className="px-3 py-2 text-foreground-muted sticky left-[60px] z-10 bg-[var(--surface)] min-w-[100px] shadow-[1px_0_0_0_var(--border)] truncate" title={stoToSA[sto]}>{stoToSA[sto] || '—'}</td>
+                  {months.map((m) => {
+                    const val = paramData?.[m]?.[sto];
+                    const numVal = typeof val === "number" ? val : parseFloat(String(val || "").replace(',', '.'));
+                    const display = !isNaN(numVal) ? `${numVal.toFixed(2)}%` : (val != null && val !== "" ? `${val}%` : "—");
+                    return (
+                      <td
+                        key={m}
+                        className={cn(
+                          "px-2 py-2 text-center tabular-nums transition-colors",
+                          !isNaN(numVal) ? getHeatColor(numVal) : "text-foreground-muted"
+                        )}
+                      >
+                        {display}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 interface ReportEbisEasternProps {
   data: DistrictData[];
+  assuranceData?: DistrictData[] | null;
+  trendData?: IHTrendResponse | null;
 }
 
-export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
+export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbisEasternProps) {
   const { theme } = useTheme();
   const [activeDistrict, setActiveDistrict] = useState(0);
+  const [mode, setMode] = useState<"FF" | "ASSURANCE">("FF");
   const tableRef = useRef<HTMLDivElement>(null);
+
+  const activeData = (mode === "ASSURANCE" ? assuranceData : data) || data;
+  const configs = mode === "ASSURANCE" ? ASSURANCE_METRIC_CONFIGS : FF_METRIC_CONFIGS;
 
   const handleDownloadPNG = async () => {
     if (!tableRef.current) return;
@@ -409,7 +762,7 @@ export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
     }
   };
 
-  const district = data[activeDistrict];
+  const district = activeData[activeDistrict] || activeData[0];
   if (!district) return null;
 
 
@@ -420,14 +773,13 @@ export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
     let thumbsUp = 0;
     const metrics: { label: string; value: number }[] = [];
 
-    EBIS_METRIC_CONFIGS.forEach((mc) => {
+    configs.forEach((mc) => {
       const metric = (sa.summary as any)[mc.key];
       if (!metric) return;
       const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real).replace(',', '.'));
-      const target = EBIS_TARGETS[mc.key] || 0;
 
       if (!isNaN(realVal)) {
-        if (realVal >= target) {
+        if (isMetricAchieved(realVal, mc)) {
           achieved++;
           // Only include in pie chart if it achieved the target (contributed to the score)
           const formattedVal = realVal % 1 === 0 ? realVal : Number(realVal.toFixed(2));
@@ -440,7 +792,7 @@ export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
   }
 
   // 1. Overall Best SA
-  const allSAsWithScores = data.flatMap((d) =>
+  const allSAsWithScores = activeData.flatMap((d) =>
     d.serviceAreas.map((sa) => ({ district: d.district, ...getSaScore(sa) }))
   );
   allSAsWithScores.sort((a, b) => {
@@ -461,13 +813,13 @@ export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
   const districtBestSA = activeDistrictSAs[0];
 
   // 3. Top 3 Districts Overall
-  const districtScores = data.map((d) => {
+  const districtScores = activeData.map((d) => {
     let totalMetrics = 0;
     let totalAchieved = 0;
     d.serviceAreas.forEach((sa) => {
       const score = getSaScore(sa);
       totalAchieved += score.achieved;
-      totalMetrics += EBIS_METRIC_CONFIGS.length;
+      totalMetrics += configs.length;
     });
     const percentage =
       totalMetrics > 0 ? (totalAchieved / totalMetrics) * 100 : 0;
@@ -533,14 +885,14 @@ export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
     0
   );
 
-  const averages = EBIS_METRIC_CONFIGS.map(mc => {
+  const averages = configs.map(mc => {
     const sum = district.serviceAreas.reduce((acc, sa) => {
       const real = (sa.summary as any)[mc.key]?.real || 0;
       return acc + (typeof real === 'number' ? real : parseFloat(String(real).replace(',', '.')) || 0);
     }, 0);
     const avg = district.serviceAreas.length > 0 ? sum / district.serviceAreas.length : 0;
-    const target = EBIS_TARGETS[mc.key] || 0;
-    const diff = avg - target;
+    const target = mc.target;
+    const diff = mc.isLowerBetter ? target - avg : avg - target;
     return { label: mc.shortLabel, avg, target, diff };
   });
 
@@ -721,7 +1073,7 @@ export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
                     <div className="text-[10px] text-foreground-muted font-semibold uppercase tracking-wider mb-1 flex items-center justify-center gap-1.5">
                       <Target className="w-3 h-3 text-blue-400" /> Targets
                     </div>
-                    <div className="text-lg font-bold text-blue-400">{districtBestSA.achieved} <span className="text-[10px] text-foreground-muted">/ {EBIS_METRIC_CONFIGS.length}</span></div>
+                    <div className="text-lg font-bold text-blue-400">{districtBestSA.achieved} <span className="text-[10px] text-foreground-muted">/ {configs.length}</span></div>
                   </div>
                   <div className="bg-[var(--surface)] rounded-lg p-3 border border-[var(--border)] text-center flex flex-col justify-center">
                     <div className="text-[10px] text-foreground-muted font-semibold uppercase tracking-wider mb-1 flex items-center justify-center gap-1.5">
@@ -736,223 +1088,143 @@ export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
         </div>
       </div>
 
-      {/* District Tabs */}
-      <div className="glass-card p-1.5 flex gap-1.5 overflow-x-auto">
-        {data.map((d, idx) => (
+      {/* District Tabs & Assurance / FF Mode Switcher */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        {/* District Selection */}
+        <div className="glass-card p-1.5 flex gap-1.5 overflow-x-auto flex-1 max-w-xl">
+          {activeData.map((d, idx) => (
+            <button
+              key={d.district}
+              onClick={() => setActiveDistrict(idx)}
+              className={cn(
+                "flex-1 min-w-fit px-5 py-3 rounded-lg text-sm font-semibold transition-all duration-200 whitespace-nowrap",
+                activeDistrict === idx
+                  ? "bg-accent-blue text-white shadow-lg shadow-blue-500/20"
+                  : "text-foreground-muted hover:bg-[var(--surface-hover)] hover:text-foreground"
+              )}
+            >
+              {d.district}
+            </button>
+          ))}
+        </div>
+
+        {/* Assurance vs Fulfillment Mode Toggle */}
+        <div className="glass-card p-1.5 flex items-center gap-1.5 self-start md:self-auto shrink-0 shadow-sm">
           <button
-            key={d.district}
-            onClick={() => setActiveDistrict(idx)}
+            onClick={() => setMode("FF")}
             className={cn(
-              "flex-1 min-w-fit px-5 py-3 rounded-lg text-sm font-semibold transition-all duration-200 whitespace-nowrap",
-              activeDistrict === idx
-                ? "bg-accent-blue text-white shadow-lg shadow-blue-500/20"
+              "px-4 py-3 rounded-lg text-xs font-extrabold uppercase tracking-wider transition-all duration-200 flex items-center gap-2",
+              mode === "FF"
+                ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 scale-[1.02]"
                 : "text-foreground-muted hover:bg-[var(--surface-hover)] hover:text-foreground"
             )}
           >
-            {d.district}
+            <span>Fulfillment (FF)</span>
           </button>
-        ))}
+          <button
+            onClick={() => setMode("ASSURANCE")}
+            className={cn(
+              "px-4 py-3 rounded-lg text-xs font-extrabold uppercase tracking-wider transition-all duration-200 flex items-center gap-2",
+              mode === "ASSURANCE"
+                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20 scale-[1.02]"
+                : "text-foreground-muted hover:bg-[var(--surface-hover)] hover:text-foreground"
+            )}
+          >
+            <span>Assurance</span>
+          </button>
+        </div>
       </div>
 
-      {/* ─── District Performance ─────────────────────────────────────── */}
-      {(() => {
-        const sas = district.serviceAreas;
-
-        type EbisCardDef = {
-          uiLabel: string;
-          metricKey: string;
-          target: number;
-          calc: () => number;
-        };
-
-        // Safe number extractor from MetricData (handles untyped fields)
-        const getField = (sa: ServiceAreaData, metricKey: string, field: string): number => {
-          const metric = (sa.summary as any)[metricKey];
-          if (!metric) return 0;
-          const v = metric[field];
-          return typeof v === "number" && !isNaN(v) ? v : (parseFloat(String(v)) || 0);
-        };
-
-        const sumField = (metricKey: string, field: string) =>
-          sas.reduce((acc, sa) => acc + getField(sa, metricKey, field), 0);
-
-        // Safe average of `real` percentages — ignores non-numeric and >100% outliers
-        const avgRealSafe = (metricKey: string) => {
-          let sum = 0;
-          let count = 0;
-          sas.forEach((sa) => {
-            const metric = (sa.summary as any)[metricKey];
-            if (!metric) return;
-            const v = metric.real;
-            const n = typeof v === "number" ? v : parseFloat(String(v).replace(",", "."));
-            if (!isNaN(n) && n >= 0 && n <= 100) { sum += n; count++; }
-          });
-          return count > 0 ? sum / count : 0;
-        };
-
-        const avgH1 = (metricKey: string) => {
-          let sum = 0;
-          let count = 0;
-          sas.forEach((sa) => {
-            const metric = (sa.summary as any)[metricKey];
-            if (!metric) return;
-            const v = metric.h1;
-            if (typeof v === "number" && !isNaN(v)) { sum += v; count++; }
-          });
-          return count > 0 ? sum / count : 0;
-        };
-
-        const cards: EbisCardDef[] = [
-          {
-            uiLabel: "Fulfillment",
-            metricKey: "fulfillmentGuarantee",
-            target: 93.00,
-            calc: () => avgRealSafe("fulfillmentGuarantee"),
-          },
-          {
-            uiLabel: "TTI 1X24",
-            metricKey: "tti1X24Jam",
-            target: 93.00,
-            calc: () => {
-              const c = sumField("fulfillmentGuarantee", "comply") || sumField("tti1X24Jam", "comply");
-              const nc = sumField("fulfillmentGuarantee", "notCmply") || sumField("tti1X24Jam", "notCmply");
-              const total = c + nc;
-              if (total > 0) return (c / total) * 100;
-              return avgRealSafe("tti1X24Jam");
-            },
-          },
-          {
-            uiLabel: "TTR 3 Jam",
-            metricKey: "ttrFulfillmentGuarantee3Jam",
-            target: 87.00,
-            calc: () => {
-              const c = sumField("tti1X24Jam", "comply") || sumField("ttrFulfillmentGuarantee3Jam", "comply");
-              const nc = sumField("tti1X24Jam", "notCmply") || sumField("ttrFulfillmentGuarantee3Jam", "notCmply");
-              const total = c + nc;
-              if (total > 0) return (c / total) * 100;
-              return avgRealSafe("ttrFulfillmentGuarantee3Jam");
-            },
-          },
-          {
-            uiLabel: "Underspec",
-            metricKey: "underspecGuarantee",
-            target: 99.30,
-            calc: () => {
-              const u = sumField("ttrFulfillmentGuarantee3Jam", "undrspc") || sumField("underspecGuarantee", "undrspc");
-              const t = sumField("ttrFulfillmentGuarantee3Jam", "jmlTerukur") || sumField("underspecGuarantee", "jmlTerukur");
-              if (t > 0) return ((t - u) / t) * 100;
-              return avgRealSafe("underspecGuarantee");
-            },
-          },
-          {
-            uiLabel: "PS to PI",
-            metricKey: "psToPiRatio",
-            target: 93.00,
-            calc: () => {
-              const ps = sumField("underspecGuarantee", "jmlPs") || sumField("psToPiRatio", "jmlPs");
-              const pi = sumField("underspecGuarantee", "jmlPi") || sumField("psToPiRatio", "jmlPi");
-              if (pi > 0) return (ps / pi) * 100;
-              return avgRealSafe("psToPiRatio");
-            },
-          },
-        ];
-
-        return (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2.5 px-1">
-              <div className="w-1 h-5 rounded-full bg-accent-blue" />
-              <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">
-                District Performance
-              </h2>
-              <span className="text-[10px] text-foreground-muted font-medium ml-1">
-                — {district.district}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              {cards.map((card) => {
-                const real = card.calc();
-                const h1 = avgH1(card.metricKey);
-                const isAchieved = real >= card.target;
-                const diff = real - h1;
-
-                let trendArrow: string;
-                let trendColorCls: string;
-                if (diff > 0.005) {
-                  trendArrow = "↑";
-                  trendColorCls = "text-emerald-500";
-                } else if (diff < -0.005) {
-                  trendArrow = "↓";
-                  trendColorCls = "text-rose-500";
-                } else {
-                  trendArrow = "=";
-                  trendColorCls = "text-amber-500";
-                }
-
-                return (
-                  <div
-                    key={card.uiLabel}
-                    className={cn(
-                      "relative overflow-hidden rounded-xl border p-4 transition-all duration-200 hover:scale-[1.02] group",
-                      isAchieved
-                        ? "border-emerald-500/25 bg-emerald-500/[0.04]"
-                        : "border-rose-500/25 bg-rose-500/[0.04]"
-                    )}
-                  >
-                    {/* Subtle glow */}
-                    <div
-                      className={cn(
-                        "absolute -top-6 -right-6 w-16 h-16 rounded-full blur-2xl opacity-30 pointer-events-none transition-opacity group-hover:opacity-50",
-                        isAchieved ? "bg-emerald-500" : "bg-rose-500"
-                      )}
-                    />
-
-                    {/* Label + Target badge */}
-                    <div className="flex items-center justify-between mb-2.5 relative z-10">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-foreground-muted leading-none">
-                        {card.uiLabel}
-                      </span>
-                      <span
-                        className={cn(
-                          "text-[9px] font-bold tabular-nums px-1.5 py-0.5 rounded-md leading-none",
-                          isAchieved
-                            ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                            : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
-                        )}
-                      >
-                        T: {card.target.toFixed(2)}%
-                      </span>
-                    </div>
-
-                    {/* Hero number */}
-                    <div className="relative z-10 flex items-baseline gap-1">
-                      <span className="text-[10px] font-medium text-foreground-muted leading-none">=</span>
-                      <span
-                        className={cn(
-                          "text-xl font-extrabold tabular-nums leading-none tracking-tight",
-                          isAchieved ? "text-emerald-500" : "text-rose-500"
-                        )}
-                      >
-                        {real.toFixed(2)}%
-                      </span>
-                    </div>
-
-                    {/* Trend & H-1 */}
-                    <div className="mt-2.5 flex items-center gap-1.5 relative z-10">
-                      <span className={cn("text-xs font-black leading-none", trendColorCls)}>
-                        {trendArrow}
-                      </span>
-                      <span className="text-[10px] text-foreground-muted tabular-nums">
-                        H-1: {h1.toFixed(2)}%
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+      {/* ─── District Performance (from API districtSummary) ────────── */}
+      {district.districtSummary && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2.5 px-1">
+            <div className="w-1 h-5 rounded-full bg-accent-blue" />
+            <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">
+              District Performance ({mode === "FF" ? "Fulfillment" : "Assurance"})
+            </h2>
+            <span className="text-[10px] text-foreground-muted font-medium ml-1">
+              — {district.district}
+            </span>
           </div>
-        );
-      })()}
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {configs.map((card) => {
+              const metric = (district.districtSummary as any)[card.key];
+              if (!metric) return null;
+
+              const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real).replace(',', '.'));
+              const h1Val = typeof metric.h1 === "number" ? metric.h1 : parseFloat(String(metric.h1).replace(',', '.'));
+              const isAchieved = isMetricAchieved(realVal, card);
+
+              const trendColors = getTrendColor(metric.trend);
+              let trendArrow = "=";
+              if (metric.trend === "🟢") trendArrow = "↑";
+              else if (metric.trend === "🔴") trendArrow = "↓";
+
+              return (
+                <div
+                  key={card.key}
+                  className={cn(
+                    "relative overflow-hidden rounded-xl border p-4 transition-all duration-200 hover:scale-[1.02] group",
+                    isAchieved
+                      ? "border-emerald-500/25 bg-emerald-500/[0.04]"
+                      : "border-rose-500/25 bg-rose-500/[0.04]"
+                  )}
+                >
+                  {/* Subtle glow */}
+                  <div
+                    className={cn(
+                      "absolute -top-6 -right-6 w-16 h-16 rounded-full blur-2xl opacity-30 pointer-events-none transition-opacity group-hover:opacity-50",
+                      isAchieved ? "bg-emerald-500" : "bg-rose-500"
+                    )}
+                  />
+
+                  {/* Label + Target badge */}
+                  <div className="flex items-center justify-between mb-2.5 relative z-10">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-foreground-muted leading-none truncate pr-1" title={card.label}>
+                      {card.shortLabel}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-[9px] font-bold tabular-nums px-1.5 py-0.5 rounded-md leading-none shrink-0",
+                        isAchieved
+                          ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                          : "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                      )}
+                    >
+                      T: {card.target.toFixed(2)}%
+                    </span>
+                  </div>
+
+                  {/* Hero number */}
+                  <div className="relative z-10 flex items-baseline gap-1">
+                    <span className="text-[10px] font-medium text-foreground-muted leading-none">=</span>
+                    <span
+                      className={cn(
+                        "text-xl font-extrabold tabular-nums leading-none tracking-tight",
+                        isAchieved ? "text-emerald-500" : "text-rose-500"
+                      )}
+                    >
+                      {!isNaN(realVal) ? `${realVal.toFixed(2)}%` : metric.real != null && metric.real !== "" ? `${metric.real}%` : "-"}
+                    </span>
+                  </div>
+
+                  {/* Trend & H-1 */}
+                  <div className="mt-2.5 flex items-center gap-1.5 relative z-10">
+                    <span className={cn("text-xs font-black leading-none", trendColors.text)}>
+                      {trendArrow}
+                    </span>
+                    <span className="text-[10px] text-foreground-muted tabular-nums">
+                      H-1: {!isNaN(h1Val) ? `${h1Val.toFixed(2)}%` : metric.h1 != null && metric.h1 !== "" ? `${metric.h1}%` : "-"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1019,14 +1291,25 @@ export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
       {/* Service Area Cards */}
       <div className="space-y-4">
         {district.serviceAreas.map((sa) => (
-          <ServiceAreaCard key={sa.serviceArea} sa={sa} />
+          <ServiceAreaCard key={sa.serviceArea} sa={sa} configs={configs} />
         ))}
       </div>
+
+      {/* Monthly EBIS Trend (now supports both Fulfillment & Assurance modes!) */}
+      <MonthlyEbisTrendSection
+        districtName={district.district}
+        trendData={trendData || null}
+        districtServiceAreas={district.serviceAreas}
+        configs={configs}
+        mode={mode}
+      />
 
       {/* Raw Data Table */}
       <div className="glass-card p-5 mt-10" ref={tableRef}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-foreground">Raw Data Table</h3>
+          <h3 className="text-lg font-bold text-foreground">
+            Raw Data Table ({mode === "FF" ? "Fulfillment" : "Assurance"})
+          </h3>
           <button
             onClick={handleDownloadPNG}
             className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 hover:text-blue-300 transition-colors border border-blue-500/20"
@@ -1041,21 +1324,21 @@ export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
               <tr>
                 <th className="px-4 py-3 font-semibold sticky left-0 z-20 bg-[var(--surface-hover)] min-w-[150px] max-w-[150px]">Service Area</th>
                 <th className="px-4 py-3 font-semibold sticky left-[150px] z-20 bg-[var(--surface-hover)] min-w-[80px] max-w-[80px] shadow-[1px_0_0_0_var(--border)]">STO</th>
-                {EBIS_METRIC_CONFIGS.map((mc, idx) => (
-                  <th key={mc.key} className={cn("px-4 py-3 font-semibold text-center", idx !== 0 && "border-l-2 border-[var(--border)]")} colSpan={6}>{mc.shortLabel}</th>
+                {configs.map((mc, idx) => (
+                  <th key={mc.key} className={cn("px-4 py-3 font-semibold text-center", idx !== 0 && "border-l-2 border-[var(--border)]")} colSpan={mc.count1 && mc.count2 ? 6 : 4}>{mc.shortLabel}</th>
                 ))}
               </tr>
               <tr className="border-b border-[var(--border)] text-xs text-foreground-muted bg-[var(--surface-hover)]/30">
                 <th className="px-4 py-2 sticky left-0 z-20 bg-[var(--surface-hover)] min-w-[150px] max-w-[150px]"></th>
                 <th className="px-4 py-2 sticky left-[150px] z-20 bg-[var(--surface-hover)] min-w-[80px] max-w-[80px] shadow-[1px_0_0_0_var(--border)]"></th>
-                {EBIS_METRIC_CONFIGS.map((mc, idx) => (
+                {configs.map((mc, idx) => (
                   <Fragment key={mc.key}>
                     <th className={cn("px-4 py-2 text-center", idx !== 0 && "border-l-2 border-[var(--border)]")}>Real</th>
                     <th className="px-4 py-2 text-center border-l border-[var(--border)]/30">Target</th>
                     <th className="px-4 py-2 text-center border-l border-[var(--border)]/30">Ach</th>
                     <th className="px-4 py-2 text-center border-l border-[var(--border)]/30">Trend</th>
-                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/30">Comply</th>
-                    <th className="px-4 py-2 text-center border-l border-[var(--border)]/30">Not Comply</th>
+                    {mc.count1 && <th className="px-4 py-2 text-center border-l border-[var(--border)]/30">{mc.count1.label}</th>}
+                    {mc.count2 && <th className="px-4 py-2 text-center border-l border-[var(--border)]/30">{mc.count2.label}</th>}
                   </Fragment>
                 ))}
               </tr>
@@ -1066,9 +1349,11 @@ export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
                   <tr key={sto.sto} className="group hover:bg-[var(--surface-hover)]/50 transition-colors">
                     <td className="px-4 py-2 sticky left-0 z-10 bg-[var(--surface)] group-hover:bg-[var(--surface-hover)] transition-colors min-w-[150px] max-w-[150px] truncate" title={sa.serviceArea}>{sa.serviceArea}</td>
                     <td className="px-4 py-2 font-medium sticky left-[150px] z-10 bg-[var(--surface)] group-hover:bg-[var(--surface-hover)] transition-colors min-w-[80px] max-w-[80px] shadow-[1px_0_0_0_var(--border)]">{sto.sto}</td>
-                    {EBIS_METRIC_CONFIGS.map((mc, idx) => {
+                    {configs.map((mc, idx) => {
                       const m = (sto as any)[mc.key];
-                      const target = EBIS_TARGETS[mc.key];
+                      const target = mc.target;
+                      const count1Val = mc.count1 ? m?.[mc.count1.key] : undefined;
+                      const count2Val = mc.count2 ? m?.[mc.count2.key] : undefined;
                       return (
                         <Fragment key={mc.key}>
                           <td className={cn("px-4 py-2 text-center", idx !== 0 && "border-l-2 border-[var(--border)]")}>
@@ -1079,8 +1364,8 @@ export function ReportEbisEastern({ data }: ReportEbisEasternProps) {
                             {typeof m?.ach === 'number' ? (m.ach * 100).toFixed(2) + '%' : (m?.ach ?? '-')}
                           </td>
                           <td className="px-4 py-2 text-center border-l border-[var(--border)]/30">{m?.trend ?? '-'}</td>
-                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/30">{m?.comply ?? '-'}</td>
-                          <td className="px-4 py-2 text-center border-l border-[var(--border)]/30">{m?.notCmply ?? '-'}</td>
+                          {mc.count1 && <td className="px-4 py-2 text-center border-l border-[var(--border)]/30">{count1Val ?? '-'}</td>}
+                          {mc.count2 && <td className="px-4 py-2 text-center border-l border-[var(--border)]/30">{count2Val ?? '-'}</td>}
                         </Fragment>
                       )
                     })}

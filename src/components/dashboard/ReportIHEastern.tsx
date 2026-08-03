@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Fragment, useRef } from "react";
+import { useState, useMemo, Fragment, useRef } from "react";
 import { cn } from "@/lib/utils";
 import type {
   DistrictData,
@@ -8,21 +8,27 @@ import type {
   MetricSet,
   MetricData,
   MetricKey,
+  IHTrendResponse,
 } from "@/types/report-ih-eastern";
-import { METRIC_CONFIGS, getTrendColor, WSA_TARGETS } from "@/types/report-ih-eastern";
+import { METRIC_CONFIGS, getTrendColor, WSA_TARGETS, TREND_DISTRICT_MAP } from "@/types/report-ih-eastern";
 
-import { Trophy, Medal, Crown, Target, ThumbsUp, Download } from "lucide-react";
+import { Trophy, Medal, Crown, Target, ThumbsUp, Download, TrendingUp } from "lucide-react";
 import { toPng } from "html-to-image";
-import { Doughnut } from "react-chartjs-2";
+import { Doughnut, Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   ArcElement,
   Tooltip,
   Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Filler,
 } from "chart.js";
 import { useTheme } from "@/components/ThemeProvider";
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler);
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
@@ -324,13 +330,304 @@ function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
   );
 }
 
+// ─── Monthly Trend Sub-component ────────────────────────────────────────────
+
+interface MonthlyTrendSectionProps {
+  districtName: string;
+  trendData: IHTrendResponse | null;
+  districtServiceAreas: ServiceAreaData[];
+}
+
+const TREND_COLORS = [
+  "rgba(16, 185, 129, 1)",   // emerald
+  "rgba(59, 130, 246, 1)",   // blue
+  "rgba(245, 158, 11, 1)",   // amber
+  "rgba(239, 68, 68, 1)",    // red
+  "rgba(168, 85, 247, 1)",   // purple
+  "rgba(249, 115, 22, 1)",   // orange
+  "rgba(20, 184, 166, 1)",   // teal
+  "rgba(236, 72, 153, 1)",   // pink
+  "rgba(99, 102, 241, 1)",   // indigo
+  "rgba(34, 197, 94, 1)",    // green
+];
+
+function MonthlyTrendSection({ districtName, trendData, districtServiceAreas }: MonthlyTrendSectionProps) {
+  const { theme } = useTheme();
+  const [selectedSA, setSelectedSA] = useState<string>("ALL");
+  const [selectedParam, setSelectedParam] = useState<string>("sa");
+  const [showChart, setShowChart] = useState(true);
+
+  // Find the matching trend district key
+  const trendKey = useMemo(() => {
+    if (!trendData) return null;
+    const entry = Object.entries(TREND_DISTRICT_MAP).find(([, v]) => v === districtName);
+    return entry ? entry[0] : null;
+  }, [trendData, districtName]);
+
+  const trendDistrictData = trendData && trendKey ? trendData[trendKey] : null;
+  if (!trendDistrictData) return null;
+
+  const paramData = trendDistrictData[selectedParam] || null;
+  const activeConfig = METRIC_CONFIGS.find((mc) => mc.trendKey === selectedParam) || METRIC_CONFIGS[0];
+  const targetValue = WSA_TARGETS[activeConfig.key] || 95;
+
+  // Get months and filter out empty future months
+  const allMonths = paramData ? Object.keys(paramData) : [];
+  const months = allMonths.filter((m) => {
+    const vals = Object.values(paramData?.[m] || {});
+    return vals.some((v) => v !== "" && v !== null && v !== undefined);
+  });
+
+  // Build STO -> SA mapping from the report data
+  const stoToSA: Record<string, string> = {};
+  districtServiceAreas.forEach((sa) => {
+    sa.stos.forEach((sto) => {
+      stoToSA[sto.sto] = sa.serviceArea;
+    });
+  });
+
+  // Get STOs to display (all or filtered by SA)
+  const allSTOs = paramData && months.length > 0 ? Object.keys(paramData[months[0]] || {}) : [];
+  const filteredSTOs = selectedSA === "ALL"
+    ? allSTOs
+    : allSTOs.filter((sto) => stoToSA[sto] === selectedSA);
+
+  // SA options for filter
+  const saOptions = [...new Set(Object.values(stoToSA))].sort();
+
+  // Calculate suggested y-axis range based on active metric values and target
+  const allNumericValues: number[] = [];
+  months.forEach((m) => {
+    filteredSTOs.forEach((sto) => {
+      const val = paramData?.[m]?.[sto];
+      if (typeof val === "number" && !isNaN(val)) {
+        allNumericValues.push(val);
+      }
+    });
+  });
+
+  const minVal = allNumericValues.length > 0 ? Math.min(...allNumericValues, targetValue) : 90;
+  const maxVal = allNumericValues.length > 0 ? Math.max(...allNumericValues, targetValue) : 101;
+  const yMin = Math.floor(Math.max(0, minVal - Math.max(2, (maxVal - minVal) * 0.1)));
+  const yMax = Math.ceil(Math.min(105, maxVal + Math.max(1, (maxVal - minVal) * 0.05)));
+
+  // Chart data for line chart
+  const chartData = {
+    labels: months,
+    datasets: filteredSTOs.map((sto, idx) => {
+      const color = TREND_COLORS[idx % TREND_COLORS.length];
+      return {
+        label: sto,
+        data: months.map((m) => {
+          const val = paramData?.[m]?.[sto];
+          return typeof val === "number" ? val : null;
+        }),
+        borderColor: color,
+        backgroundColor: color.replace(", 1)", ", 0.1)"),
+        borderWidth: 1.5,
+        pointRadius: 2,
+        pointHoverRadius: 5,
+        tension: 0.3,
+        spanGaps: true,
+      };
+    }),
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: "index" as const,
+      intersect: false,
+    },
+    plugins: {
+      legend: {
+        display: filteredSTOs.length <= 15,
+        position: "top" as const,
+        labels: {
+          color: theme === "dark" ? "rgba(255,255,255,0.7)" : "#475569",
+          font: { size: 10 },
+          boxWidth: 8,
+          usePointStyle: true,
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(15, 23, 42, 0.95)",
+        titleColor: "#fff",
+        bodyColor: "#fff",
+        borderColor: "rgba(255,255,255,0.1)",
+        borderWidth: 1,
+        padding: 10,
+        callbacks: {
+          label: (context: any) => ` ${context.dataset.label}: ${context.raw != null ? context.raw + '%' : 'N/A'}`,
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: theme === "dark" ? "rgba(255,255,255,0.5)" : "#94a3b8",
+          font: { size: 10 },
+        },
+        grid: {
+          color: theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
+        },
+      },
+      y: {
+        min: yMin,
+        max: yMax,
+        ticks: {
+          color: theme === "dark" ? "rgba(255,255,255,0.5)" : "#94a3b8",
+          font: { size: 10 },
+          callback: (v: any) => v + '%',
+        },
+        grid: {
+          color: theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
+        },
+      },
+    },
+  };
+
+  const getHeatColor = (val: number | string) => {
+    if (typeof val !== "number" || isNaN(val)) return "";
+    if (val >= targetValue) return "bg-emerald-500/20 text-emerald-500 font-bold";
+    if (val >= targetValue - 2) return "bg-amber-500/15 text-amber-500 font-semibold";
+    return "bg-rose-500/15 text-rose-500 font-semibold";
+  };
+
+  return (
+    <div className="glass-card p-5 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-1 h-5 rounded-full bg-purple-500" />
+          <h2 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-purple-400" />
+            Monthly Trend 2026 — {activeConfig.label}
+          </h2>
+          <span className="text-[10px] text-foreground-muted font-medium">
+            ({districtName})
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedSA}
+            onChange={(e) => setSelectedSA(e.target.value)}
+            className="text-xs bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/30"
+          >
+            <option value="ALL">All STOs ({allSTOs.length})</option>
+            {saOptions.map((sa) => (
+              <option key={sa} value={sa}>
+                {sa} ({allSTOs.filter((s) => stoToSA[s] === sa).length})
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => setShowChart((prev) => !prev)}
+            className={cn(
+              "text-xs px-3 py-1.5 rounded-lg border transition-colors font-medium",
+              showChart
+                ? "bg-purple-500/10 border-purple-500/30 text-purple-400"
+                : "bg-[var(--surface)] border-[var(--border)] text-foreground-muted hover:text-foreground"
+            )}
+          >
+            {showChart ? "Chart" : "Table"}
+          </button>
+        </div>
+      </div>
+
+      {/* Parameter Selector Pills */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 no-scrollbar border-b border-[var(--border)]">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-foreground-muted mr-1 shrink-0">
+          Parameter:
+        </span>
+        {METRIC_CONFIGS.map((mc) => {
+          if (!mc.trendKey) return null;
+          const isSelected = selectedParam === mc.trendKey;
+          const target = WSA_TARGETS[mc.key];
+          return (
+            <button
+              key={mc.key}
+              onClick={() => setSelectedParam(mc.trendKey || "sa")}
+              className={cn(
+                "px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 flex items-center gap-1.5 shrink-0 border",
+                isSelected
+                  ? "bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-500/25 scale-[1.02]"
+                  : "bg-[var(--surface)] border-[var(--border)] text-foreground-muted hover:text-foreground hover:bg-[var(--surface-hover)] hover:border-purple-500/30"
+              )}
+            >
+              <span>{mc.shortLabel}</span>
+              {target !== undefined && (
+                <span className={cn(
+                  "text-[9px] px-1.5 py-0.5 rounded-md font-mono font-bold leading-none",
+                  isSelected ? "bg-white/20 text-white" : "bg-[var(--surface-hover)] text-foreground-muted"
+                )}>
+                  T: {target}%
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {months.length === 0 ? (
+        <div className="py-12 text-center text-foreground-muted text-xs">
+          No monthly trend data recorded yet for {activeConfig.label}.
+        </div>
+      ) : showChart ? (
+        <div className="h-[320px] w-full pt-2">
+          <Line data={chartData} options={chartOptions} />
+        </div>
+      ) : (
+        <div className="overflow-x-auto pt-2">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="bg-[var(--surface-hover)] text-foreground-muted">
+                <th className="px-3 py-2.5 text-left font-semibold sticky left-0 z-10 bg-[var(--surface-hover)] min-w-[60px]">STO</th>
+                <th className="px-3 py-2.5 text-left font-semibold sticky left-[60px] z-10 bg-[var(--surface-hover)] min-w-[100px] shadow-[1px_0_0_0_var(--border)]">SA</th>
+                {months.map((m) => (
+                  <th key={m} className="px-2 py-2.5 text-center font-semibold whitespace-nowrap min-w-[65px]">{m}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border)]">
+              {filteredSTOs.map((sto) => (
+                <tr key={sto} className="hover:bg-[var(--surface-hover)]/50 transition-colors">
+                  <td className="px-3 py-2 font-bold text-foreground sticky left-0 z-10 bg-[var(--surface)] min-w-[60px]">{sto}</td>
+                  <td className="px-3 py-2 text-foreground-muted sticky left-[60px] z-10 bg-[var(--surface)] min-w-[100px] shadow-[1px_0_0_0_var(--border)] truncate" title={stoToSA[sto]}>{stoToSA[sto] || '—'}</td>
+                  {months.map((m) => {
+                    const val = paramData?.[m]?.[sto];
+                    const numVal = typeof val === "number" ? val : parseFloat(String(val || "").replace(',', '.'));
+                    const display = !isNaN(numVal) ? `${numVal.toFixed(2)}%` : (val != null && val !== "" ? `${val}%` : "—");
+                    return (
+                      <td
+                        key={m}
+                        className={cn(
+                          "px-2 py-2 text-center tabular-nums transition-colors",
+                          !isNaN(numVal) ? getHeatColor(numVal) : "text-foreground-muted"
+                        )}
+                      >
+                        {display}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 interface ReportIHEasternProps {
   data: DistrictData[];
+  trendData?: IHTrendResponse | null;
 }
 
-export function ReportIHEastern({ data }: ReportIHEasternProps) {
+export function ReportIHEastern({ data, trendData }: ReportIHEasternProps) {
   const { theme } = useTheme();
   const [activeDistrict, setActiveDistrict] = useState(0);
   const tableRef = useRef<HTMLDivElement>(null);
@@ -738,204 +1035,86 @@ export function ReportIHEastern({ data }: ReportIHEasternProps) {
         ))}
       </div>
 
-      {/* ─── District Performance ─────────────────────────────────────── */}
-      {(() => {
-        const sas = district.serviceAreas;
-
-        type CardDef = {
-          uiLabel: string;
-          metricKey: MetricKey;
-          calc: () => number;
-        };
-
-        // Aggregate raw counts across all SA summaries for the active district
-        const sumField = (key: MetricKey, field: "tiketGgn" | "lisPlngn" | "gaul" | "comply" | "notComply") =>
-          sas.reduce((acc, sa) => acc + (Number(sa.summary[key]?.[field]) || 0), 0);
-
-        const avgReal = (key: MetricKey) => {
-          let sum = 0;
-          let count = 0;
-          sas.forEach((sa) => {
-            const v = sa.summary[key]?.real;
-            if (v != null) {
-              const n = typeof v === "number" ? v : parseFloat(String(v).replace(",", "."));
-              if (!isNaN(n)) { sum += n; count++; }
-            }
-          });
-          return count > 0 ? sum / count : 0;
-        };
-
-        const avgH1 = (key: MetricKey) => {
-          let sum = 0;
-          let count = 0;
-          sas.forEach((sa) => {
-            const v = sa.summary[key]?.h1;
-            if (v != null && typeof v === "number" && !isNaN(v)) { sum += v; count++; }
-          });
-          return count > 0 ? sum / count : 0;
-        };
-
-        const cards: CardDef[] = [
-          {
-            uiLabel: "SA",
-            metricKey: "serviceAvailability" as MetricKey,
-            calc: () => {
-              const tg = sumField("serviceAvailability", "tiketGgn");
-              const lp = sumField("serviceAvailability", "lisPlngn");
-              return lp > 0 ? (1 - tg / lp) * 100 : 100;
-            },
-          },
-          {
-            uiLabel: "ASGAR",
-            metricKey: "assuranceGuarantee" as MetricKey,
-            calc: () => {
-              const tg = sumField("assuranceGuarantee", "tiketGgn");
-              const gl = sumField("assuranceGuarantee", "gaul");
-              return tg > 0 ? ((tg - gl) / tg) * 100 : 100;
-            },
-          },
-          {
-            uiLabel: "DIAMOND",
-            metricKey: "ttrCompDiamond3Jam" as MetricKey,
-            calc: () => {
-              const c = sumField("ttrCompDiamond3Jam", "comply");
-              const tg = sumField("ttrCompDiamond3Jam", "tiketGgn");
-              return tg > 0 ? (c / tg) * 100 : 100;
-            },
-          },
-          {
-            uiLabel: "PLATINUM",
-            metricKey: "ttrCompPlatinum6Jam" as MetricKey,
-            calc: () => {
-              const c = sumField("ttrCompPlatinum6Jam", "comply");
-              const tg = sumField("ttrCompPlatinum6Jam", "tiketGgn");
-              return tg > 0 ? (c / tg) * 100 : 100;
-            },
-          },
-          {
-            uiLabel: "MANJA",
-            metricKey: "ttrCompManja3Jam" as MetricKey,
-            calc: () => {
-              const c = sumField("ttrCompManja3Jam", "comply");
-              const tg = sumField("ttrCompManja3Jam", "tiketGgn");
-              return tg > 0 ? (c / tg) * 100 : 100;
-            },
-          },
-          {
-            uiLabel: "TTR 36",
-            metricKey: "ttr36Jam" as MetricKey,
-            calc: () => avgReal("ttr36Jam"),
-          },
-          {
-            uiLabel: "TTI 3X24",
-            metricKey: "tti3x24Jam" as MetricKey,
-            calc: () => {
-              const c = sumField("tti3x24Jam", "comply");
-              const nc = sumField("tti3x24Jam", "notComply");
-              return c + nc > 0 ? (c / (c + nc)) * 100 : 100;
-            },
-          },
-          {
-            uiLabel: "FFG",
-            metricKey: "ffg" as MetricKey,
-            calc: () => {
-              const c = sumField("ffg", "comply");
-              const nc = sumField("ffg", "notComply");
-              return c + nc > 0 ? (c / (c + nc)) * 100 : 100;
-            },
-          },
-          {
-            uiLabel: "TTR FFG",
-            metricKey: "ttrFfg" as MetricKey,
-            calc: () => avgReal("ttrFfg"),
-          },
-        ];
-
-        return (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2.5 px-1">
-              <div className="w-1 h-5 rounded-full bg-accent-blue" />
-              <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">
-                District Performance
-              </h2>
-              <span className="text-[10px] text-foreground-muted font-medium ml-1">
-                — {district.district}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-9 gap-2.5">
-              {cards.map((card) => {
-                const real = card.calc();
-                const h1 = avgH1(card.metricKey);
-                const target = WSA_TARGETS[card.metricKey] || 0;
-                const isAchieved = real >= target;
-                const diff = real - h1;
-
-                let trendArrow: string;
-                let trendColorCls: string;
-                if (diff > 0.005) {
-                  trendArrow = "↑";
-                  trendColorCls = "text-emerald-500";
-                } else if (diff < -0.005) {
-                  trendArrow = "↓";
-                  trendColorCls = "text-rose-500";
-                } else {
-                  trendArrow = "=";
-                  trendColorCls = "text-amber-500";
-                }
-
-                return (
-                  <div
-                    key={card.uiLabel}
-                    className={cn(
-                      "relative overflow-hidden rounded-xl border p-3.5 transition-all duration-200 hover:scale-[1.02] group",
-                      isAchieved
-                        ? "border-emerald-500/25 bg-emerald-500/[0.04]"
-                        : "border-rose-500/25 bg-rose-500/[0.04]"
-                    )}
-                  >
-                    {/* Subtle glow */}
-                    <div
-                      className={cn(
-                        "absolute -top-6 -right-6 w-16 h-16 rounded-full blur-2xl opacity-30 pointer-events-none transition-opacity group-hover:opacity-50",
-                        isAchieved ? "bg-emerald-500" : "bg-rose-500"
-                      )}
-                    />
-
-                    {/* Label */}
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-foreground-muted mb-2 leading-none relative z-10">
-                      {card.uiLabel}
-                    </div>
-
-                    {/* Hero number */}
-                    <div className="relative z-10 flex items-baseline gap-1">
-                      <span className="text-[10px] font-medium text-foreground-muted leading-none">=</span>
-                      <span
-                        className={cn(
-                          "text-lg font-extrabold tabular-nums leading-none tracking-tight",
-                          isAchieved ? "text-emerald-500" : "text-rose-500"
-                        )}
-                      >
-                        {real.toFixed(2)}%
-                      </span>
-                    </div>
-
-                    {/* Trend & H-1 */}
-                    <div className="mt-2 flex items-center gap-1.5 relative z-10">
-                      <span className={cn("text-xs font-black leading-none", trendColorCls)}>
-                        {trendArrow}
-                      </span>
-                      <span className="text-[10px] text-foreground-muted tabular-nums">
-                        H-1: {h1.toFixed(2)}%
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+      {/* ─── District Performance (from API districtSummary) ────────── */}
+      {district.districtSummary && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2.5 px-1">
+            <div className="w-1 h-5 rounded-full bg-accent-blue" />
+            <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">
+              District Performance
+            </h2>
+            <span className="text-[10px] text-foreground-muted font-medium ml-1">
+              — {district.district}
+            </span>
           </div>
-        );
-      })()}
+
+          <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-9 gap-2.5">
+            {METRIC_CONFIGS.map((mc) => {
+              const metric = district.districtSummary[mc.key];
+              if (!metric) return null;
+
+              const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real).replace(',', '.'));
+              const h1Val = typeof metric.h1 === "number" ? metric.h1 : parseFloat(String(metric.h1).replace(',', '.'));
+              const target = WSA_TARGETS[mc.key] || 0;
+              const isAchieved = !isNaN(realVal) && realVal >= target;
+
+              // Use the API trend emoji directly
+              const trendColors = getTrendColor(metric.trend);
+              let trendArrow = "=";
+              if (metric.trend === "🟢") trendArrow = "↑";
+              else if (metric.trend === "🔴") trendArrow = "↓";
+
+              return (
+                <div
+                  key={mc.key}
+                  className={cn(
+                    "relative overflow-hidden rounded-xl border p-3.5 transition-all duration-200 hover:scale-[1.02] group",
+                    isAchieved
+                      ? "border-emerald-500/25 bg-emerald-500/[0.04]"
+                      : "border-rose-500/25 bg-rose-500/[0.04]"
+                  )}
+                >
+                  {/* Subtle glow */}
+                  <div
+                    className={cn(
+                      "absolute -top-6 -right-6 w-16 h-16 rounded-full blur-2xl opacity-30 pointer-events-none transition-opacity group-hover:opacity-50",
+                      isAchieved ? "bg-emerald-500" : "bg-rose-500"
+                    )}
+                  />
+
+                  {/* Label */}
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-foreground-muted mb-2 leading-none relative z-10">
+                    {mc.shortLabel}
+                  </div>
+
+                  {/* Hero number */}
+                  <div className="relative z-10 flex items-baseline gap-1">
+                    <span className="text-[10px] font-medium text-foreground-muted leading-none">=</span>
+                    <span
+                      className={cn(
+                        "text-lg font-extrabold tabular-nums leading-none tracking-tight",
+                        isAchieved ? "text-emerald-500" : "text-rose-500"
+                      )}
+                    >
+                      {!isNaN(realVal) ? `${realVal.toFixed(2)}%` : metric.real != null ? `${metric.real}%` : "-"}
+                    </span>
+                  </div>
+
+                  {/* Trend & H-1 */}
+                  <div className="mt-2 flex items-center gap-1.5 relative z-10">
+                    <span className={cn("text-xs font-black leading-none", trendColors.text)}>
+                      {trendArrow}
+                    </span>
+                    <span className="text-[10px] text-foreground-muted tabular-nums">
+                      H-1: {!isNaN(h1Val) ? `${h1Val.toFixed(2)}%` : metric.h1 != null ? `${metric.h1}%` : "-"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* District Stats Bar */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1005,6 +1184,13 @@ export function ReportIHEastern({ data }: ReportIHEasternProps) {
           <ServiceAreaCard key={sa.serviceArea} sa={sa} />
         ))}
       </div>
+
+      {/* Monthly Trend */}
+      <MonthlyTrendSection
+        districtName={district.district}
+        trendData={trendData || null}
+        districtServiceAreas={district.serviceAreas}
+      />
 
       {/* Raw Data Table */}
       <div className="glass-card p-5 mt-10" ref={tableRef}>
