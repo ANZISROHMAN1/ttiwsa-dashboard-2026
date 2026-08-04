@@ -5,6 +5,7 @@ import { useReportIHEastern } from "@/hooks/useReportIHEastern";
 import { useReportAllEastern } from "@/hooks/useReportAllEastern";
 import { useReportEbis } from "@/hooks/useReportEbis";
 import { useReportDatin } from "@/hooks/useReportDatin";
+import { useReportDatinTrend } from "@/hooks/useReportDatinTrend";
 import { useReportIHTrend } from "@/hooks/useReportIHTrend";
 import { useReportEbisTrend } from "@/hooks/useReportEbisTrend";
 import { useReportEbisAssurance } from "@/hooks/useReportEbisAssurance";
@@ -69,12 +70,13 @@ function EbisView() {
 
 function DatinView() {
   const { data, isLoading, error, refetch } = useReportDatin();
+  const { data: trendData } = useReportDatinTrend();
 
   if (isLoading) return <PageSkeleton />;
   if (error) return <ErrorState error={error} refetch={refetch} />;
   if (!data || data.length === 0) return <EmptyState />;
 
-  return <ReportDatinEastern data={data} />;
+  return <ReportDatinEastern data={data} trendData={trendData} />;
 }
 
 function FrameworkView({ category }: { category: FrameworkCategory }) {

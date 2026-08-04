@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Fragment, useRef } from "react";
+import { useState, Fragment, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import type {
   DistrictData,
@@ -8,31 +8,50 @@ import type {
   MetricSet,
   MetricData,
   MetricKey,
+  IHTrendResponse,
 } from "@/types/report-ih-eastern";
-import { getTrendColor } from "@/types/report-ih-eastern";
+import { getTrendColor, TREND_DISTRICT_MAP } from "@/types/report-ih-eastern";
 
 const DATIN_METRIC_CONFIGS = [
   { key: "complianceDatinK2", label: "Compliance Datin K2", shortLabel: "K2" },
   { key: "complianceDatinK3", label: "Compliance Datin K3", shortLabel: "K3" },
+  { key: "asgarDatin", label: "Asgar Datin", shortLabel: "Asgar Datin" },
+  { key: "asgarWifi", label: "Asgar Wifi", shortLabel: "Asgar Wifi" },
 ];
 
 const DATIN_TARGETS: Record<string, number> = {
   complianceDatinK2: 95.00,
   complianceDatinK3: 92.00,
+  asgarDatin: 95.00,
+  asgarWifi: 99.00,
 };
 
 import { Trophy, Medal, Crown, Target, ThumbsUp, Download } from "lucide-react";
 import { toPng } from "html-to-image";
-import { Doughnut } from "react-chartjs-2";
+import { Doughnut, Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   ArcElement,
   Tooltip,
   Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
 } from "chart.js";
 import { useTheme } from "@/components/ThemeProvider";
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title
+);
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
@@ -344,13 +363,292 @@ function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
   );
 }
 
+// ─── Monthly Trend Sub-component ────────────────────────────────────────────
+
+interface MonthlyTrendSectionProps {
+  districtName: string;
+  trendData: IHTrendResponse | null;
+  districtServiceAreas: ServiceAreaData[];
+}
+
+const TREND_COLORS = [
+  "rgba(16, 185, 129, 1)",
+  "rgba(59, 130, 246, 1)",
+  "rgba(245, 158, 11, 1)",
+  "rgba(239, 68, 68, 1)",
+  "rgba(168, 85, 247, 1)",
+  "rgba(249, 115, 22, 1)",
+  "rgba(20, 184, 166, 1)",
+  "rgba(236, 72, 153, 1)",
+  "rgba(99, 102, 241, 1)",
+  "rgba(34, 197, 94, 1)",
+];
+
+function MonthlyTrendSection({ districtName, trendData, districtServiceAreas }: MonthlyTrendSectionProps) {
+  const { theme } = useTheme();
+  const [selectedSA, setSelectedSA] = useState<string>("ALL");
+  const [selectedParam, setSelectedParam] = useState<string>("");
+  const [showChart, setShowChart] = useState(true);
+
+  const trendKey = useMemo(() => {
+    if (!trendData) return null;
+    const entry = Object.entries(TREND_DISTRICT_MAP).find(([, v]) => v === districtName);
+    return entry ? entry[0] : null;
+  }, [trendData, districtName]);
+
+  const trendDistrictData = trendData && trendKey ? trendData[trendKey] : null;
+  if (!trendDistrictData) return null;
+
+  const availableTrendConfigs = DATIN_METRIC_CONFIGS.filter(
+    (mc) => Boolean(trendDistrictData[mc.key])
+  );
+  // Fallback for any unexpected keys returned directly by the API
+  const allTrendKeys = Object.keys(trendDistrictData);
+
+  const activeParamKey =
+    selectedParam && trendDistrictData[selectedParam]
+      ? selectedParam
+      : availableTrendConfigs[0]?.key || allTrendKeys[0] || "";
+
+  const paramData = activeParamKey ? trendDistrictData[activeParamKey] : null;
+  const activeConfig =
+    DATIN_METRIC_CONFIGS.find((mc) => mc.key === activeParamKey) || {
+      key: activeParamKey,
+      label: activeParamKey,
+      shortLabel: activeParamKey,
+    };
+  const targetValue = DATIN_TARGETS[activeConfig.key] || 95;
+
+  const allMonths = paramData ? Object.keys(paramData) : [];
+  const months = allMonths.filter((m) => {
+    const vals = Object.values(paramData?.[m] || {});
+    return vals.some((v) => v !== "" && v !== null && v !== undefined);
+  });
+
+  const stoToSA: Record<string, string> = {};
+  districtServiceAreas.forEach((sa) => {
+    sa.stos.forEach((sto) => {
+      stoToSA[sto.sto] = sa.serviceArea;
+    });
+  });
+
+  const allSTOs = paramData && months.length > 0 ? Object.keys(paramData[months[0]] || {}) : [];
+  const filteredSTOs = selectedSA === "ALL"
+    ? allSTOs
+    : allSTOs.filter((sto) => stoToSA[sto] === selectedSA);
+
+  const saOptions = [...new Set(Object.values(stoToSA))].sort();
+
+  const allNumericValues: number[] = [];
+  months.forEach((m) => {
+    filteredSTOs.forEach((sto) => {
+      const val = paramData?.[m]?.[sto];
+      if (typeof val === "number" && !isNaN(val)) {
+        allNumericValues.push(val);
+      }
+    });
+  });
+
+  const minVal = allNumericValues.length > 0 ? Math.min(...allNumericValues, targetValue) : 90;
+  const maxVal = allNumericValues.length > 0 ? Math.max(...allNumericValues, targetValue) : 101;
+  const yMin = Math.floor(Math.max(0, minVal - Math.max(2, (maxVal - minVal) * 0.1)));
+  const yMax = Math.ceil(Math.min(105, maxVal + Math.max(1, (maxVal - minVal) * 0.05)));
+
+  const chartData = {
+    labels: months,
+    datasets: filteredSTOs.map((sto, idx) => {
+      const color = TREND_COLORS[idx % TREND_COLORS.length];
+      return {
+        label: sto,
+        data: months.map((m) => {
+          const val = paramData?.[m]?.[sto];
+          return typeof val === "number" ? val : null;
+        }),
+        borderColor: color,
+        backgroundColor: color.replace(", 1)", ", 0.1)"),
+        borderWidth: 1.5,
+        pointRadius: 2,
+        pointHoverRadius: 5,
+        tension: 0.3,
+        spanGaps: true,
+      };
+    }),
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: "index" as const,
+      intersect: false,
+    },
+    plugins: {
+      legend: {
+        display: filteredSTOs.length <= 15,
+        position: "top" as const,
+        labels: {
+          color: theme === "dark" ? "rgba(255,255,255,0.7)" : "#475569",
+          font: { size: 10 },
+          boxWidth: 8,
+          usePointStyle: true,
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(15, 23, 42, 0.95)",
+        titleColor: "#fff",
+        bodyColor: "#fff",
+        borderColor: "rgba(255,255,255,0.1)",
+        borderWidth: 1,
+        padding: 10,
+        callbacks: {
+          label: (context: any) => ` ${context.dataset.label}: ${context.raw != null ? context.raw + '%' : 'N/A'}`,
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: theme === "dark" ? "rgba(255,255,255,0.5)" : "#94a3b8",
+          font: { size: 10 },
+        },
+        grid: {
+          color: theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
+        },
+      },
+      y: {
+        min: yMin,
+        max: yMax,
+        ticks: {
+          color: theme === "dark" ? "rgba(255,255,255,0.5)" : "#94a3b8",
+          font: { size: 10 },
+          callback: (v: any) => v + '%',
+        },
+        grid: {
+          color: theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
+        },
+      },
+    },
+  };
+
+  const getHeatColor = (val: number | string) => {
+    if (typeof val !== "number" || isNaN(val)) return "";
+    if (val >= targetValue) return "bg-emerald-500/20 text-emerald-500 font-bold";
+    if (val >= targetValue - 2) return "bg-amber-500/15 text-amber-500 font-semibold";
+    return "bg-rose-500/15 text-rose-500 font-semibold";
+  };
+
+  return (
+    <div className="glass-card p-5 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+            Monthly Performance Trend
+          </h3>
+          <p className="text-xs text-foreground-muted">
+            Tracking {activeConfig.label} (Target: {targetValue}%) across STOs
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={activeParamKey}
+            onChange={(e) => setSelectedParam(e.target.value)}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--surface-hover)] border border-[var(--border)] text-foreground focus:outline-none"
+          >
+            {allTrendKeys.map((key) => {
+              const cfg = DATIN_METRIC_CONFIGS.find((mc) => mc.key === key);
+              return (
+                <option key={key} value={key}>
+                  {cfg ? cfg.label : key}
+                </option>
+              );
+            })}
+          </select>
+
+          <select
+            value={selectedSA}
+            onChange={(e) => setSelectedSA(e.target.value)}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--surface-hover)] border border-[var(--border)] text-foreground focus:outline-none"
+          >
+            <option value="ALL">All Service Areas</option>
+            {saOptions.map((sa) => (
+              <option key={sa} value={sa}>
+                {sa}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={() => setShowChart((prev) => !prev)}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20 transition-colors"
+          >
+            {showChart ? "Show Heatmap" : "Show Chart"}
+          </button>
+        </div>
+      </div>
+
+      {showChart ? (
+        <div className="h-[280px] w-full pt-2">
+          <Line data={chartData} options={chartOptions} />
+        </div>
+      ) : (
+        <div className="overflow-x-auto border border-[var(--border)] rounded-xl">
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="bg-[var(--surface-hover)] text-foreground-muted">
+                <th className="px-3 py-2 text-left sticky left-0 bg-[var(--surface-hover)] font-semibold z-10">
+                  STO
+                </th>
+                <th className="px-3 py-2 text-left font-semibold">Service Area</th>
+                {months.map((m) => (
+                  <th key={m} className="px-3 py-2 text-center font-semibold whitespace-nowrap">
+                    {m}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border)]">
+              {filteredSTOs.map((sto) => (
+                <tr key={sto} className="hover:bg-[var(--surface-hover)] transition-colors">
+                  <td className="px-3 py-2 font-bold text-foreground sticky left-0 bg-[var(--surface)] z-10 whitespace-nowrap">
+                    {sto}
+                  </td>
+                  <td className="px-3 py-2 text-foreground-muted whitespace-nowrap">
+                    {stoToSA[sto] || "-"}
+                  </td>
+                  {months.map((m) => {
+                    const val = paramData?.[m]?.[sto];
+                    const formatted = typeof val === "number" ? `${val.toFixed(1)}%` : val || "-";
+                    return (
+                      <td
+                        key={m}
+                        className={cn(
+                          "px-3 py-2 text-center tabular-nums whitespace-nowrap",
+                          getHeatColor(val as number)
+                        )}
+                      >
+                        {formatted}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 interface ReportDatinEasternProps {
   data: DistrictData[];
+  trendData?: IHTrendResponse | null;
 }
 
-export function ReportDatinEastern({ data }: ReportDatinEasternProps) {
+export function ReportDatinEastern({ data, trendData }: ReportDatinEasternProps) {
   const { theme } = useTheme();
   const [activeDistrict, setActiveDistrict] = useState(0);
   const tableRef = useRef<HTMLDivElement>(null);
@@ -715,7 +1013,7 @@ export function ReportDatinEastern({ data }: ReportDatinEasternProps) {
                     <div className="text-[10px] text-foreground-muted font-semibold uppercase tracking-wider mb-1 flex items-center justify-center gap-1.5">
                       <Target className="w-3 h-3 text-blue-400" /> Targets
                     </div>
-                    <div className="text-lg font-bold text-blue-400">{districtBestSA.achieved} <span className="text-[10px] text-foreground-muted">/ 2</span></div>
+                    <div className="text-lg font-bold text-blue-400">{districtBestSA.achieved} <span className="text-[10px] text-foreground-muted">/ {DATIN_METRIC_CONFIGS.length}</span></div>
                   </div>
                   <div className="bg-[var(--surface)] rounded-lg p-3 border border-[var(--border)] text-center flex flex-col justify-center">
                     <div className="text-[10px] text-foreground-muted font-semibold uppercase tracking-wider mb-1 flex items-center justify-center gap-1.5">
@@ -729,6 +1027,13 @@ export function ReportDatinEastern({ data }: ReportDatinEasternProps) {
           )}
         </div>
       </div>
+
+      {/* Monthly Trend Section */}
+      <MonthlyTrendSection
+        districtName={district.district}
+        trendData={trendData || null}
+        districtServiceAreas={district.serviceAreas}
+      />
 
       {/* District Tabs */}
       <div className="glass-card p-1.5 flex gap-1.5 overflow-x-auto">
@@ -800,6 +1105,8 @@ export function ReportDatinEastern({ data }: ReportDatinEasternProps) {
             metricKey: "complianceDatinK2",
             target: 95.00,
             calc: () => {
+              const m = (district.districtSummary as any)?.complianceDatinK2;
+              if (m && typeof m.real === "number") return m.real;
               const c = sumField("complianceDatinK2", "comply");
               const nc = sumField("complianceDatinK2", "notCmply");
               const total = c + nc;
@@ -812,11 +1119,33 @@ export function ReportDatinEastern({ data }: ReportDatinEasternProps) {
             metricKey: "complianceDatinK3",
             target: 92.00,
             calc: () => {
+              const m = (district.districtSummary as any)?.complianceDatinK3;
+              if (m && typeof m.real === "number") return m.real;
               const c = sumField("complianceDatinK3", "comply");
               const nc = sumField("complianceDatinK3", "notCmply");
               const total = c + nc;
               if (total > 0) return (c / total) * 100;
               return avgRealSafe("complianceDatinK3");
+            },
+          },
+          {
+            uiLabel: "Asgar Datin",
+            metricKey: "asgarDatin",
+            target: 95.00,
+            calc: () => {
+              const m = (district.districtSummary as any)?.asgarDatin;
+              if (m && typeof m.real === "number") return m.real;
+              return avgRealSafe("asgarDatin");
+            },
+          },
+          {
+            uiLabel: "Asgar Wifi",
+            metricKey: "asgarWifi",
+            target: 99.00,
+            calc: () => {
+              const m = (district.districtSummary as any)?.asgarWifi;
+              if (m && typeof m.real === "number") return m.real;
+              return avgRealSafe("asgarWifi");
             },
           },
         ];

@@ -1017,6 +1017,13 @@ export function ReportIHEastern({ data, trendData }: ReportIHEasternProps) {
         </div>
       </div>
 
+      {/* Monthly Trend Section */}
+      <MonthlyTrendSection
+        districtName={district.district}
+        trendData={trendData || null}
+        districtServiceAreas={district.serviceAreas}
+      />
+
       {/* District Tabs */}
       <div className="glass-card p-1.5 flex gap-1.5 overflow-x-auto">
         {data.map((d, idx) => (
@@ -1184,13 +1191,6 @@ export function ReportIHEastern({ data, trendData }: ReportIHEasternProps) {
           <ServiceAreaCard key={sa.serviceArea} sa={sa} />
         ))}
       </div>
-
-      {/* Monthly Trend */}
-      <MonthlyTrendSection
-        districtName={district.district}
-        trendData={trendData || null}
-        districtServiceAreas={district.serviceAreas}
-      />
 
       {/* Raw Data Table */}
       <div className="glass-card p-5 mt-10" ref={tableRef}>

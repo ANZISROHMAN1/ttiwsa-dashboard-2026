@@ -1088,6 +1088,15 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
         </div>
       </div>
 
+      {/* Monthly EBIS Trend Section */}
+      <MonthlyEbisTrendSection
+        districtName={district.district}
+        trendData={trendData || null}
+        districtServiceAreas={district.serviceAreas}
+        configs={configs}
+        mode={mode}
+      />
+
       {/* District Tabs & Assurance / FF Mode Switcher */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         {/* District Selection */}
@@ -1294,15 +1303,6 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
           <ServiceAreaCard key={sa.serviceArea} sa={sa} configs={configs} />
         ))}
       </div>
-
-      {/* Monthly EBIS Trend (now supports both Fulfillment & Assurance modes!) */}
-      <MonthlyEbisTrendSection
-        districtName={district.district}
-        trendData={trendData || null}
-        districtServiceAreas={district.serviceAreas}
-        configs={configs}
-        mode={mode}
-      />
 
       {/* Raw Data Table */}
       <div className="glass-card p-5 mt-10" ref={tableRef}>
