@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { redis } from "@/lib/redis";
 
 export async function POST(request: Request) {
   try {
@@ -27,11 +28,25 @@ export async function POST(request: Request) {
     }
 
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    const chatIds = [process.env.TEST_CHAT_ID, process.env.TEST_CHAT_ID2].filter(Boolean);
+    const envChatIds = [process.env.TEST_CHAT_ID, process.env.TEST_CHAT_ID2].filter(Boolean) as string[];
 
-    if (!botToken || chatIds.length === 0) {
-      console.error("Missing Telegram Bot Token or Chat ID");
+    if (!botToken) {
+      console.error("Missing Telegram Bot Token");
       return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
+    }
+
+    const keys = await redis.keys("telegram:user:*");
+    const registeredChatIds: string[] = [];
+    for (const key of keys) {
+      const val = await redis.get<string>(key);
+      if (val) registeredChatIds.push(val.toString());
+    }
+
+    const chatIds = Array.from(new Set([...envChatIds, ...registeredChatIds]));
+
+    if (chatIds.length === 0) {
+      console.error("No Telegram Chat IDs registered or configured");
+      return NextResponse.json({ error: "No chat IDs configured" }, { status: 500 });
     }
 
     const responses = await Promise.all(

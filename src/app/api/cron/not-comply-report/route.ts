@@ -50,7 +50,7 @@ export async function GET(request: Request) {
       const usernames = new Set(mappedUsers.split(" ").filter(Boolean));
 
       for (const username of usernames) {
-        const isOverseer = OVERSEERS.includes(username.toLowerCase());
+        const isOverseer = OVERSEERS.some(o => o.toLowerCase() === username.toLowerCase());
         const text = isOverseer ? overseerText : baseText;
 
         // Fetch Chat ID dynamically from Upstash Redis

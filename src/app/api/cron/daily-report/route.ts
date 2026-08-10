@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { fetchDashboardData } from "@/lib/api";
 import { generateTelegramText } from "@/lib/telegram";
+import { redis } from "@/lib/redis";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -13,13 +14,26 @@ export async function GET(request: Request) {
   }
 
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const chatIds = [process.env.TEST_CHAT_ID, process.env.TEST_CHAT_ID2].filter(Boolean);
+  const envChatIds = [process.env.TEST_CHAT_ID, process.env.TEST_CHAT_ID2].filter(Boolean) as string[];
 
-  if (!botToken || chatIds.length === 0) {
+  if (!botToken) {
     return NextResponse.json({ error: "Missing Telegram config" }, { status: 500 });
   }
 
   try {
+    const keys = await redis.keys("telegram:user:*");
+    const registeredChatIds: string[] = [];
+    for (const key of keys) {
+      const val = await redis.get<string>(key);
+      if (val) registeredChatIds.push(val.toString());
+    }
+
+    const chatIds = Array.from(new Set([...envChatIds, ...registeredChatIds]));
+
+    if (chatIds.length === 0) {
+      return NextResponse.json({ error: "No Telegram chat IDs registered or configured" }, { status: 500 });
+    }
+
     const data = await fetchDashboardData();
     const text = generateTelegramText(data, false);
 
