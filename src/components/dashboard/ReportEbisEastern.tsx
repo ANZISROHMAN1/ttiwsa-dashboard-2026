@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, Fragment, useRef } from "react";
+import { useState, useMemo, Fragment, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import type {
   DistrictData,
@@ -45,7 +45,7 @@ function isMetricAchieved(realVal: number, config?: EbisMetricConfig | null): bo
   return realVal >= config.target;
 }
 
-import { Trophy, Medal, Crown, Target, ThumbsUp, Download, TrendingUp } from "lucide-react";
+import { Trophy, Medal, Crown, Target, ThumbsUp, Download, TrendingUp, AlertTriangle } from "lucide-react";
 import { toPng } from "html-to-image";
 import { Doughnut, Line } from "react-chartjs-2";
 import {
@@ -134,7 +134,7 @@ function MetricPill({
 }
 
 /** Metric cell inside the STO table */
-function MetricCell({ metric, config }: { metric: MetricData; config: EbisMetricConfig }) {
+function MetricCell({ metric, config, unachievingOnly }: { metric: MetricData; config?: EbisMetricConfig | null; unachievingOnly?: boolean }) {
   if (!metric) {
     return (
       <td className="px-3 py-3 whitespace-nowrap text-center text-foreground-muted text-sm">
@@ -145,6 +145,14 @@ function MetricCell({ metric, config }: { metric: MetricData; config: EbisMetric
 
   const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real ?? "").replace(',', '.'));
   const isAchieved = isMetricAchieved(realVal, config);
+
+  if (unachievingOnly && isAchieved) {
+    return (
+      <td className="px-3 py-3 whitespace-nowrap text-center">
+        <span className="text-foreground-muted/20 text-xs font-normal">-</span>
+      </td>
+    );
+  }
 
   const realDisplay =
     typeof metric.real === "number"
@@ -265,8 +273,30 @@ function MetricCell({ metric, config }: { metric: MetricData; config: EbisMetric
 }
 
 /** Expandable Service Area card */
-function ServiceAreaCard({ sa, configs }: { sa: ServiceAreaData; configs: EbisMetricConfig[] }) {
+function ServiceAreaCard({ sa, configs, unachievingOnly }: { sa: ServiceAreaData; configs: EbisMetricConfig[]; unachievingOnly?: boolean }) {
   const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (unachievingOnly) setExpanded(true);
+  }, [unachievingOnly]);
+
+  const pillConfigs = configs.filter((mc) => {
+    if (!unachievingOnly) return true;
+    const m = (sa.summary as any)[mc.key];
+    if (!m) return false;
+    const realVal = typeof m.real === "number" ? m.real : parseFloat(String(m.real ?? "").replace(',', '.'));
+    return isNaN(realVal) || !isMetricAchieved(realVal, mc);
+  });
+
+  const tableColumnConfigs = configs.filter((mc) => {
+    if (!unachievingOnly) return true;
+    return sa.stos.some(sto => {
+      const sm = (sto as any)[mc.key];
+      if (!sm) return false;
+      const realVal = typeof sm.real === "number" ? sm.real : parseFloat(String(sm.real ?? "").replace(',', '.'));
+      return isNaN(realVal) || !isMetricAchieved(realVal, mc);
+    });
+  });
 
   // Count how many metrics achieved their target for the SA summary
   const targetCounts = configs.reduce(
@@ -282,6 +312,16 @@ function ServiceAreaCard({ sa, configs }: { sa: ServiceAreaData; configs: EbisMe
     },
     { achieved: 0, notAchieved: 0 }
   );
+
+  const filteredStos = sa.stos.filter((sto) => {
+    if (!unachievingOnly) return true;
+    return configs.some((mc) => {
+      const m = (sto as any)[mc.key];
+      if (!m) return false;
+      const realVal = typeof m.real === "number" ? m.real : parseFloat(String(m.real ?? "").replace(',', '.'));
+      return isNaN(realVal) || !isMetricAchieved(realVal, mc);
+    });
+  });
 
   return (
     <div className="glass-card overflow-hidden animate-fade-in">
@@ -304,16 +344,21 @@ function ServiceAreaCard({ sa, configs }: { sa: ServiceAreaData; configs: EbisMe
               <span className="text-[10px] text-foreground-muted">
                 {sa.stos.length} STOs
               </span>
-              <span className="text-[10px] text-foreground-muted">•</span>
-              {targetCounts.achieved > 0 && (
-                <span className="text-[10px] text-emerald-500 font-medium">
-                  {targetCounts.achieved} Achieved
-                </span>
+              {!unachievingOnly && targetCounts.achieved > 0 && (
+                <>
+                  <span className="text-[10px] text-foreground-muted">•</span>
+                  <span className="text-[10px] text-emerald-500 font-medium">
+                    {targetCounts.achieved} Achieved
+                  </span>
+                </>
               )}
               {targetCounts.notAchieved > 0 && (
-                <span className="text-[10px] text-rose-500 font-medium">
-                  {targetCounts.notAchieved} Missed
-                </span>
+                <>
+                  <span className="text-[10px] text-foreground-muted">•</span>
+                  <span className="text-[10px] text-rose-500 font-bold">
+                    {targetCounts.notAchieved} Missed
+                  </span>
+                </>
               )}
             </div>
           </div>
@@ -340,7 +385,7 @@ function ServiceAreaCard({ sa, configs }: { sa: ServiceAreaData; configs: EbisMe
       {/* SA Summary Metrics Row */}
       <div className="px-5 pb-4">
         <div className="flex flex-wrap gap-2">
-          {configs.map((mc) => (
+          {pillConfigs.map((mc) => (
             <MetricPill
               key={mc.key}
               label={mc.shortLabel}
@@ -361,7 +406,7 @@ function ServiceAreaCard({ sa, configs }: { sa: ServiceAreaData; configs: EbisMe
                   <th className="px-4 py-3 font-semibold whitespace-nowrap sticky left-0 bg-[var(--surface-hover)] z-10">
                     STO
                   </th>
-                  {configs.map((mc) => (
+                  {tableColumnConfigs.map((mc) => (
                     <th
                       key={mc.key}
                       className="px-3 py-3 font-semibold whitespace-nowrap text-center"
@@ -372,7 +417,7 @@ function ServiceAreaCard({ sa, configs }: { sa: ServiceAreaData; configs: EbisMe
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
-                {sa.stos.map((sto) => (
+                {filteredStos.map((sto) => (
                   <tr
                     key={sto.sto}
                     className="hover:bg-[var(--surface-hover)] transition-colors"
@@ -382,11 +427,12 @@ function ServiceAreaCard({ sa, configs }: { sa: ServiceAreaData; configs: EbisMe
                         {sto.sto}
                       </span>
                     </td>
-                    {configs.map((mc) => (
+                    {tableColumnConfigs.map((mc) => (
                       <MetricCell
                         key={mc.key}
                         metric={(sto as any)[mc.key] as MetricData}
                         config={mc}
+                        unachievingOnly={unachievingOnly}
                       />
                     ))}
                   </tr>
@@ -709,10 +755,21 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
   const { theme } = useTheme();
   const [activeDistrict, setActiveDistrict] = useState(0);
   const [mode, setMode] = useState<"FF" | "ASSURANCE">("FF");
+  const [unachievingOnly, setUnachievingOnly] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
 
   const activeData = (mode === "ASSURANCE" ? assuranceData : data) || data;
   const configs = mode === "ASSURANCE" ? ASSURANCE_METRIC_CONFIGS : FF_METRIC_CONFIGS;
+
+  function isMetricUnachieving(metric?: MetricData | null, config?: EbisMetricConfig | null): boolean {
+    if (!metric || !config) return false;
+    const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real ?? "").replace(',', '.'));
+    return isNaN(realVal) || !isMetricAchieved(realVal, config);
+  }
+
+  function hasRecordUnachieving(dataRecord: Record<string, any>): boolean {
+    return configs.some(c => isMetricUnachieving(dataRecord[c.key], c));
+  }
 
   const handleDownloadPNG = async () => {
     if (!tableRef.current) return;
@@ -1147,18 +1204,39 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
       {/* ─── District Performance (from API districtSummary) ────────── */}
       {district.districtSummary && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2.5 px-1">
-            <div className="w-1 h-5 rounded-full bg-accent-blue" />
-            <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">
-              District Performance ({mode === "FF" ? "Fulfillment" : "Assurance"})
-            </h2>
-            <span className="text-[10px] text-foreground-muted font-medium ml-1">
-              — {district.district}
-            </span>
+          <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+            <div className="flex items-center gap-2.5">
+              <div className="w-1 h-5 rounded-full bg-accent-blue" />
+              <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">
+                District Performance ({mode === "FF" ? "Fulfillment" : "Assurance"})
+              </h2>
+              <span className="text-[10px] text-foreground-muted font-medium ml-1">
+                — {district.district}
+              </span>
+            </div>
+
+            <button
+              onClick={() => setUnachievingOnly((prev) => !prev)}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 border shadow-sm cursor-pointer",
+                unachievingOnly
+                  ? "bg-rose-500/20 text-rose-400 border-rose-500/50 shadow-rose-500/20 ring-2 ring-rose-500/40"
+                  : "bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20 hover:text-rose-300"
+              )}
+              title={unachievingOnly ? "Show All Data" : "Filter Unachieving / Red Only"}
+            >
+              <AlertTriangle className={cn("w-3.5 h-3.5 text-rose-500", unachievingOnly && "animate-pulse")} />
+              <span>Unachieving / Red Only</span>
+              {unachievingOnly && (
+                <span className="ml-1 text-[9px] bg-rose-500 text-white px-1.5 py-0.5 rounded-full font-extrabold uppercase tracking-wider">
+                  ACTIVE
+                </span>
+              )}
+            </button>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {configs.map((card) => {
+            {configs.filter(c => !unachievingOnly || isMetricUnachieving((district.districtSummary as any)[c.key], c)).map((card) => {
               const metric = (district.districtSummary as any)[card.key];
               if (!metric) return null;
 
@@ -1232,76 +1310,28 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
               );
             })}
           </div>
+
+          {unachievingOnly && configs.every(c => !isMetricUnachieving((district.districtSummary as any)[c.key], c)) && (
+            <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-medium flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              All District level metrics achieved target!
+            </div>
+          )}
         </div>
       )}
 
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass-card-sm p-4 text-center flex flex-col justify-center">
-          <div className="text-3xl font-bold text-foreground">
-            {districtTotalSAs}
-          </div>
-          <div className="text-xs text-foreground-muted mt-1 uppercase tracking-wider font-semibold">
-            Service Areas
-          </div>
-        </div>
-        <div className="glass-card-sm p-4 text-center flex flex-col justify-center">
-          <div className="text-3xl font-bold text-foreground">
-            {districtTotalSTOs}
-          </div>
-          <div className="text-xs text-foreground-muted mt-1 uppercase tracking-wider font-semibold">STOs</div>
-        </div>
-        
-        <div className="glass-card-sm p-4 flex flex-col justify-between">
-          <div className="text-xs text-foreground-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            Top Achieving
-          </div>
-          <div className="space-y-2">
-            {top3Achieving.map((item, i) => (
-              <div key={item.label} className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-foreground">{item.label}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-emerald-500 tabular-nums">
-                    {item.avg.toFixed(2)}%
-                  </span>
-                  <span className="text-[9px] text-emerald-500/70 tabular-nums bg-emerald-500/10 px-1.5 py-0.5 rounded-sm">
-                    +{item.diff.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="glass-card-sm p-4 flex flex-col justify-between">
-          <div className="text-xs text-foreground-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-            Needs Attention
-          </div>
-          <div className="space-y-2">
-            {top3Unachieving.map((item, i) => (
-              <div key={item.label} className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-foreground">{item.label}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-rose-500 tabular-nums">
-                    {item.avg.toFixed(2)}%
-                  </span>
-                  <span className="text-[9px] text-rose-500/70 tabular-nums bg-rose-500/10 px-1.5 py-0.5 rounded-sm">
-                    {item.diff.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* Service Area Cards */}
       <div className="space-y-4">
-        {district.serviceAreas.map((sa) => (
-          <ServiceAreaCard key={sa.serviceArea} sa={sa} configs={configs} />
-        ))}
+        {district.serviceAreas
+          .filter((sa) => {
+            if (!unachievingOnly) return true;
+            const saUnachieving = hasRecordUnachieving(sa.summary);
+            const stoUnachieving = sa.stos.some((sto) => hasRecordUnachieving(sto));
+            return saUnachieving || stoUnachieving;
+          })
+          .map((sa) => (
+            <ServiceAreaCard key={sa.serviceArea} sa={sa} configs={configs} unachievingOnly={unachievingOnly} />
+          ))}
       </div>
 
       {/* Raw Data Table */}
@@ -1345,7 +1375,9 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
               {district.serviceAreas.flatMap(sa => 
-                sa.stos.map(sto => (
+                sa.stos
+                  .filter(sto => !unachievingOnly || hasRecordUnachieving(sto))
+                  .map(sto => (
                   <tr key={sto.sto} className="group hover:bg-[var(--surface-hover)]/50 transition-colors">
                     <td className="px-4 py-2 sticky left-0 z-10 bg-[var(--surface)] group-hover:bg-[var(--surface-hover)] transition-colors min-w-[150px] max-w-[150px] truncate" title={sa.serviceArea}>{sa.serviceArea}</td>
                     <td className="px-4 py-2 font-medium sticky left-[150px] z-10 bg-[var(--surface)] group-hover:bg-[var(--surface-hover)] transition-colors min-w-[80px] max-w-[80px] shadow-[1px_0_0_0_var(--border)]">{sto.sto}</td>
@@ -1354,9 +1386,25 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
                       const target = mc.target;
                       const count1Val = mc.count1 ? m?.[mc.count1.key] : undefined;
                       const count2Val = mc.count2 ? m?.[mc.count2.key] : undefined;
+                      const realVal = m ? (typeof m.real === 'number' ? m.real : parseFloat(String(m.real ?? "").replace(',', '.'))) : NaN;
+                      const isAchieved = isMetricAchieved(realVal, mc);
+
+                      if (unachievingOnly && isAchieved) {
+                        return (
+                          <Fragment key={mc.key}>
+                            <td className={cn("px-4 py-2 text-center text-foreground-muted/20 text-xs", idx !== 0 && "border-l-2 border-[var(--border)]")}>-</td>
+                            <td className="px-4 py-2 text-center border-l border-[var(--border)]/30 text-foreground-muted/20 text-xs">-</td>
+                            <td className="px-4 py-2 text-center border-l border-[var(--border)]/30 text-foreground-muted/20 text-xs">-</td>
+                            <td className="px-4 py-2 text-center border-l border-[var(--border)]/30 text-foreground-muted/20 text-xs">-</td>
+                            {mc.count1 && <td className="px-4 py-2 text-center border-l border-[var(--border)]/30 text-foreground-muted/20 text-xs">-</td>}
+                            {mc.count2 && <td className="px-4 py-2 text-center border-l border-[var(--border)]/30 text-foreground-muted/20 text-xs">-</td>}
+                          </Fragment>
+                        );
+                      }
+
                       return (
                         <Fragment key={mc.key}>
-                          <td className={cn("px-4 py-2 text-center", idx !== 0 && "border-l-2 border-[var(--border)]")}>
+                          <td className={cn("px-4 py-2 text-center font-bold text-rose-500", idx !== 0 && "border-l-2 border-[var(--border)]")}>
                             {m?.real != null ? (typeof m.real === 'number' ? m.real.toFixed(2) + '%' : String(m.real).endsWith('%') ? m.real : m.real + '%') : '-'}
                           </td>
                           <td className="px-4 py-2 text-center border-l border-[var(--border)]/30">{target ?? '-'}</td>

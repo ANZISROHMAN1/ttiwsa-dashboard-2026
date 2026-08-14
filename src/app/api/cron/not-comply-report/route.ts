@@ -27,27 +27,35 @@ export async function GET(request: Request) {
     // Filter tickets that need update and are NOT COMPLY, but exclude those that have been updated (isUpdated: true)
     const needUpdateTickets = allTickets.filter(t => t.NULL_GDOC === true && t.STATUS.includes("-NOTC") && !t.isUpdated);
 
-    // Group by STO
-    const groupedBySTO = needUpdateTickets.reduce((acc, ticket) => {
-      const sto = ticket.STO || "UNKNOWN";
-      if (!acc[sto]) {
-        acc[sto] = [];
+    // Group by Service Area (SA)
+    const groupedBySA = needUpdateTickets.reduce((acc, ticket) => {
+      const sa = ticket.SA || "UNKNOWN";
+      if (!acc[sa]) {
+        acc[sa] = [];
       }
-      acc[sto].push(ticket);
+      acc[sa].push(ticket);
       return acc;
     }, {} as Record<string, Ticket[]>);
 
     let sentCount = 0;
 
-    for (const [sto, tickets] of Object.entries(groupedBySTO)) {
+    for (const [sa, tickets] of Object.entries(groupedBySA)) {
       if (tickets.length === 0) continue; // No empty messages
 
-      const baseText = formatNotComplyMessage(tickets, needUpdateTickets, false);
-      const overseerText = formatNotComplyMessage(tickets, needUpdateTickets, true);
+      const baseText = formatNotComplyMessage(tickets, sa, needUpdateTickets, false);
+      const overseerText = formatNotComplyMessage(tickets, sa, needUpdateTickets, true);
 
-      // Get users for this STO
-      const mappedUsers = FULL_USER_MAPPING[sto] || "";
-      const usernames = new Set(mappedUsers.split(" ").filter(Boolean));
+      // Aggregate all STOs that belong to this SA
+      const stoSet = new Set<string>();
+      allTickets.filter(t => (t.SA || "UNKNOWN") === sa).forEach(t => { if (t.STO) stoSet.add(t.STO); });
+      tickets.forEach(t => { if (t.STO) stoSet.add(t.STO); });
+
+      // Get users for all STOs under this SA
+      const usernames = new Set<string>();
+      stoSet.forEach(sto => {
+        const mappedUsers = FULL_USER_MAPPING[sto] || "";
+        mappedUsers.split(" ").filter(Boolean).forEach(u => usernames.add(u));
+      });
 
       for (const username of usernames) {
         const isOverseer = OVERSEERS.includes(username.toLowerCase());
@@ -72,15 +80,15 @@ export async function GET(request: Request) {
 
         const telegramData = await response.json();
         if (!response.ok) {
-          console.error(`Telegram API Error for STO ${sto} (user ${username}):`, telegramData);
-          // We continue to send to other STOs even if one fails
+          console.error(`Telegram API Error for SA ${sa} (user ${username}):`, telegramData);
+          // We continue to send to other SAs even if one fails
         } else {
           sentCount++;
         }
       }
     }
 
-    return NextResponse.json({ success: true, message: `Sent ${sentCount} Not Comply reports.` });
+    return NextResponse.json({ success: true, message: `Sent ${sentCount} Not Comply reports per Service Area.` });
 
   } catch (error: any) {
     console.error("Cron Error:", error);

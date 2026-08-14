@@ -122,8 +122,9 @@ export function isUserWhitelisted(username: string): boolean {
   return false;
 }
 
-export function formatNotComplyMessage(tickets: Ticket[], allTickets?: Ticket[], isOverseer?: boolean): string {
-  let message = "\n\nREKON NOT COMPLY\n\nLink Update:\nhttps://ttiwsa-dashboard-2026.vercel.app/submit/not-comply\n\n";
+export function formatNotComplyMessage(tickets: Ticket[], saName?: string, allTickets?: Ticket[], isOverseer?: boolean): string {
+  const headerTitle = saName ? `REKON NOT COMPLY - SA ${saName.toUpperCase()}` : "REKON NOT COMPLY";
+  let message = `\n\n${headerTitle}\n\nLink Update:\nhttps://ttiwsa-dashboard-2026.vercel.app/submit/not-comply\n\n`;
 
   tickets.forEach(t => {
     const isTTI = t.STATUS.startsWith("TTI");

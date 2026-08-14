@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Fragment, useRef, useMemo } from "react";
+import { useState, Fragment, useRef, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import type {
   DistrictData,
@@ -26,7 +26,7 @@ const DATIN_TARGETS: Record<string, number> = {
   asgarWifi: 99.00,
 };
 
-import { Trophy, Medal, Crown, Target, ThumbsUp, Download } from "lucide-react";
+import { Trophy, Medal, Crown, Target, ThumbsUp, Download, AlertTriangle } from "lucide-react";
 import { toPng } from "html-to-image";
 import { Doughnut, Line } from "react-chartjs-2";
 import {
@@ -125,7 +125,7 @@ function MetricPill({
 }
 
 /** Metric cell inside the STO table */
-function MetricCell({ metric, metricKey }: { metric: MetricData; metricKey: keyof MetricSet }) {
+function MetricCell({ metric, metricKey, unachievingOnly }: { metric: MetricData; metricKey: keyof MetricSet; unachievingOnly?: boolean }) {
   if (!metric) {
     return (
       <td className="px-3 py-3 whitespace-nowrap text-center text-foreground-muted text-sm">
@@ -137,6 +137,14 @@ function MetricCell({ metric, metricKey }: { metric: MetricData; metricKey: keyo
   const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real).replace(',', '.'));
   const target = DATIN_TARGETS[metricKey] || 0;
   const isAchieved = !isNaN(realVal) && realVal >= target;
+
+  if (unachievingOnly && isAchieved) {
+    return (
+      <td className="px-3 py-3 whitespace-nowrap text-center">
+        <span className="text-foreground-muted/20 text-xs font-normal">-</span>
+      </td>
+    );
+  }
 
   const realDisplay =
     typeof metric.real === "number"
@@ -227,8 +235,32 @@ function MetricCell({ metric, metricKey }: { metric: MetricData; metricKey: keyo
 }
 
 /** Expandable Service Area card */
-function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
+function ServiceAreaCard({ sa, unachievingOnly }: { sa: ServiceAreaData; unachievingOnly?: boolean }) {
   const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (unachievingOnly) setExpanded(true);
+  }, [unachievingOnly]);
+
+  const pillConfigs = DATIN_METRIC_CONFIGS.filter((mc) => {
+    if (!unachievingOnly) return true;
+    const m = (sa.summary as any)[mc.key];
+    if (!m) return false;
+    const realVal = typeof m.real === "number" ? m.real : parseFloat(String(m.real).replace(',', '.'));
+    const target = DATIN_TARGETS[mc.key] || 0;
+    return isNaN(realVal) || realVal < target;
+  });
+
+  const tableColumnConfigs = DATIN_METRIC_CONFIGS.filter((mc) => {
+    if (!unachievingOnly) return true;
+    return sa.stos.some((sto) => {
+      const sm = (sto as any)[mc.key];
+      if (!sm) return false;
+      const realVal = typeof sm.real === "number" ? sm.real : parseFloat(String(sm.real).replace(',', '.'));
+      const target = DATIN_TARGETS[mc.key] || 0;
+      return isNaN(realVal) || realVal < target;
+    });
+  });
 
   // Count how many metrics achieved their target for the SA summary
   const targetCounts = DATIN_METRIC_CONFIGS.reduce(
@@ -245,6 +277,17 @@ function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
     },
     { achieved: 0, notAchieved: 0 }
   );
+
+  const filteredStos = sa.stos.filter((sto) => {
+    if (!unachievingOnly) return true;
+    return DATIN_METRIC_CONFIGS.some((mc) => {
+      const m = (sto as any)[mc.key];
+      if (!m) return false;
+      const realVal = typeof m.real === "number" ? m.real : parseFloat(String(m.real).replace(',', '.'));
+      const target = DATIN_TARGETS[mc.key] || 0;
+      return isNaN(realVal) || realVal < target;
+    });
+  });
 
   return (
     <div className="glass-card overflow-hidden animate-fade-in">
@@ -267,16 +310,21 @@ function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
               <span className="text-[10px] text-foreground-muted">
                 {sa.stos.length} STOs
               </span>
-              <span className="text-[10px] text-foreground-muted">•</span>
-              {targetCounts.achieved > 0 && (
-                <span className="text-[10px] text-emerald-500 font-medium">
-                  {targetCounts.achieved} Achieved
-                </span>
+              {!unachievingOnly && targetCounts.achieved > 0 && (
+                <>
+                  <span className="text-[10px] text-foreground-muted">•</span>
+                  <span className="text-[10px] text-emerald-500 font-medium">
+                    {targetCounts.achieved} Achieved
+                  </span>
+                </>
               )}
               {targetCounts.notAchieved > 0 && (
-                <span className="text-[10px] text-rose-500 font-medium">
-                  {targetCounts.notAchieved} Missed
-                </span>
+                <>
+                  <span className="text-[10px] text-foreground-muted">•</span>
+                  <span className="text-[10px] text-rose-500 font-bold">
+                    {targetCounts.notAchieved} Missed
+                  </span>
+                </>
               )}
             </div>
           </div>
@@ -303,7 +351,7 @@ function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
       {/* SA Summary Metrics Row */}
       <div className="px-5 pb-4">
         <div className="flex flex-wrap gap-2">
-          {DATIN_METRIC_CONFIGS.map((mc) => (
+          {pillConfigs.map((mc) => (
             <MetricPill
               key={mc.key}
               label={mc.shortLabel}
@@ -324,7 +372,7 @@ function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
                   <th className="px-4 py-3 font-semibold whitespace-nowrap sticky left-0 bg-[var(--surface-hover)] z-10">
                     STO
                   </th>
-                  {DATIN_METRIC_CONFIGS.map((mc) => (
+                  {tableColumnConfigs.map((mc) => (
                     <th
                       key={mc.key}
                       className="px-3 py-3 font-semibold whitespace-nowrap text-center"
@@ -335,7 +383,7 @@ function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
-                {sa.stos.map((sto) => (
+                {filteredStos.map((sto) => (
                   <tr
                     key={sto.sto}
                     className="hover:bg-[var(--surface-hover)] transition-colors"
@@ -345,11 +393,12 @@ function ServiceAreaCard({ sa }: { sa: ServiceAreaData }) {
                         {sto.sto}
                       </span>
                     </td>
-                    {DATIN_METRIC_CONFIGS.map((mc) => (
+                    {tableColumnConfigs.map((mc) => (
                       <MetricCell
                         key={mc.key}
                         metric={(sto as any)[mc.key] as MetricData}
                         metricKey={mc.key as any}
+                        unachievingOnly={unachievingOnly}
                       />
                     ))}
                   </tr>
@@ -651,7 +700,19 @@ interface ReportDatinEasternProps {
 export function ReportDatinEastern({ data, trendData }: ReportDatinEasternProps) {
   const { theme } = useTheme();
   const [activeDistrict, setActiveDistrict] = useState(0);
+  const [unachievingOnly, setUnachievingOnly] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
+
+  function isMetricUnachieving(metric?: MetricData | null, metricKey?: string): boolean {
+    if (!metric || !metricKey) return false;
+    const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real).replace(',', '.'));
+    const target = DATIN_TARGETS[metricKey] || 0;
+    return isNaN(realVal) || realVal < target;
+  }
+
+  function hasRecordUnachieving(dataRecord: Record<string, any>): boolean {
+    return DATIN_METRIC_CONFIGS.some(mc => isMetricUnachieving(dataRecord[mc.key], mc.key));
+  }
 
   const handleDownloadPNG = async () => {
     if (!tableRef.current) return;
@@ -1152,18 +1213,39 @@ export function ReportDatinEastern({ data, trendData }: ReportDatinEasternProps)
 
         return (
           <div className="space-y-3">
-            <div className="flex items-center gap-2.5 px-1">
-              <div className="w-1 h-5 rounded-full bg-accent-blue" />
-              <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">
-                District Performance
-              </h2>
-              <span className="text-[10px] text-foreground-muted font-medium ml-1">
-                — {district.district}
-              </span>
+            <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+              <div className="flex items-center gap-2.5">
+                <div className="w-1 h-5 rounded-full bg-accent-blue" />
+                <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">
+                  District Performance
+                </h2>
+                <span className="text-[10px] text-foreground-muted font-medium ml-1">
+                  — {district.district}
+                </span>
+              </div>
+
+              <button
+                onClick={() => setUnachievingOnly((prev) => !prev)}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 border shadow-sm cursor-pointer",
+                  unachievingOnly
+                    ? "bg-rose-500/20 text-rose-400 border-rose-500/50 shadow-rose-500/20 ring-2 ring-rose-500/40"
+                    : "bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20 hover:text-rose-300"
+                )}
+                title={unachievingOnly ? "Show All Data" : "Filter Unachieving / Red Only"}
+              >
+                <AlertTriangle className={cn("w-3.5 h-3.5 text-rose-500", unachievingOnly && "animate-pulse")} />
+                <span>Unachieving / Red Only</span>
+                {unachievingOnly && (
+                  <span className="ml-1 text-[9px] bg-rose-500 text-white px-1.5 py-0.5 rounded-full font-extrabold uppercase tracking-wider">
+                    ACTIVE
+                  </span>
+                )}
+              </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {cards.map((card) => {
+              {cards.filter(c => !unachievingOnly || (c.calc() < c.target)).map((card) => {
                 const real = card.calc();
                 const h1 = avgH1(card.metricKey);
                 const isAchieved = real >= card.target;
@@ -1239,77 +1321,29 @@ export function ReportDatinEastern({ data, trendData }: ReportDatinEasternProps)
                 );
               })}
             </div>
+
+            {unachievingOnly && cards.every(c => c.calc() >= c.target) && (
+              <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-medium flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                All District level metrics achieved target!
+              </div>
+            )}
           </div>
         );
       })()}
 
-      {/* District Stats Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass-card-sm p-4 text-center flex flex-col justify-center">
-          <div className="text-3xl font-bold text-foreground">
-            {districtTotalSAs}
-          </div>
-          <div className="text-xs text-foreground-muted mt-1 uppercase tracking-wider font-semibold">
-            Service Areas
-          </div>
-        </div>
-        <div className="glass-card-sm p-4 text-center flex flex-col justify-center">
-          <div className="text-3xl font-bold text-foreground">
-            {districtTotalSTOs}
-          </div>
-          <div className="text-xs text-foreground-muted mt-1 uppercase tracking-wider font-semibold">STOs</div>
-        </div>
-        
-        <div className="glass-card-sm p-4 flex flex-col justify-between">
-          <div className="text-xs text-foreground-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            Top Achieving
-          </div>
-          <div className="space-y-2">
-            {top3Achieving.map((item, i) => (
-              <div key={item.label} className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-foreground">{item.label}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-emerald-500 tabular-nums">
-                    {item.avg.toFixed(2)}%
-                  </span>
-                  <span className="text-[9px] text-emerald-500/70 tabular-nums bg-emerald-500/10 px-1.5 py-0.5 rounded-sm">
-                    +{item.diff.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="glass-card-sm p-4 flex flex-col justify-between">
-          <div className="text-xs text-foreground-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-            Needs Attention
-          </div>
-          <div className="space-y-2">
-            {top3Unachieving.map((item, i) => (
-              <div key={item.label} className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-foreground">{item.label}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-rose-500 tabular-nums">
-                    {item.avg.toFixed(2)}%
-                  </span>
-                  <span className="text-[9px] text-rose-500/70 tabular-nums bg-rose-500/10 px-1.5 py-0.5 rounded-sm">
-                    {item.diff.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* Service Area Cards */}
       <div className="space-y-4">
-        {district.serviceAreas.map((sa) => (
-          <ServiceAreaCard key={sa.serviceArea} sa={sa} />
-        ))}
+        {district.serviceAreas
+          .filter((sa) => {
+            if (!unachievingOnly) return true;
+            const saUnachieving = hasRecordUnachieving(sa.summary);
+            const stoUnachieving = sa.stos.some((sto) => hasRecordUnachieving(sto));
+            return saUnachieving || stoUnachieving;
+          })
+          .map((sa) => (
+            <ServiceAreaCard key={sa.serviceArea} sa={sa} unachievingOnly={unachievingOnly} />
+          ))}
       </div>
 
       {/* Raw Data Table */}
@@ -1351,16 +1385,34 @@ export function ReportDatinEastern({ data, trendData }: ReportDatinEasternProps)
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
               {district.serviceAreas.flatMap(sa => 
-                sa.stos.map(sto => (
+                sa.stos
+                  .filter(sto => !unachievingOnly || hasRecordUnachieving(sto))
+                  .map(sto => (
                   <tr key={sto.sto} className="group hover:bg-[var(--surface-hover)]/50 transition-colors">
                     <td className="px-4 py-2 sticky left-0 z-10 bg-[var(--surface)] group-hover:bg-[var(--surface-hover)] transition-colors min-w-[150px] max-w-[150px] truncate" title={sa.serviceArea}>{sa.serviceArea}</td>
                     <td className="px-4 py-2 font-medium sticky left-[150px] z-10 bg-[var(--surface)] group-hover:bg-[var(--surface-hover)] transition-colors min-w-[80px] max-w-[80px] shadow-[1px_0_0_0_var(--border)]">{sto.sto}</td>
                     {DATIN_METRIC_CONFIGS.map((mc, idx) => {
                       const m = (sto as any)[mc.key];
                       const target = DATIN_TARGETS[mc.key];
+                      const realVal = m ? (typeof m.real === 'number' ? m.real : parseFloat(String(m.real).replace(',', '.'))) : NaN;
+                      const isAchieved = !isNaN(realVal) && realVal >= target;
+
+                      if (unachievingOnly && isAchieved) {
+                        return (
+                          <Fragment key={mc.key}>
+                            <td className={cn("px-4 py-2 text-center text-foreground-muted/20 text-xs", idx !== 0 && "border-l-2 border-[var(--border)]")}>-</td>
+                            <td className="px-4 py-2 text-center border-l border-[var(--border)]/30 text-foreground-muted/20 text-xs">-</td>
+                            <td className="px-4 py-2 text-center border-l border-[var(--border)]/30 text-foreground-muted/20 text-xs">-</td>
+                            <td className="px-4 py-2 text-center border-l border-[var(--border)]/30 text-foreground-muted/20 text-xs">-</td>
+                            <td className="px-4 py-2 text-center border-l border-[var(--border)]/30 text-foreground-muted/20 text-xs">-</td>
+                            <td className="px-4 py-2 text-center border-l border-[var(--border)]/30 text-foreground-muted/20 text-xs">-</td>
+                          </Fragment>
+                        );
+                      }
+
                       return (
                         <Fragment key={mc.key}>
-                          <td className={cn("px-4 py-2 text-center", idx !== 0 && "border-l-2 border-[var(--border)]")}>
+                          <td className={cn("px-4 py-2 text-center font-bold text-rose-500", idx !== 0 && "border-l-2 border-[var(--border)]")}>
                             {m?.real != null ? (typeof m.real === 'number' ? m.real.toFixed(2) + '%' : String(m.real).endsWith('%') ? m.real : m.real + '%') : '-'}
                           </td>
                           <td className="px-4 py-2 text-center border-l border-[var(--border)]/30">{target ?? '-'}</td>
