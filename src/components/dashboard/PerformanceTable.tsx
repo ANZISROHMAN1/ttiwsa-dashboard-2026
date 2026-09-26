@@ -20,6 +20,7 @@ import { DipisahView } from "./DipisahView";
 import { SaldoPspiView } from "./SaldoPspiView";
 import { UnspecView } from "./UnspecView";
 import type { UnspecTicket } from "@/types/dashboard";
+import { useReportIHEastern } from "@/hooks/useReportIHEastern";
 
 interface PerformanceTableProps {
   summary: DashboardSummary;
@@ -99,6 +100,28 @@ export function PerformanceTable({
   const [metricTab, setMetricTab] = useState<PerformanceMetricTab>("overall");
   const [segment, setSegment] = useState<Segment>("indihome");
   const [view, setView] = useState<"sa" | "sto">("sa");
+  const [districtFilter, setDistrictFilter] = useState<string>("ALL");
+
+  const { data: districtData } = useReportIHEastern();
+
+  const { saToDistrict, stoToDistrict, districts } = useMemo(() => {
+    const s2d: Record<string, string> = {};
+    const sto2d: Record<string, string> = {};
+    const dists = new Set<string>();
+
+    if (districtData) {
+      districtData.forEach(d => {
+        dists.add(d.district);
+        d.serviceAreas?.forEach(sa => {
+          s2d[sa.serviceArea.toUpperCase()] = d.district;
+          sa.stos?.forEach(sto => {
+            sto2d[sto.sto.toUpperCase()] = d.district;
+          });
+        });
+      });
+    }
+    return { saToDistrict: s2d, stoToDistrict: sto2d, districts: Array.from(dists).sort() };
+  }, [districtData]);
 
   const sortKey = getSortKey(metricTab, segment);
 
@@ -119,22 +142,26 @@ export function PerformanceTable({
     );
   }, [rankingSTO, sortKey]);
 
-  // Enrich data with PS/PI and UNSPEC counts
+  // Enrich data with PS/PI and UNSPEC counts, and apply District Filter
   const enrichedSortedSA = useMemo(() => {
-    return sortedSA.map(row => {
-      const pspi = saldoPspiTickets.filter(t => t.SA?.toUpperCase() === row.sa?.toUpperCase()).length;
-      const unspec = unspecTickets.filter(t => t.SA?.toUpperCase() === row.sa?.toUpperCase()).length;
-      return { ...row, _pspi: pspi, _unspec: unspec };
-    });
-  }, [sortedSA, saldoPspiTickets, unspecTickets]);
+    return sortedSA
+      .filter(row => districtFilter === "ALL" || saToDistrict[row.sa.toUpperCase()] === districtFilter)
+      .map(row => {
+        const pspi = saldoPspiTickets.filter(t => t.SA?.toUpperCase() === row.sa?.toUpperCase()).length;
+        const unspec = unspecTickets.filter(t => t.SA?.toUpperCase() === row.sa?.toUpperCase()).length;
+        return { ...row, _pspi: pspi, _unspec: unspec };
+      });
+  }, [sortedSA, saldoPspiTickets, unspecTickets, districtFilter, saToDistrict]);
 
   const enrichedSortedSTO = useMemo(() => {
-    return sortedSTO.map(row => {
-      const pspi = saldoPspiTickets.filter(t => t.sto?.toUpperCase() === row.sto?.toUpperCase()).length;
-      const unspec = unspecTickets.filter(t => t.sto?.toUpperCase() === row.sto?.toUpperCase()).length;
-      return { ...row, _pspi: pspi, _unspec: unspec };
-    });
-  }, [sortedSTO, saldoPspiTickets, unspecTickets]);
+    return sortedSTO
+      .filter(row => districtFilter === "ALL" || stoToDistrict[row.sto.toUpperCase()] === districtFilter)
+      .map(row => {
+        const pspi = saldoPspiTickets.filter(t => t.sto?.toUpperCase() === row.sto?.toUpperCase()).length;
+        const unspec = unspecTickets.filter(t => t.sto?.toUpperCase() === row.sto?.toUpperCase()).length;
+        return { ...row, _pspi: pspi, _unspec: unspec };
+      });
+  }, [sortedSTO, saldoPspiTickets, unspecTickets, districtFilter, stoToDistrict]);
 
   // ── Build columns based on metric tab ──
 
@@ -374,6 +401,18 @@ export function PerformanceTable({
                 value={view}
                 onChange={setView}
               />
+              <div className="flex items-center">
+                <select
+                  value={districtFilter}
+                  onChange={(e) => setDistrictFilter(e.target.value)}
+                  className="bg-[var(--surface)] text-foreground text-sm font-semibold border border-[var(--border)] rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500 min-h-[38px]"
+                >
+                  <option value="ALL">All Districts</option>
+                  {districts.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
               <div className="text-xs text-foreground-muted ml-auto hidden sm:block">
                 Ranked by: <span className="text-foreground font-medium">{getMetricTitle(metricTab, segment)}</span>
               </div>
