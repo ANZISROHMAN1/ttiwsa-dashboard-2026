@@ -416,26 +416,26 @@ export async function fetchDashboardData(
     });
 
     const rankingSA: RankingSA[] = Array.from(saMap.values()).map((row) => {
-      if (row.achievementIH === 0 && (row.ttiIH > 0 || row.ffgIH > 0 || row.garansiIH > 0)) {
-        row.achievementIH = (row.ttiIH + row.ffgIH + row.garansiIH) / 3;
-      }
-      if (row.achievementIB === 0 && (row.ttiIB > 0 || row.ffgIB > 0 || row.garansiIB > 0)) {
-        row.achievementIB = (row.ttiIB + row.ffgIB + row.garansiIB) / 3;
-      }
+      row.performanceIH = row.ttiIH > 0 || row.ffgIH > 0 || row.garansiIH > 0 ? (row.ttiIH + row.ffgIH + row.garansiIH) / 3 : 0;
+      row.performanceIB = row.ttiIB > 0 || row.ffgIB > 0 || row.garansiIB > 0 ? (row.ttiIB + row.ffgIB + row.garansiIB) / 3 : 0;
+      row.performance = (row.performanceIH + row.performanceIB) / 2;
+
+      if (row.achievementIH === 0 && row.performanceIH > 0) row.achievementIH = row.performanceIH;
+      if (row.achievementIB === 0 && row.performanceIB > 0) row.achievementIB = row.performanceIB;
       row.achievement = (row.achievementIH + row.achievementIB) / 2;
       return row;
-    }).sort((a, b) => b.achievement - a.achievement);
+    }); // we will sort this in the component based on the page
 
     const rankingSTO: RankingSTO[] = Array.from(stoMap.values()).map((row) => {
-      if (row.achievementIH === 0 && (row.ttiIH > 0 || row.ffgIH > 0 || row.garansiIH > 0)) {
-        row.achievementIH = (row.ttiIH + row.ffgIH + row.garansiIH) / 3;
-      }
-      if (row.achievementIB === 0 && (row.ttiIB > 0 || row.ffgIB > 0 || row.garansiIB > 0)) {
-        row.achievementIB = (row.ttiIB + row.ffgIB + row.garansiIB) / 3;
-      }
+      row.performanceIH = row.ttiIH > 0 || row.ffgIH > 0 || row.garansiIH > 0 ? (row.ttiIH + row.ffgIH + row.garansiIH) / 3 : 0;
+      row.performanceIB = row.ttiIB > 0 || row.ffgIB > 0 || row.garansiIB > 0 ? (row.ttiIB + row.ffgIB + row.garansiIB) / 3 : 0;
+      row.performance = (row.performanceIH + row.performanceIB) / 2;
+
+      if (row.achievementIH === 0 && row.performanceIH > 0) row.achievementIH = row.performanceIH;
+      if (row.achievementIB === 0 && row.performanceIB > 0) row.achievementIB = row.performanceIB;
       row.achievement = (row.achievementIH + row.achievementIB) / 2;
       return row;
-    }).sort((a, b) => b.achievement - a.achievement);
+    }); // we will sort this in the component based on the page
 
     const calcSimulation = (sa: string, kpi: string, target: number, actual: number, total: number, comply: number) => {
       let status: "ACHIEVE" | "NOT ACHIEVE" = actual >= target ? "ACHIEVE" : "NOT ACHIEVE";

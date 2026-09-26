@@ -24,9 +24,12 @@ export interface DashboardSummary {
 
 export interface RankingSA {
   sa: string;
-  achievement: number;
+  achievement: number; // For Leaderboard
   achievementIH: number;
   achievementIB: number;
+  performance: number; // For Performance page
+  performanceIH: number;
+  performanceIB: number;
   saIH: number;
   asgarIH: number;
   diamondIH: number;
@@ -44,9 +47,12 @@ export interface RankingSA {
 
 export interface RankingSTO {
   sto: string;
-  achievement: number;
+  achievement: number; // For Leaderboard
   achievementIH: number;
   achievementIB: number;
+  performance: number; // For Performance page
+  performanceIH: number;
+  performanceIB: number;
   saIH: number;
   asgarIH: number;
   diamondIH: number;

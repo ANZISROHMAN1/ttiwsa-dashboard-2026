@@ -32,6 +32,7 @@ interface PerformanceTableProps {
   ffgTickets: Ticket[];
   saldoPspiTickets: SaldoPspiTicket[];
   unspecTickets: UnspecTicket[];
+  mode?: "leaderboard" | "performance";
 }
 
 const SEGMENT_OPTIONS: { value: Segment; label: string }[] = [
@@ -62,9 +63,13 @@ function RankCell({ rank }: { rank: number }) {
 /** Get the sort key for a metric tab + segment combination */
 function getSortKey(
   metric: PerformanceMetricTab,
-  segment: Segment
+  segment: Segment,
+  mode: "leaderboard" | "performance"
 ): string {
-  if (metric === "overall") return segment === "indihome" ? "achievementIH" : "achievementIB";
+  if (metric === "overall") {
+    if (mode === "leaderboard") return segment === "indihome" ? "achievementIH" : "achievementIB";
+    return segment === "indihome" ? "performanceIH" : "performanceIB";
+  }
   if (metric === "tti") return segment === "indihome" ? "ttiIH" : "ttiIB";
   if (metric === "ttr-ffg") return segment === "indihome" ? "ffgIH" : "ffgIB";
   // ffg (garansi)
@@ -96,6 +101,7 @@ export function PerformanceTable({
   ffgTickets,
   saldoPspiTickets,
   unspecTickets,
+  mode = "performance",
 }: PerformanceTableProps) {
   const [metricTab, setMetricTab] = useState<PerformanceMetricTab>("overall");
   const [segment, setSegment] = useState<Segment>("indihome");
@@ -148,7 +154,7 @@ export function PerformanceTable({
     return { getDistrictForSA, getDistrictForSTO, districts: Array.from(dists).sort() };
   }, [districtData]);
 
-  const sortKey = getSortKey(metricTab, segment);
+  const sortKey = getSortKey(metricTab, segment, mode);
 
   // Sort data by the selected metric
   const sortedSA = useMemo(() => {
@@ -219,22 +225,31 @@ export function PerformanceTable({
           label: "Overall",
           sortable: true,
           align: "center" as const,
-          render: (row: any) => (
-            <AchievementBadge value={segment === "indihome" ? row.achievementIH : row.achievementIB} />
-          ),
+          render: (row: any) => {
+            const val = mode === "leaderboard" 
+              ? (segment === "indihome" ? row.achievementIH : row.achievementIB)
+              : (segment === "indihome" ? row.performanceIH : row.performanceIB);
+            return <AchievementBadge value={val} />;
+          },
         },
         ...(segment === "indihome"
-          ? [
-              col("saIH", "SA"),
-              col("asgarIH", "ASGAR"),
-              col("diamondIH", "DIAMOND"),
-              col("platinumIH", "PLATINUM"),
-              col("manjaIH", "MANJA"),
-              col("ttr36IH", "TTR 36"),
-              col("ttiIH", "TTI 3X24"),
-              col("garansiIH", "FFG"),
-              col("ffgIH", "TTR FFG"),
-            ]
+          ? mode === "leaderboard"
+            ? [
+                col("saIH", "SA"),
+                col("asgarIH", "ASGAR"),
+                col("diamondIH", "DIAMOND"),
+                col("platinumIH", "PLATINUM"),
+                col("manjaIH", "MANJA"),
+                col("ttr36IH", "TTR 36"),
+                col("ttiIH", "TTI 3X24"),
+                col("garansiIH", "FFG"),
+                col("ffgIH", "TTR FFG"),
+              ]
+            : [
+                col("ttiIH", "TTI"),
+                col("ffgIH", "TTR FFG"),
+                col("garansiIH", "FFG"),
+              ]
           : [
               col("ttiIB", "TTI"),
               col("ffgIB", "TTR FFG"),
@@ -326,22 +341,31 @@ export function PerformanceTable({
           label: "Overall",
           sortable: true,
           align: "center" as const,
-          render: (row: RankingSTO) => (
-            <AchievementBadge value={row.achievement} />
-          ),
+          render: (row: RankingSTO) => {
+            const val = mode === "leaderboard" 
+              ? (segment === "indihome" ? row.achievementIH : row.achievementIB)
+              : (segment === "indihome" ? row.performanceIH : row.performanceIB);
+            return <AchievementBadge value={val} />;
+          },
         },
         ...(segment === "indihome"
-          ? [
-              colSTO("saIH", "SA"),
-              colSTO("asgarIH", "ASGAR"),
-              colSTO("diamondIH", "DIAMOND"),
-              colSTO("platinumIH", "PLATINUM"),
-              colSTO("manjaIH", "MANJA"),
-              colSTO("ttr36IH", "TTR 36"),
-              colSTO("ttiIH", "TTI 3X24"),
-              colSTO("garansiIH", "FFG"),
-              colSTO("ffgIH", "TTR FFG"),
-            ]
+          ? mode === "leaderboard"
+            ? [
+                colSTO("saIH", "SA"),
+                colSTO("asgarIH", "ASGAR"),
+                colSTO("diamondIH", "DIAMOND"),
+                colSTO("platinumIH", "PLATINUM"),
+                colSTO("manjaIH", "MANJA"),
+                colSTO("ttr36IH", "TTR 36"),
+                colSTO("ttiIH", "TTI 3X24"),
+                colSTO("garansiIH", "FFG"),
+                colSTO("ffgIH", "TTR FFG"),
+              ]
+            : [
+                colSTO("ttiIH", "TTI"),
+                colSTO("ffgIH", "TTR FFG"),
+                colSTO("garansiIH", "FFG"),
+              ]
           : [
               colSTO("ttiIB", "TTI"),
               colSTO("ffgIB", "TTR FFG"),
