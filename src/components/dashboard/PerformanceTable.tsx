@@ -225,9 +225,15 @@ export function PerformanceTable({
         },
         ...(segment === "indihome"
           ? [
-              col("ttiIH", "TTI"),
-              col("ffgIH", "TTR FFG"),
+              col("saIH", "SA"),
+              col("asgarIH", "ASGAR"),
+              col("diamondIH", "DIAMOND"),
+              col("platinumIH", "PLATINUM"),
+              col("manjaIH", "MANJA"),
+              col("ttr36IH", "TTR 36"),
+              col("ttiIH", "TTI 3X24"),
               col("garansiIH", "FFG"),
+              col("ffgIH", "TTR FFG"),
             ]
           : [
               col("ttiIB", "TTI"),
@@ -326,9 +332,15 @@ export function PerformanceTable({
         },
         ...(segment === "indihome"
           ? [
-              colSTO("ttiIH", "TTI"),
-              colSTO("ffgIH", "TTR FFG"),
+              colSTO("saIH", "SA"),
+              colSTO("asgarIH", "ASGAR"),
+              colSTO("diamondIH", "DIAMOND"),
+              colSTO("platinumIH", "PLATINUM"),
+              colSTO("manjaIH", "MANJA"),
+              colSTO("ttr36IH", "TTR 36"),
+              colSTO("ttiIH", "TTI 3X24"),
               colSTO("garansiIH", "FFG"),
+              colSTO("ffgIH", "TTR FFG"),
             ]
           : [
               colSTO("ttiIB", "TTI"),

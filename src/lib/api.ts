@@ -341,9 +341,9 @@ export async function fetchDashboardData(
       [isSA ? 'sa' : 'sto']: name,
       achievement: 0,
       achievementIH: 0, achievementIB: 0,
-      saIH: 0, saIB: 0,
+      saIH: 0, asgarIH: 0, diamondIH: 0, platinumIH: 0, manjaIH: 0, ttr36IH: 0,
       ttiIH: 0, ffgIH: 0, garansiIH: 0,
-      ttiIB: 0, ffgIB: 0, garansiIB: 0
+      saIB: 0, ttiIB: 0, ffgIB: 0, garansiIB: 0
     });
 
     const getAverageMetric = (summary: any) => {
@@ -365,6 +365,12 @@ export async function fetchDashboardData(
         if (!saMap.has(name)) saMap.set(name, initData(sa.serviceArea, true));
         const row = saMap.get(name);
         row.achievementIH = getAverageMetric(sa.summary);
+        row.saIH = parseVal(sa.summary?.serviceAvailability?.real);
+        row.asgarIH = parseVal(sa.summary?.assuranceGuarantee?.real);
+        row.diamondIH = parseVal(sa.summary?.ttrCompDiamond3Jam?.real);
+        row.platinumIH = parseVal(sa.summary?.ttrCompPlatinum6Jam?.real);
+        row.manjaIH = parseVal(sa.summary?.ttrCompManja3Jam?.real);
+        row.ttr36IH = parseVal(sa.summary?.ttr36Jam?.real);
         row.ttiIH = parseVal(sa.summary?.tti3x24Jam?.real);
         row.ffgIH = parseVal(sa.summary?.ttrFfg?.real);
         row.garansiIH = parseVal(sa.summary?.ffg?.real);
@@ -374,6 +380,12 @@ export async function fetchDashboardData(
           if (!stoMap.has(stoName)) stoMap.set(stoName, initData(sto.sto, false));
           const stoRow = stoMap.get(stoName);
           stoRow.achievementIH = getAverageMetric(sto.summary);
+          stoRow.saIH = parseVal(sto.summary?.serviceAvailability?.real);
+          stoRow.asgarIH = parseVal(sto.summary?.assuranceGuarantee?.real);
+          stoRow.diamondIH = parseVal(sto.summary?.ttrCompDiamond3Jam?.real);
+          stoRow.platinumIH = parseVal(sto.summary?.ttrCompPlatinum6Jam?.real);
+          stoRow.manjaIH = parseVal(sto.summary?.ttrCompManja3Jam?.real);
+          stoRow.ttr36IH = parseVal(sto.summary?.ttr36Jam?.real);
           stoRow.ttiIH = parseVal(sto.summary?.tti3x24Jam?.real);
           stoRow.ffgIH = parseVal(sto.summary?.ttrFfg?.real);
           stoRow.garansiIH = parseVal(sto.summary?.ffg?.real);
