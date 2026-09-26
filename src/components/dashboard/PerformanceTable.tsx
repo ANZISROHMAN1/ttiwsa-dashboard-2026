@@ -104,7 +104,7 @@ export function PerformanceTable({
 
   const { data: districtData } = useReportIHEastern();
 
-  const { saToDistrict, stoToDistrict, districts } = useMemo(() => {
+  const { getDistrictForSA, getDistrictForSTO, districts } = useMemo(() => {
     const s2d: Record<string, string> = {};
     const sto2d: Record<string, string> = {};
     const dists = new Set<string>();
@@ -120,7 +120,32 @@ export function PerformanceTable({
         });
       });
     }
-    return { saToDistrict: s2d, stoToDistrict: sto2d, districts: Array.from(dists).sort() };
+
+    // Helper for fuzzy matching since API strings differ (e.g. "CIAPUS - PAGELARAN" vs "PAGELARAN")
+    const getDistrictForSA = (saName: string) => {
+      const upper = saName.toUpperCase();
+      if (s2d[upper]) return s2d[upper];
+      for (const [knownSA, dist] of Object.entries(s2d)) {
+        // If the known SA is a substring of the raw SA or vice-versa
+        if (upper.includes(knownSA) || knownSA.includes(upper)) {
+          return dist;
+        }
+      }
+      return "UNKNOWN";
+    };
+
+    const getDistrictForSTO = (stoName: string) => {
+      const upper = stoName.toUpperCase();
+      if (sto2d[upper]) return sto2d[upper];
+      for (const [knownSTO, dist] of Object.entries(sto2d)) {
+        if (upper.includes(knownSTO) || knownSTO.includes(upper)) {
+          return dist;
+        }
+      }
+      return "UNKNOWN";
+    };
+
+    return { getDistrictForSA, getDistrictForSTO, districts: Array.from(dists).sort() };
   }, [districtData]);
 
   const sortKey = getSortKey(metricTab, segment);
@@ -145,23 +170,23 @@ export function PerformanceTable({
   // Enrich data with PS/PI and UNSPEC counts, and apply District Filter
   const enrichedSortedSA = useMemo(() => {
     return sortedSA
-      .filter(row => districtFilter === "ALL" || saToDistrict[row.sa.toUpperCase()] === districtFilter)
+      .filter(row => districtFilter === "ALL" || getDistrictForSA(row.sa) === districtFilter)
       .map(row => {
         const pspi = saldoPspiTickets.filter(t => t.SA?.toUpperCase() === row.sa?.toUpperCase()).length;
         const unspec = unspecTickets.filter(t => t.SA?.toUpperCase() === row.sa?.toUpperCase()).length;
         return { ...row, _pspi: pspi, _unspec: unspec };
       });
-  }, [sortedSA, saldoPspiTickets, unspecTickets, districtFilter, saToDistrict]);
+  }, [sortedSA, saldoPspiTickets, unspecTickets, districtFilter, getDistrictForSA]);
 
   const enrichedSortedSTO = useMemo(() => {
     return sortedSTO
-      .filter(row => districtFilter === "ALL" || stoToDistrict[row.sto.toUpperCase()] === districtFilter)
+      .filter(row => districtFilter === "ALL" || getDistrictForSTO(row.sto) === districtFilter)
       .map(row => {
         const pspi = saldoPspiTickets.filter(t => t.sto?.toUpperCase() === row.sto?.toUpperCase()).length;
         const unspec = unspecTickets.filter(t => t.sto?.toUpperCase() === row.sto?.toUpperCase()).length;
         return { ...row, _pspi: pspi, _unspec: unspec };
       });
-  }, [sortedSTO, saldoPspiTickets, unspecTickets, districtFilter, stoToDistrict]);
+  }, [sortedSTO, saldoPspiTickets, unspecTickets, districtFilter, getDistrictForSTO]);
 
   // ── Build columns based on metric tab ──
 
