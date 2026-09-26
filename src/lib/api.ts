@@ -340,6 +340,8 @@ export async function fetchDashboardData(
     const initData = (name: string, isSA: boolean) => ({
       [isSA ? 'sa' : 'sto']: name,
       achievement: 0,
+      achievementIH: 0, achievementIB: 0,
+      saIH: 0, saIB: 0,
       ttiIH: 0, ffgIH: 0, garansiIH: 0,
       ttiIB: 0, ffgIB: 0, garansiIB: 0
     });
@@ -349,6 +351,7 @@ export async function fetchDashboardData(
         const name = sa.serviceArea.toUpperCase();
         if (!saMap.has(name)) saMap.set(name, initData(sa.serviceArea, true));
         const row = saMap.get(name);
+        row.saIH = parseVal(sa.summary?.serviceAvailability?.real); // Added saIH
         row.ttiIH = parseVal(sa.summary?.tti3x24Jam?.real);
         row.ffgIH = parseVal(sa.summary?.ttrFfg?.real);
         row.garansiIH = parseVal(sa.summary?.ffg?.real);
@@ -357,6 +360,7 @@ export async function fetchDashboardData(
           const stoName = sto.sto.toUpperCase();
           if (!stoMap.has(stoName)) stoMap.set(stoName, initData(sto.sto, false));
           const stoRow = stoMap.get(stoName);
+          stoRow.saIH = parseVal(sto.summary?.serviceAvailability?.real); // Added saIH
           stoRow.ttiIH = parseVal(sto.summary?.tti3x24Jam?.real);
           stoRow.ffgIH = parseVal(sto.summary?.ttrFfg?.real);
           stoRow.garansiIH = parseVal(sto.summary?.ffg?.real);
@@ -369,6 +373,7 @@ export async function fetchDashboardData(
         const name = sa.serviceArea.toUpperCase();
         if (!saMap.has(name)) saMap.set(name, initData(sa.serviceArea, true));
         const row = saMap.get(name);
+        row.saIB = parseVal(sa.summary?.general?.real); // Added saIB
         row.ttiIB = parseVal(sa.summary?.tti1X24Jam?.real);
         row.ffgIB = parseVal(sa.summary?.ttrFulfillmentGuarantee3Jam?.real || sa.summary?.ttrFfg?.real);
         row.garansiIB = parseVal(sa.summary?.fulfillmentGuarantee?.real);
@@ -377,6 +382,7 @@ export async function fetchDashboardData(
           const stoName = sto.sto.toUpperCase();
           if (!stoMap.has(stoName)) stoMap.set(stoName, initData(sto.sto, false));
           const stoRow = stoMap.get(stoName);
+          stoRow.saIB = parseVal(sto.summary?.general?.real); // Added saIB
           stoRow.ttiIB = parseVal(sto.summary?.tti1X24Jam?.real);
           stoRow.ffgIB = parseVal(sto.summary?.ttrFulfillmentGuarantee3Jam?.real || sto.summary?.ttrFfg?.real);
           stoRow.garansiIB = parseVal(sto.summary?.fulfillmentGuarantee?.real);
@@ -385,12 +391,20 @@ export async function fetchDashboardData(
     });
 
     const rankingSA: RankingSA[] = Array.from(saMap.values()).map((row) => {
-      row.achievement = (row.ttiIH + row.ffgIH + row.garansiIH + row.ttiIB + row.ffgIB + row.garansiIB) / 6;
+      // In the frontend, the UI switches between segments, but 'achievement' is a single column for the table.
+      // Since the leaderboard can switch between IH and IB, we should set 'achievement' to the average of both, 
+      // or we can pass both saIH and saIB and let the frontend decide. 
+      // Currently the frontend uses row.achievement for the overall column regardless of segment.
+      row.achievementIH = row.saIH || ((row.ttiIH + row.ffgIH + row.garansiIH) / 3);
+      row.achievementIB = row.saIB || ((row.ttiIB + row.ffgIB + row.garansiIB) / 3);
+      row.achievement = (row.achievementIH + row.achievementIB) / 2;
       return row;
     }).sort((a, b) => b.achievement - a.achievement);
 
     const rankingSTO: RankingSTO[] = Array.from(stoMap.values()).map((row) => {
-      row.achievement = (row.ttiIH + row.ffgIH + row.garansiIH + row.ttiIB + row.ffgIB + row.garansiIB) / 6;
+      row.achievementIH = row.saIH || ((row.ttiIH + row.ffgIH + row.garansiIH) / 3);
+      row.achievementIB = row.saIB || ((row.ttiIB + row.ffgIB + row.garansiIB) / 3);
+      row.achievement = (row.achievementIH + row.achievementIB) / 2;
       return row;
     }).sort((a, b) => b.achievement - a.achievement);
 

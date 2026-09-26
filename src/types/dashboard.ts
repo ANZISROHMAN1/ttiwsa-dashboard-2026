@@ -25,6 +25,10 @@ export interface DashboardSummary {
 export interface RankingSA {
   sa: string;
   achievement: number;
+  achievementIH: number;
+  achievementIB: number;
+  saIH: number;
+  saIB: number;
   ttiIH: number;
   ffgIH: number;
   garansiIH: number;
@@ -36,6 +40,10 @@ export interface RankingSA {
 export interface RankingSTO {
   sto: string;
   achievement: number;
+  achievementIH: number;
+  achievementIB: number;
+  saIH: number;
+  saIB: number;
   ttiIH: number;
   ffgIH: number;
   garansiIH: number;

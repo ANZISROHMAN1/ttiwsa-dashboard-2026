@@ -64,7 +64,7 @@ function getSortKey(
   metric: PerformanceMetricTab,
   segment: Segment
 ): string {
-  if (metric === "overall") return "achievement";
+  if (metric === "overall") return segment === "indihome" ? "achievementIH" : "achievementIB";
   if (metric === "tti") return segment === "indihome" ? "ttiIH" : "ttiIB";
   if (metric === "ttr-ffg") return segment === "indihome" ? "ffgIH" : "ffgIB";
   // ffg (garansi)
@@ -219,8 +219,8 @@ export function PerformanceTable({
           label: "Overall",
           sortable: true,
           align: "center" as const,
-          render: (row: RankingSA) => (
-            <AchievementBadge value={row.achievement} />
+          render: (row: any) => (
+            <AchievementBadge value={segment === "indihome" ? row.achievementIH : row.achievementIB} />
           ),
         },
         ...(segment === "indihome"
