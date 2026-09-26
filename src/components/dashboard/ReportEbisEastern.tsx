@@ -850,6 +850,28 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
     return { sa, achieved, thumbsUp, metrics };
   }
 
+  function getStoScore(sto: STOData) {
+    let achieved = 0;
+    let thumbsUp = 0;
+    const metrics: { label: string; value: number }[] = [];
+
+    configs.forEach((mc) => {
+      const metric = (sto as any)[mc.key];
+      if (!metric) return;
+      const realVal = typeof metric.real === "number" ? metric.real : parseFloat(String(metric.real).replace(',', '.'));
+
+      if (!isNaN(realVal)) {
+        if (isMetricAchieved(realVal, mc)) {
+          achieved++;
+          const formattedVal = realVal % 1 === 0 ? realVal : Number(realVal.toFixed(2));
+          metrics.push({ label: mc.shortLabel, value: formattedVal });
+        }
+      }
+      if (metric.trend === "🟢") thumbsUp++;
+    });
+    return { sto, achieved, thumbsUp, metrics };
+  }
+
   // 1. Overall Best SA
   const allSAsWithScores = activeData.flatMap((d) =>
     d.serviceAreas.map((sa) => ({ district: d.district, ...getSaScore(sa) }))
@@ -885,7 +907,22 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
     return { district: d.district, percentage };
   });
   districtScores.sort((a, b) => b.percentage - a.percentage);
+  districtScores.sort((a, b) => b.percentage - a.percentage);
   const top3Districts = districtScores.slice(0, 3);
+
+  // 4. Best STO in Active District
+  const activeDistrictSTOs = district.serviceAreas.flatMap((sa) => 
+    sa.stos.map((sto) => ({
+      district: district.district,
+      sa: sa.serviceArea,
+      ...getStoScore(sto),
+    }))
+  );
+  activeDistrictSTOs.sort((a, b) => {
+    if (b.achieved !== a.achieved) return b.achieved - a.achieved;
+    return b.thumbsUp - a.thumbsUp;
+  });
+  const districtBestSTO = activeDistrictSTOs[0];
 
   const pieData = {
     labels: overallBestSA?.metrics.map((m) => m.label) || [],
@@ -991,7 +1028,7 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
       </div>
 
       {/* Top Performers Widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
         
         {/* Widget 1: Global Best SA */}
         <div className="glass-card p-5 flex flex-col justify-between relative overflow-hidden group">
@@ -1139,6 +1176,51 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
                       <ThumbsUp className="w-3 h-3 text-blue-400" /> Trends
                     </div>
                     <div className="text-lg font-bold text-blue-400">{districtBestSA.thumbsUp} <span className="text-[10px] text-foreground-muted">pos</span></div>
+                  </div>
+                </div>
+              </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Widget 4: Best STO per District */}
+        <div className="glass-card p-5 flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-violet-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+          
+          <div className="mb-4 relative z-10">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Target className="w-4 h-4 text-violet-400" />
+              Best STO in {district.district}
+            </h3>
+            <p className="text-[10px] text-foreground-muted mt-1">Top performing STO in current district</p>
+          </div>
+
+          {districtBestSTO && (
+            <div className="relative z-10 flex flex-col flex-1 justify-center">
+              <div className="bg-[var(--surface-hover)] p-5 rounded-xl border border-[var(--border)] relative overflow-hidden">
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0 border border-violet-500/20">
+                    <span className="text-violet-400 font-bold text-lg tracking-widest">{districtBestSTO.sto.sto.substring(0, 3)}</span>
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-foreground">{districtBestSTO.sto.sto}</div>
+                    <div className="text-xs text-violet-400 mt-0.5">SA: {districtBestSTO.sa}</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-[var(--surface)] rounded-lg p-3 border border-[var(--border)] text-center flex flex-col justify-center">
+                    <div className="text-[10px] text-foreground-muted font-semibold uppercase tracking-wider mb-1 flex items-center justify-center gap-1.5">
+                      <Target className="w-3 h-3 text-violet-400" /> Targets
+                    </div>
+                    <div className="text-lg font-bold text-violet-400">{districtBestSTO.achieved} <span className="text-[10px] text-foreground-muted">/ {configs.length}</span></div>
+                  </div>
+                  <div className="bg-[var(--surface)] rounded-lg p-3 border border-[var(--border)] text-center flex flex-col justify-center">
+                    <div className="text-[10px] text-foreground-muted font-semibold uppercase tracking-wider mb-1 flex items-center justify-center gap-1.5">
+                      <ThumbsUp className="w-3 h-3 text-violet-400" /> Trends
+                    </div>
+                    <div className="text-lg font-bold text-violet-400">{districtBestSTO.thumbsUp} <span className="text-[10px] text-foreground-muted">pos</span></div>
                   </div>
                 </div>
               </div>
