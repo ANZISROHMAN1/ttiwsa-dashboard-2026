@@ -444,7 +444,7 @@ export async function fetchDashboardData(
     };
 
     let kpiSimulation: KPISimulation[] = [];
-    for (const sa of allSAs) {
+    for (const sa of Array.from(saMap.keys())) {
       kpiSimulation = kpiSimulation.concat(generateSimulations(sa, sa));
     }
     const branchBogor = generateSimulations("", "BOGOR");
