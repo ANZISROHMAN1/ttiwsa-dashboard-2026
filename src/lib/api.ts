@@ -1,4 +1,4 @@
-import { API_BASE_URL, SALDO_PSPI_API_URL, UNSPEC_API_URL, EVIDENCE_API_URL, KPI_TARGET } from "./constants";
+import { API_BASE_URL, SALDO_PSPI_API_URL, UNSPEC_API_URL, EVIDENCE_API_URL, KPI_TARGET, REPORT_IH_EASTERN_API_URL, EBIS_API_URL } from "./constants";
 import type { DashboardData, SaldoPspiTicket, UnspecTicket, KPISimulation, TTITicket, FFGTicket, RankingSA, RankingSTO, DashboardSummary, Resume } from "@/types/dashboard";
 import { getCachedData, setCachedData } from "./redisCache";
 
@@ -56,7 +56,7 @@ export async function fetchDashboardData(
     const refreshPspi = refreshTarget === "pspi" || refreshTarget === "all";
     const refreshUnspec = refreshTarget === "unspec" || refreshTarget === "all";
 
-    const [rawData, saldoPspiTickets, unspecTickets, evidenceData] = await Promise.all([
+    const [rawData, saldoPspiTickets, unspecTickets, evidenceData, reportIh, reportIb] = await Promise.all([
       getFeedData(
         "feed_raw_ttiwsa",
         async () => {
@@ -105,6 +105,26 @@ export async function fetchDashboardData(
                 return [];
               }
               return res.json();
+            },
+            refreshRegular
+          ),
+      basic
+        ? Promise.resolve([])
+        : getFeedData<any>(
+            "feed_report_ih",
+            async () => {
+              const res = await fetch(REPORT_IH_EASTERN_API_URL, { signal, next: { revalidate: 0 } });
+              return res.ok ? res.json() : [];
+            },
+            refreshRegular
+          ),
+      basic
+        ? Promise.resolve([])
+        : getFeedData<any>(
+            "feed_report_ib",
+            async () => {
+              const res = await fetch(EBIS_API_URL, { signal, next: { revalidate: 0 } });
+              return res.ok ? res.json() : [];
             },
             refreshRegular
           ),
@@ -305,38 +325,73 @@ export async function fetchDashboardData(
       "GARANSI INDIBIZ": getGaransi(psIbList, internalFfg, 'FFG IB')
     };
 
-    const allSAs = Array.from(new Set([
-      ...internalTti.filter(t => t.kpi.startsWith('TTI')).map(t => t.SA),
-      ...internalFfg.filter(t => t.kpi.startsWith('FFG')).map(t => t.SA),
-      ...psIhList.map(p => p.sa), ...psIbList.map(p => p.sa)
-    ])).filter(sa => sa && sa.toUpperCase() !== "UNKNOWN");
+    const parseVal = (v: any) => {
+      if (typeof v === 'number') return v;
+      if (!v) return 0;
+      return parseFloat(String(v).replace(',', '.')) || 0;
+    };
 
-    const rankingSA: RankingSA[] = allSAs.map(sa => {
-      const ttiIh = getMetric(internalTti.filter(t => t.SA === sa), 'TTI IH', KPI_TARGET["TTI_IH"]).achievement;
-      const ffgIh = getMetric(internalFfg.filter(t => t.SA === sa), 'FFG IH', KPI_TARGET["FFG_IH"]).achievement;
-      const ttiIb = getMetric(internalTti.filter(t => t.SA === sa), 'TTI IB', KPI_TARGET["TTI_IB"]).achievement;
-      const ffgIb = getMetric(internalFfg.filter(t => t.SA === sa), 'FFG IB', KPI_TARGET["FFG_IB"]).achievement;
-      const garansiIh = getGaransi(psIhList.filter(p => p.sa === sa), internalFfg.filter(t => t.SA === sa), 'FFG IH').achievement;
-      const garansiIb = getGaransi(psIbList.filter(p => p.sa === sa), internalFfg.filter(t => t.SA === sa), 'FFG IB').achievement;
-      const achievement = (ttiIh + ffgIh + ttiIb + ffgIb + garansiIh + garansiIb) / 6;
-      return { sa, achievement, ttiIH: ttiIh, ffgIH: ffgIh, garansiIH: garansiIh, ttiIB: ttiIb, ffgIB: ffgIb, garansiIB: garansiIb };
+    const ihDistricts = Array.isArray(reportIh) ? reportIh : (reportIh?.Data || []);
+    const ibDistricts = Array.isArray(reportIb) ? reportIb : (reportIb?.Data || []);
+
+    const saMap = new Map<string, any>();
+    const stoMap = new Map<string, any>();
+
+    const initData = (name: string, isSA: boolean) => ({
+      [isSA ? 'sa' : 'sto']: name,
+      achievement: 0,
+      ttiIH: 0, ffgIH: 0, garansiIH: 0,
+      ttiIB: 0, ffgIB: 0, garansiIB: 0
+    });
+
+    ihDistricts.forEach((d: any) => {
+      d.serviceAreas?.forEach((sa: any) => {
+        const name = sa.serviceArea.toUpperCase();
+        if (!saMap.has(name)) saMap.set(name, initData(sa.serviceArea, true));
+        const row = saMap.get(name);
+        row.ttiIH = parseVal(sa.summary?.tti3x24Jam?.real);
+        row.ffgIH = parseVal(sa.summary?.ttrFfg?.real);
+        row.garansiIH = parseVal(sa.summary?.ffg?.real);
+        
+        sa.stos?.forEach((sto: any) => {
+          const stoName = sto.sto.toUpperCase();
+          if (!stoMap.has(stoName)) stoMap.set(stoName, initData(sto.sto, false));
+          const stoRow = stoMap.get(stoName);
+          stoRow.ttiIH = parseVal(sto.summary?.tti3x24Jam?.real);
+          stoRow.ffgIH = parseVal(sto.summary?.ttrFfg?.real);
+          stoRow.garansiIH = parseVal(sto.summary?.ffg?.real);
+        });
+      });
+    });
+
+    ibDistricts.forEach((d: any) => {
+      d.serviceAreas?.forEach((sa: any) => {
+        const name = sa.serviceArea.toUpperCase();
+        if (!saMap.has(name)) saMap.set(name, initData(sa.serviceArea, true));
+        const row = saMap.get(name);
+        row.ttiIB = parseVal(sa.summary?.tti1X24Jam?.real);
+        row.ffgIB = parseVal(sa.summary?.ttrFulfillmentGuarantee3Jam?.real || sa.summary?.ttrFfg?.real);
+        row.garansiIB = parseVal(sa.summary?.fulfillmentGuarantee?.real);
+        
+        sa.stos?.forEach((sto: any) => {
+          const stoName = sto.sto.toUpperCase();
+          if (!stoMap.has(stoName)) stoMap.set(stoName, initData(sto.sto, false));
+          const stoRow = stoMap.get(stoName);
+          stoRow.ttiIB = parseVal(sto.summary?.tti1X24Jam?.real);
+          stoRow.ffgIB = parseVal(sto.summary?.ttrFulfillmentGuarantee3Jam?.real || sto.summary?.ttrFfg?.real);
+          stoRow.garansiIB = parseVal(sto.summary?.fulfillmentGuarantee?.real);
+        });
+      });
+    });
+
+    const rankingSA: RankingSA[] = Array.from(saMap.values()).map((row) => {
+      row.achievement = (row.ttiIH + row.ffgIH + row.garansiIH + row.ttiIB + row.ffgIB + row.garansiIB) / 6;
+      return row;
     }).sort((a, b) => b.achievement - a.achievement);
 
-    const allSTOs = Array.from(new Set([
-      ...internalTti.filter(t => t.kpi.startsWith('TTI')).map(t => t.STO),
-      ...internalFfg.filter(t => t.kpi.startsWith('FFG')).map(t => t.STO),
-      ...psIhList.map(p => p.sto), ...psIbList.map(p => p.sto)
-    ])).filter(sto => sto && sto.toUpperCase() !== "UNKNOWN");
-
-    const rankingSTO: RankingSTO[] = allSTOs.map(sto => {
-      const ttiIh = getMetric(internalTti.filter(t => t.STO === sto), 'TTI IH', KPI_TARGET["TTI_IH"]).achievement;
-      const ffgIh = getMetric(internalFfg.filter(t => t.STO === sto), 'FFG IH', KPI_TARGET["FFG_IH"]).achievement;
-      const ttiIb = getMetric(internalTti.filter(t => t.STO === sto), 'TTI IB', KPI_TARGET["TTI_IB"]).achievement;
-      const ffgIb = getMetric(internalFfg.filter(t => t.STO === sto), 'FFG IB', KPI_TARGET["FFG_IB"]).achievement;
-      const garansiIh = getGaransi(psIhList.filter(p => p.sto === sto), internalFfg.filter(t => t.STO === sto), 'FFG IH').achievement;
-      const garansiIb = getGaransi(psIbList.filter(p => p.sto === sto), internalFfg.filter(t => t.STO === sto), 'FFG IB').achievement;
-      const achievement = (ttiIh + ffgIh + ttiIb + ffgIb + garansiIh + garansiIb) / 6;
-      return { sto, achievement, ttiIH: ttiIh, ffgIH: ffgIh, garansiIH: garansiIh, ttiIB: ttiIb, ffgIB: ffgIb, garansiIB: garansiIb };
+    const rankingSTO: RankingSTO[] = Array.from(stoMap.values()).map((row) => {
+      row.achievement = (row.ttiIH + row.ffgIH + row.garansiIH + row.ttiIB + row.ffgIB + row.garansiIB) / 6;
+      return row;
     }).sort((a, b) => b.achievement - a.achievement);
 
     const calcSimulation = (sa: string, kpi: string, target: number, actual: number, total: number, comply: number) => {
