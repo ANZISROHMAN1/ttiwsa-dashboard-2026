@@ -68,6 +68,7 @@ export const NAV_ITEMS: NavItem[] = [
     subItems: [
       { label: "KPI Dashboard", href: "/", description: "Main KPI overview" },
       { label: "Kawal 65 PI", href: "/report-ih-eastern", description: "District performance report" },
+      { label: "Leaderboard", href: "/performance", description: "Ranking performance" },
     ],
   },
   {
