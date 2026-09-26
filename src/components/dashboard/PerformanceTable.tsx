@@ -457,21 +457,23 @@ export function PerformanceTable({
     <div className="space-y-5 animate-fade-in relative">
       {/* Sticky Header for Controls */}
       <div className="sticky top-[var(--header-height)] z-20 bg-[var(--background)]/95 backdrop-blur-xl pt-5 lg:pt-8 pb-4 -mx-5 px-5 lg:-mx-8 lg:px-8 border-b border-[var(--border)] mb-6 flex flex-col gap-4 -mt-5 lg:-mt-8">
-        <div className="flex flex-wrap gap-2">
-          {PERF_METRIC_TABS.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => setMetricTab(tab.value)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                metricTab === tab.value
-                  ? "bg-accent-blue text-white shadow-lg shadow-blue-500/20"
-                  : "bg-[var(--surface)] text-foreground-muted hover:text-foreground hover:bg-[var(--surface-hover)] border border-[var(--border)]"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {mode !== "leaderboard" && (
+          <div className="flex flex-wrap gap-2">
+            {PERF_METRIC_TABS.map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setMetricTab(tab.value)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  metricTab === tab.value
+                    ? "bg-accent-blue text-white shadow-lg shadow-blue-500/20"
+                    : "bg-[var(--surface)] text-foreground-muted hover:text-foreground hover:bg-[var(--surface-hover)] border border-[var(--border)]"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
 
       {/* Segment + View Controls (Hide if saldo-pspi or unspec) */}
       {metricTab !== "saldo-pspi" && metricTab !== "unspec" && (
