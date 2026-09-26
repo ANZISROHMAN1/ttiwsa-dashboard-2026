@@ -45,6 +45,11 @@ export interface RankingSA {
   garansiIB: number;
   underspecIB: number;
   pspiIB: number;
+  qggnIB: number;
+  asgarHsiIB: number;
+  asgarDtnIB: number;
+  asgarWifiIB: number;
+  ttr24jIB: number;
 }
 
 export interface RankingSTO {
@@ -70,6 +75,11 @@ export interface RankingSTO {
   garansiIB: number;
   underspecIB: number;
   pspiIB: number;
+  qggnIB: number;
+  asgarHsiIB: number;
+  asgarDtnIB: number;
+  asgarWifiIB: number;
+  ttr24jIB: number;
 }
 
 export interface TTITicket {

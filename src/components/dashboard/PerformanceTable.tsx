@@ -252,6 +252,11 @@ export function PerformanceTable({
               ]
           : mode === "leaderboard"
             ? [
+                col("qggnIB", "Q-GGN"),
+                col("asgarHsiIB", "ASGAR HSI"),
+                col("asgarDtnIB", "ASGAR DTN"),
+                col("asgarWifiIB", "ASGAR WIFI"),
+                col("ttr24jIB", "TTR 24J"),
                 col("ttiIB", "TTI 1X24"),
                 col("ffgIB", "TTR FFG"),
                 col("garansiIB", "FFG"),
@@ -376,6 +381,11 @@ export function PerformanceTable({
               ]
           : mode === "leaderboard"
             ? [
+                colSTO("qggnIB", "Q-GGN"),
+                colSTO("asgarHsiIB", "ASGAR HSI"),
+                colSTO("asgarDtnIB", "ASGAR DTN"),
+                colSTO("asgarWifiIB", "ASGAR WIFI"),
+                colSTO("ttr24jIB", "TTR 24J"),
                 colSTO("ttiIB", "TTI 1X24"),
                 colSTO("ffgIB", "TTR FFG"),
                 colSTO("garansiIB", "FFG"),

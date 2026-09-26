@@ -1,4 +1,4 @@
-import { API_BASE_URL, SALDO_PSPI_API_URL, UNSPEC_API_URL, EVIDENCE_API_URL, KPI_TARGET, REPORT_IH_EASTERN_API_URL, EBIS_API_URL } from "./constants";
+import { API_BASE_URL, SALDO_PSPI_API_URL, UNSPEC_API_URL, EVIDENCE_API_URL, KPI_TARGET, REPORT_IH_EASTERN_API_URL, EBIS_API_URL, REPORT_EBIS_ASSURANCE_API_URL } from "./constants";
 import type { DashboardData, SaldoPspiTicket, UnspecTicket, KPISimulation, TTITicket, FFGTicket, RankingSA, RankingSTO, DashboardSummary, Resume } from "@/types/dashboard";
 import { getCachedData, setCachedData } from "./redisCache";
 
@@ -56,7 +56,7 @@ export async function fetchDashboardData(
     const refreshPspi = refreshTarget === "pspi" || refreshTarget === "all";
     const refreshUnspec = refreshTarget === "unspec" || refreshTarget === "all";
 
-    const [rawData, saldoPspiTickets, unspecTickets, evidenceData, reportIh, reportIb] = await Promise.all([
+    const [rawData, saldoPspiTickets, unspecTickets, evidenceData, reportIh, reportIb, reportIbAssurance] = await Promise.all([
       getFeedData(
         "feed_raw_ttiwsa",
         async () => {
@@ -124,6 +124,17 @@ export async function fetchDashboardData(
             "feed_report_ib",
             async () => {
               const res = await fetch(EBIS_API_URL, { signal, next: { revalidate: 0 } });
+              return res.ok ? res.json() : [];
+            },
+            refreshRegular
+          ),
+      basic
+        ? Promise.resolve([])
+        : getFeedData<any>(
+            "feed_report_ib_ass",
+            async () => {
+              if (!REPORT_EBIS_ASSURANCE_API_URL) return [];
+              const res = await fetch(REPORT_EBIS_ASSURANCE_API_URL, { signal, next: { revalidate: 0 } });
               return res.ok ? res.json() : [];
             },
             refreshRegular
@@ -343,19 +354,22 @@ export async function fetchDashboardData(
       achievementIH: 0, achievementIB: 0,
       saIH: 0, asgarIH: 0, diamondIH: 0, platinumIH: 0, manjaIH: 0, ttr36IH: 0,
       ttiIH: 0, ffgIH: 0, garansiIH: 0,
-      saIB: 0, ttiIB: 0, ffgIB: 0, garansiIB: 0, underspecIB: 0, pspiIB: 0
+      saIB: 0, ttiIB: 0, ffgIB: 0, garansiIB: 0, underspecIB: 0, pspiIB: 0,
+      qggnIB: 0, asgarHsiIB: 0, asgarDtnIB: 0, asgarWifiIB: 0, ttr24jIB: 0
     });
 
-    const getAverageMetric = (summary: any) => {
-      if (!summary) return 0;
+    const getAverageMetric = (...summaries: any[]) => {
       let total = 0;
       let count = 0;
-      Object.values(summary).forEach((metric: any) => {
-        if (metric && typeof metric.real !== 'undefined') {
-          total += parseVal(metric.real);
-          count++;
-        }
-      });
+      for (const summary of summaries) {
+        if (!summary) continue;
+        Object.values(summary).forEach((metric: any) => {
+          if (metric && typeof metric.real !== 'undefined') {
+            total += parseVal(metric.real);
+            count++;
+          }
+        });
+      }
       return count > 0 ? total / count : 0;
     };
 
@@ -415,6 +429,40 @@ export async function fetchDashboardData(
           stoRow.garansiIB = parseVal(sto.summary?.fulfillmentGuarantee?.real);
           stoRow.underspecIB = parseVal(sto.summary?.underspecGuarantee?.real);
           stoRow.pspiIB = parseVal(sto.summary?.psToPiRatio?.real);
+        });
+      });
+    });
+
+    reportIbAssurance?.forEach?.((d: any) => {
+      d.serviceAreas?.forEach((sa: any) => {
+        const name = sa.serviceArea.toUpperCase();
+        if (!saMap.has(name)) saMap.set(name, initData(sa.serviceArea, true));
+        const row = saMap.get(name);
+        
+        row.qggnIB = parseVal(sa.summary?.qGangguan?.real);
+        row.asgarHsiIB = parseVal(sa.summary?.asgarHsi?.real);
+        row.asgarDtnIB = parseVal(sa.summary?.asgarDatin?.real);
+        row.asgarWifiIB = parseVal(sa.summary?.asgarWifi?.real);
+        row.ttr24jIB = parseVal(sa.summary?.ttr24jRegulerIndibiz?.real);
+
+        // recalculate achievement IB by looking up the FF summary
+        const ffD = ibDistricts.find((x: any) => x.district === d.district);
+        const ffSa = ffD?.serviceAreas?.find((x: any) => x.serviceArea.toUpperCase() === name);
+        row.achievementIB = getAverageMetric(ffSa?.summary, sa.summary);
+
+        sa.stos?.forEach((sto: any) => {
+          const stoName = sto.sto.toUpperCase();
+          if (!stoMap.has(stoName)) stoMap.set(stoName, initData(sto.sto, false));
+          const stoRow = stoMap.get(stoName);
+          
+          stoRow.qggnIB = parseVal(sto.summary?.qGangguan?.real);
+          stoRow.asgarHsiIB = parseVal(sto.summary?.asgarHsi?.real);
+          stoRow.asgarDtnIB = parseVal(sto.summary?.asgarDatin?.real);
+          stoRow.asgarWifiIB = parseVal(sto.summary?.asgarWifi?.real);
+          stoRow.ttr24jIB = parseVal(sto.summary?.ttr24jRegulerIndibiz?.real);
+
+          const ffSto = ffSa?.stos?.find((x: any) => x.sto.toUpperCase() === stoName);
+          stoRow.achievementIB = getAverageMetric(ffSto?.summary, sto.summary);
         });
       });
     });
