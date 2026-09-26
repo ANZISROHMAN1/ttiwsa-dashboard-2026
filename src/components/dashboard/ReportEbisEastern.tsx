@@ -33,7 +33,9 @@ const FF_METRIC_CONFIGS: EbisMetricConfig[] = [
 
 const ASSURANCE_METRIC_CONFIGS: EbisMetricConfig[] = [
   { key: "qGangguan", label: "Q-Gangguan", shortLabel: "Q-Ggn", target: 2.40, isLowerBetter: true, count1: { key: "tiketGgn", label: "Tiket Ggn" }, count2: { key: "gaul", label: "Gaul" }, trendKey: "qHsi" },
-  { key: "asgarHsi", label: "ASGAR HSI", shortLabel: "ASGAR", target: 91.00, count1: { key: "comply", label: "Comply" }, count2: { key: "notComp", label: "Not Comply" }, trendKey: "asgarHsi" },
+  { key: "asgarHsi", label: "ASGAR HSI", shortLabel: "ASGAR HSI", target: 91.00, count1: { key: "gaul", label: "Gaul" }, count2: { key: "tiketGgn", label: "Tiket Ggn" }, trendKey: "asgarHsi" },
+  { key: "asgarDatin", label: "ASGAR DATIN", shortLabel: "ASGAR DTN", target: 90.00, count1: { key: "gaul", label: "Gaul" }, count2: { key: "tiketGgn", label: "Tiket Ggn" }, trendKey: "asgarDatin" },
+  { key: "asgarWifi", label: "ASGAR WIFI", shortLabel: "ASGAR WIFI", target: 90.50, count1: { key: "gaul", label: "Gaul" }, count2: { key: "terganggu", label: "Terganggu" }, trendKey: "asgarWifi" },
   { key: "ttr24jRegulerIndibiz", label: "TTR 24J Reguler Indibiz", shortLabel: "TTR 24J", target: 91.00, count1: { key: "comply", label: "Comply" }, count2: { key: "notComp", label: "Not Comply" }, trendKey: "ttr24jRegulerIndibiz" },
 ];
 
