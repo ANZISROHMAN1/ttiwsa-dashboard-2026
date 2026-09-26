@@ -343,7 +343,7 @@ export async function fetchDashboardData(
       achievementIH: 0, achievementIB: 0,
       saIH: 0, asgarIH: 0, diamondIH: 0, platinumIH: 0, manjaIH: 0, ttr36IH: 0,
       ttiIH: 0, ffgIH: 0, garansiIH: 0,
-      saIB: 0, ttiIB: 0, ffgIB: 0, garansiIB: 0
+      saIB: 0, ttiIB: 0, ffgIB: 0, garansiIB: 0, underspecIB: 0, pspiIB: 0
     });
 
     const getAverageMetric = (summary: any) => {
@@ -402,6 +402,8 @@ export async function fetchDashboardData(
         row.ttiIB = parseVal(sa.summary?.tti1X24Jam?.real);
         row.ffgIB = parseVal(sa.summary?.ttrFulfillmentGuarantee3Jam?.real || sa.summary?.ttrFfg?.real);
         row.garansiIB = parseVal(sa.summary?.fulfillmentGuarantee?.real);
+        row.underspecIB = parseVal(sa.summary?.underspecGuarantee?.real);
+        row.pspiIB = parseVal(sa.summary?.psToPiRatio?.real);
         
         sa.stos?.forEach((sto: any) => {
           const stoName = sto.sto.toUpperCase();
@@ -411,6 +413,8 @@ export async function fetchDashboardData(
           stoRow.ttiIB = parseVal(sto.summary?.tti1X24Jam?.real);
           stoRow.ffgIB = parseVal(sto.summary?.ttrFulfillmentGuarantee3Jam?.real || sto.summary?.ttrFfg?.real);
           stoRow.garansiIB = parseVal(sto.summary?.fulfillmentGuarantee?.real);
+          stoRow.underspecIB = parseVal(sto.summary?.underspecGuarantee?.real);
+          stoRow.pspiIB = parseVal(sto.summary?.psToPiRatio?.real);
         });
       });
     });

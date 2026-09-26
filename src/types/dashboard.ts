@@ -43,6 +43,8 @@ export interface RankingSA {
   ttiIB: number;
   ffgIB: number;
   garansiIB: number;
+  underspecIB: number;
+  pspiIB: number;
 }
 
 export interface RankingSTO {
@@ -66,6 +68,8 @@ export interface RankingSTO {
   ttiIB: number;
   ffgIB: number;
   garansiIB: number;
+  underspecIB: number;
+  pspiIB: number;
 }
 
 export interface TTITicket {

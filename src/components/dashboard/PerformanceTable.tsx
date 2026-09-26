@@ -250,29 +250,37 @@ export function PerformanceTable({
                 col("ffgIH", "TTR FFG"),
                 col("garansiIH", "FFG"),
               ]
-          : [
-              col("ttiIB", "TTI"),
-              col("ffgIB", "TTR FFG"),
-              col("garansiIB", "FFG"),
-              {
-                key: "_pspi",
-                label: "PS/PI",
-                sortable: true,
-                align: "center" as const,
-                render: (row: any) => (
-                  <span className="font-mono text-sm">{row._pspi}</span>
-                )
-              },
-              {
-                key: "_unspec",
-                label: "UNSPEC",
-                sortable: true,
-                align: "center" as const,
-                render: (row: any) => (
-                  <span className="font-mono text-sm">{row._unspec}</span>
-                )
-              },
-            ]),
+          : mode === "leaderboard"
+            ? [
+                col("ttiIB", "TTI 1X24"),
+                col("ffgIB", "TTR FFG"),
+                col("garansiIB", "FFG"),
+                col("underspecIB", "UNDERSPEC"),
+                col("pspiIB", "PS/PI RATIO"),
+              ]
+            : [
+                col("ttiIB", "TTI"),
+                col("ffgIB", "TTR FFG"),
+                col("garansiIB", "FFG"),
+                {
+                  key: "_pspi",
+                  label: "PS/PI",
+                  sortable: true,
+                  align: "center" as const,
+                  render: (row: any) => (
+                    <span className="font-mono text-sm">{row._pspi}</span>
+                  )
+                },
+                {
+                  key: "_unspec",
+                  label: "UNSPEC",
+                  sortable: true,
+                  align: "center" as const,
+                  render: (row: any) => (
+                    <span className="font-mono text-sm">{row._unspec}</span>
+                  )
+                },
+              ]),
       ];
     }
 
@@ -366,29 +374,37 @@ export function PerformanceTable({
                 colSTO("ffgIH", "TTR FFG"),
                 colSTO("garansiIH", "FFG"),
               ]
-          : [
-              colSTO("ttiIB", "TTI"),
-              colSTO("ffgIB", "TTR FFG"),
-              colSTO("garansiIB", "FFG"),
-              {
-                key: "_pspi",
-                label: "PS/PI",
-                sortable: true,
-                align: "center" as const,
-                render: (row: any) => (
-                  <span className="font-mono text-sm">{row._pspi}</span>
-                )
-              },
-              {
-                key: "_unspec",
-                label: "UNSPEC",
-                sortable: true,
-                align: "center" as const,
-                render: (row: any) => (
-                  <span className="font-mono text-sm">{row._unspec}</span>
-                )
-              },
-            ]),
+          : mode === "leaderboard"
+            ? [
+                colSTO("ttiIB", "TTI 1X24"),
+                colSTO("ffgIB", "TTR FFG"),
+                colSTO("garansiIB", "FFG"),
+                colSTO("underspecIB", "UNDERSPEC"),
+                colSTO("pspiIB", "PS/PI RATIO"),
+              ]
+            : [
+                colSTO("ttiIB", "TTI"),
+                colSTO("ffgIB", "TTR FFG"),
+                colSTO("garansiIB", "FFG"),
+                {
+                  key: "_pspi",
+                  label: "PS/PI",
+                  sortable: true,
+                  align: "center" as const,
+                  render: (row: any) => (
+                    <span className="font-mono text-sm">{row._pspi}</span>
+                  )
+                },
+                {
+                  key: "_unspec",
+                  label: "UNSPEC",
+                  sortable: true,
+                  align: "center" as const,
+                  render: (row: any) => (
+                    <span className="font-mono text-sm">{row._unspec}</span>
+                  )
+                },
+              ]),
       ];
     }
 
