@@ -373,6 +373,23 @@ export async function fetchDashboardData(
       return count > 0 ? total / count : 0;
     };
 
+    const getAverageAch = (...summaries: any[]) => {
+      let total = 0;
+      let count = 0;
+      for (const summary of summaries) {
+        if (!summary) continue;
+        Object.values(summary).forEach((metric: any) => {
+          if (metric && typeof metric.ach !== 'undefined') {
+            let ach = parseVal(metric.ach);
+            if (ach > 2) ach = ach / 100; // Normalize percentages like 73.6 to 0.736
+            total += ach;
+            count++;
+          }
+        });
+      }
+      return count > 0 ? (total / count) * 100 : 0;
+    };
+
     ihDistricts.forEach((d: any) => {
       d.serviceAreas?.forEach((sa: any) => {
         const name = sa.serviceArea.toUpperCase();
@@ -412,7 +429,7 @@ export async function fetchDashboardData(
         const name = sa.serviceArea.toUpperCase();
         if (!saMap.has(name)) saMap.set(name, initData(sa.serviceArea, true));
         const row = saMap.get(name);
-        row.achievementIB = getAverageMetric(sa.summary);
+        row.achievementIB = getAverageAch(sa.summary);
         row.ttiIB = parseVal(sa.summary?.tti1X24Jam?.real);
         row.ffgIB = parseVal(sa.summary?.ttrFulfillmentGuarantee3Jam?.real || sa.summary?.ttrFfg?.real);
         row.garansiIB = parseVal(sa.summary?.fulfillmentGuarantee?.real);
@@ -423,7 +440,7 @@ export async function fetchDashboardData(
           const stoName = sto.sto.toUpperCase();
           if (!stoMap.has(stoName)) stoMap.set(stoName, initData(sto.sto, false));
           const stoRow = stoMap.get(stoName);
-          stoRow.achievementIB = getAverageMetric(sto.summary);
+          stoRow.achievementIB = getAverageAch(sto.summary);
           stoRow.ttiIB = parseVal(sto.summary?.tti1X24Jam?.real);
           stoRow.ffgIB = parseVal(sto.summary?.ttrFulfillmentGuarantee3Jam?.real || sto.summary?.ttrFfg?.real);
           stoRow.garansiIB = parseVal(sto.summary?.fulfillmentGuarantee?.real);
@@ -448,7 +465,7 @@ export async function fetchDashboardData(
         // recalculate achievement IB by looking up the FF summary
         const ffD = ibDistricts.find((x: any) => x.district === d.district);
         const ffSa = ffD?.serviceAreas?.find((x: any) => x.serviceArea.toUpperCase() === name);
-        row.achievementIB = getAverageMetric(ffSa?.summary, sa.summary);
+        row.achievementIB = getAverageAch(ffSa?.summary, sa.summary);
 
         sa.stos?.forEach((sto: any) => {
           const stoName = sto.sto.toUpperCase();
@@ -462,7 +479,7 @@ export async function fetchDashboardData(
           stoRow.ttr24jIB = parseVal(sto.summary?.ttr24jRegulerIndibiz?.real);
 
           const ffSto = ffSa?.stos?.find((x: any) => x.sto.toUpperCase() === stoName);
-          stoRow.achievementIB = getAverageMetric(ffSto?.summary, sto.summary);
+          stoRow.achievementIB = getAverageAch(ffSto?.summary, sto.summary);
         });
       });
     });
