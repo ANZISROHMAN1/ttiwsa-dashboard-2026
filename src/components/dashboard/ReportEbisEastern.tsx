@@ -636,7 +636,7 @@ function MonthlyEbisTrendSection({ districtName, trendData, districtServiceAreas
             onChange={(e) => setSelectedSA(e.target.value)}
             className="text-xs bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/30"
           >
-            <option value="ALL">All STOs ({allSTOs.length})</option>
+            <option value="ALL">All STO ({allSTOs.length})</option>
             {saOptions.map((sa) => (
               <option key={sa} value={sa}>
                 {sa} ({allSTOs.filter((s) => stoToSA[s] === sa).length})
