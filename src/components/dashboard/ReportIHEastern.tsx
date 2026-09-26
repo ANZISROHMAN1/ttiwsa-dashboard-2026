@@ -1214,67 +1214,7 @@ export function ReportIHEastern({ data, trendData }: ReportIHEasternProps) {
         </div>
       )}
 
-      {/* District Stats Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass-card-sm p-4 text-center flex flex-col justify-center">
-          <div className="text-3xl font-bold text-foreground">
-            {districtTotalSAs}
-          </div>
-          <div className="text-xs text-foreground-muted mt-1 uppercase tracking-wider font-semibold">
-            Service Areas
-          </div>
-        </div>
-        <div className="glass-card-sm p-4 text-center flex flex-col justify-center">
-          <div className="text-3xl font-bold text-foreground">
-            {districtTotalSTOs}
-          </div>
-          <div className="text-xs text-foreground-muted mt-1 uppercase tracking-wider font-semibold">STOs</div>
-        </div>
-        
-        <div className="glass-card-sm p-4 flex flex-col justify-between">
-          <div className="text-xs text-foreground-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            Top Achieving
-          </div>
-          <div className="space-y-2">
-            {top3Achieving.map((item, i) => (
-              <div key={item.label} className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-foreground">{item.label}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-emerald-500 tabular-nums">
-                    {item.avg.toFixed(2)}%
-                  </span>
-                  <span className="text-[9px] text-emerald-500/70 tabular-nums bg-emerald-500/10 px-1.5 py-0.5 rounded-sm">
-                    +{item.diff.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
 
-        <div className="glass-card-sm p-4 flex flex-col justify-between">
-          <div className="text-xs text-foreground-muted uppercase tracking-wider font-semibold mb-3 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-            Needs Attention
-          </div>
-          <div className="space-y-2">
-            {top3Unachieving.map((item, i) => (
-              <div key={item.label} className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-foreground">{item.label}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-rose-500 tabular-nums">
-                    {item.avg.toFixed(2)}%
-                  </span>
-                  <span className="text-[9px] text-rose-500/70 tabular-nums bg-rose-500/10 px-1.5 py-0.5 rounded-sm">
-                    {item.diff.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
       {/* Service Area Cards */}
       <div className="space-y-4">
