@@ -9,6 +9,7 @@ import type {
   MetricData,
   MetricKey,
   IHTrendResponse,
+  STOData,
 } from "@/types/report-ih-eastern";
 import { getTrendColor, TREND_DISTRICT_MAP } from "@/types/report-ih-eastern";
 
@@ -885,7 +886,7 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
   // 1.5 Overall Best STO
   const allSTOsWithScores = data.flatMap((d) =>
     d.serviceAreas.flatMap((sa) =>
-      sa.stos.map((sto) => ({
+      sa.stos?.map((sto) => ({
         district: d.district,
         sa: sa.serviceArea,
         ...getStoScore(sto),
@@ -928,7 +929,7 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
 
   // 4. Best STO in Active District
   const activeDistrictSTOs = district.serviceAreas.flatMap((sa) => 
-    sa.stos.map((sto) => ({
+    sa.stos?.map((sto) => ({
       district: district.district,
       sa: sa.serviceArea,
       ...getStoScore(sto),
