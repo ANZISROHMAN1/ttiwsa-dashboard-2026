@@ -816,6 +816,22 @@ export function ReportIHEastern({ data, trendData }: ReportIHEasternProps) {
   });
   const overallBestSA = allSAsWithScores[0];
 
+  // 1.5 Overall Best STO
+  const allSTOsWithScores = data.flatMap((d) =>
+    d.serviceAreas.flatMap((sa) =>
+      sa.stos.map((sto) => ({
+        district: d.district,
+        sa: sa.serviceArea,
+        ...getStoScore(sto),
+      }))
+    )
+  );
+  allSTOsWithScores.sort((a, b) => {
+    if (b.achieved !== a.achieved) return b.achieved - a.achieved;
+    return b.thumbsUp - a.thumbsUp;
+  });
+  const overallBestSTO = allSTOsWithScores[0];
+
   // 2. Best SA in Active District
   const activeDistrictSAs = district.serviceAreas.map((sa) => ({
     district: district.district,
@@ -872,6 +888,28 @@ export function ReportIHEastern({ data, trendData }: ReportIHEasternProps) {
           "rgba(20, 184, 166, 0.85)", // teal
           "rgba(236, 72, 153, 0.85)", // pink
           "rgba(99, 102, 241, 0.85)", // indigo
+        ],
+        borderColor: "rgba(15, 23, 42, 0.8)",
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  const pieDataSTO = {
+    labels: overallBestSTO?.metrics.map((m) => m.label) || [],
+    datasets: [
+      {
+        data: overallBestSTO?.metrics.map((m) => m.value) || [],
+        backgroundColor: [
+          "rgba(168, 85, 247, 0.85)", // purple
+          "rgba(249, 115, 22, 0.85)", // orange
+          "rgba(20, 184, 166, 0.85)", // teal
+          "rgba(236, 72, 153, 0.85)", // pink
+          "rgba(99, 102, 241, 0.85)", // indigo
+          "rgba(16, 185, 129, 0.85)", // emerald
+          "rgba(59, 130, 246, 0.85)", // blue
+          "rgba(245, 158, 11, 0.85)", // amber
+          "rgba(239, 68, 68, 0.85)",  // red
         ],
         borderColor: "rgba(15, 23, 42, 0.8)",
         borderWidth: 2,
@@ -961,7 +999,7 @@ export function ReportIHEastern({ data, trendData }: ReportIHEasternProps) {
       </div>
 
       {/* Top Performers Widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5">
         
         {/* Widget 1: Global Best SA */}
         <div className="glass-card p-5 flex flex-col justify-between relative overflow-hidden group">
@@ -996,6 +1034,44 @@ export function ReportIHEastern({ data, trendData }: ReportIHEasternProps) {
               </div>
               <div className="h-[140px] w-full relative">
                 <Doughnut data={pieData} options={pieOptions} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Widget 1.5: Global Best STO */}
+        <div className="glass-card p-5 flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+          
+          <div className="mb-4 relative z-10">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Crown className="w-4 h-4 text-purple-400" />
+              Global Best STO
+            </h3>
+            <p className="text-[10px] text-foreground-muted mt-1">Highest parameters achieved across all STOs</p>
+          </div>
+
+          {overallBestSTO && (
+            <div className="relative z-10 flex flex-col flex-1 h-[calc(100%-60px)]">
+              <div className="flex items-center justify-between bg-[var(--surface-hover)] p-3 rounded-xl border border-[var(--border)] mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0 border border-purple-500/20">
+                    <span className="text-purple-400 font-bold text-sm tracking-widest">{overallBestSTO.sto.sto.substring(0, 3)}</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-foreground">{overallBestSTO.sto.sto}</div>
+                    <div className="text-[10px] text-purple-400 font-semibold">{overallBestSTO.district} ({overallBestSTO.sa})</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-purple-400 flex items-center justify-end gap-1">
+                    {overallBestSTO.achieved} <Target className="w-3 h-3" />
+                  </div>
+                  <div className="text-[10px] text-purple-500/70">{overallBestSTO.thumbsUp} Positive</div>
+                </div>
+              </div>
+              <div className="h-[140px] w-full relative">
+                <Doughnut data={pieDataSTO} options={pieOptions} />
               </div>
             </div>
           )}
