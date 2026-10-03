@@ -1211,7 +1211,6 @@ export function ReportIHEastern({ data, trendData }: ReportIHEasternProps) {
                   </div>
                 </div>
               </div>
-              </div>
             </div>
           )}
         </div>

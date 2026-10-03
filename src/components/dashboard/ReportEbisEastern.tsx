@@ -1277,7 +1277,6 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
                   </div>
                 </div>
               </div>
-              </div>
             </div>
           )}
         </div>
