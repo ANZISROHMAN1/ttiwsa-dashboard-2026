@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TTIWSA KPI Dashboard — Real-Time Enterprise Metrics",
+  title: "We-STAR — Real-Time Enterprise Metrics",
   description:
     "Real-time KPI monitoring dashboard for TTI, FFG, and Garansi metrics across Indihome and Indibiz segments per Service Area.",
 };

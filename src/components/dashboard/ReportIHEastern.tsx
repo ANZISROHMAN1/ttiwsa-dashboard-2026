@@ -405,6 +405,7 @@ const TREND_COLORS = [
 function MonthlyTrendSection({ districtName, trendData, districtServiceAreas }: MonthlyTrendSectionProps) {
   const { theme } = useTheme();
   const [selectedSA, setSelectedSA] = useState<string>("ALL");
+  const [selectedSTO, setSelectedSTO] = useState<string>("ALL");
   const [selectedParam, setSelectedParam] = useState<string>("sa");
   const [showChart, setShowChart] = useState(true);
 
@@ -439,12 +440,19 @@ function MonthlyTrendSection({ districtName, trendData, districtServiceAreas }: 
 
   // Get STOs to display (all or filtered by SA)
   const allSTOs = paramData && months.length > 0 ? Object.keys(paramData[months[0]] || {}) : [];
-  const filteredSTOs = selectedSA === "ALL"
+  
+  // SA options for filter
+  const saOptions = [...new Set(Object.values(stoToSA))].sort();
+
+  // STOs filtered by selected SA (used for STO dropdown options)
+  const stosInSelectedSA = selectedSA === "ALL"
     ? allSTOs
     : allSTOs.filter((sto) => stoToSA[sto] === selectedSA);
 
-  // SA options for filter
-  const saOptions = [...new Set(Object.values(stoToSA))].sort();
+  // Final filtered STOs to display in chart/table
+  const filteredSTOs = selectedSTO !== "ALL" 
+    ? [selectedSTO].filter(sto => selectedSA === "ALL" || stoToSA[sto] === selectedSA)
+    : stosInSelectedSA;
 
   // Calculate suggested y-axis range based on active metric values and target
   const allNumericValues: number[] = [];
@@ -562,13 +570,28 @@ function MonthlyTrendSection({ districtName, trendData, districtServiceAreas }: 
         <div className="flex items-center gap-2">
           <select
             value={selectedSA}
-            onChange={(e) => setSelectedSA(e.target.value)}
+            onChange={(e) => {
+              setSelectedSA(e.target.value);
+              setSelectedSTO("ALL");
+            }}
             className="text-xs bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/30"
           >
-            <option value="ALL">All STO ({allSTOs.length})</option>
+            <option value="ALL">All SA ({saOptions.length})</option>
             {saOptions.map((sa) => (
               <option key={sa} value={sa}>
                 {sa} ({allSTOs.filter((s) => stoToSA[s] === sa).length})
+              </option>
+            ))}
+          </select>
+          <select
+            value={selectedSTO}
+            onChange={(e) => setSelectedSTO(e.target.value)}
+            className="text-xs bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/30"
+          >
+            <option value="ALL">All STO ({stosInSelectedSA.length})</option>
+            {stosInSelectedSA.map((sto) => (
+              <option key={sto} value={sto}>
+                {sto}
               </option>
             ))}
           </select>

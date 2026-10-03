@@ -437,6 +437,7 @@ const TREND_COLORS = [
 function MonthlyTrendSection({ districtName, trendData, districtServiceAreas }: MonthlyTrendSectionProps) {
   const { theme } = useTheme();
   const [selectedSA, setSelectedSA] = useState<string>("ALL");
+  const [selectedSTO, setSelectedSTO] = useState<string>("ALL");
   const [selectedParam, setSelectedParam] = useState<string>("");
   const [showChart, setShowChart] = useState(true);
 
@@ -483,11 +484,16 @@ function MonthlyTrendSection({ districtName, trendData, districtServiceAreas }: 
   });
 
   const allSTOs = paramData && months.length > 0 ? Object.keys(paramData[months[0]] || {}) : [];
-  const filteredSTOs = selectedSA === "ALL"
+
+  const saOptions = [...new Set(Object.values(stoToSA))].sort();
+
+  const stosInSelectedSA = selectedSA === "ALL"
     ? allSTOs
     : allSTOs.filter((sto) => stoToSA[sto] === selectedSA);
 
-  const saOptions = [...new Set(Object.values(stoToSA))].sort();
+  const filteredSTOs = selectedSTO !== "ALL" 
+    ? [selectedSTO].filter(sto => selectedSA === "ALL" || stoToSA[sto] === selectedSA)
+    : stosInSelectedSA;
 
   const allNumericValues: number[] = [];
   months.forEach((m) => {
@@ -617,13 +623,28 @@ function MonthlyTrendSection({ districtName, trendData, districtServiceAreas }: 
 
           <select
             value={selectedSA}
-            onChange={(e) => setSelectedSA(e.target.value)}
+            onChange={(e) => {
+              setSelectedSA(e.target.value);
+              setSelectedSTO("ALL");
+            }}
             className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--surface-hover)] border border-[var(--border)] text-foreground focus:outline-none"
           >
-            <option value="ALL">All Service Areas</option>
+            <option value="ALL">All SA ({saOptions.length})</option>
             {saOptions.map((sa) => (
               <option key={sa} value={sa}>
-                {sa}
+                {sa} ({allSTOs.filter((s) => stoToSA[s] === sa).length})
+              </option>
+            ))}
+          </select>
+          <select
+            value={selectedSTO}
+            onChange={(e) => setSelectedSTO(e.target.value)}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--surface-hover)] border border-[var(--border)] text-foreground focus:outline-none"
+          >
+            <option value="ALL">All STO ({stosInSelectedSA.length})</option>
+            {stosInSelectedSA.map((sto) => (
+              <option key={sto} value={sto}>
+                {sto}
               </option>
             ))}
           </select>
