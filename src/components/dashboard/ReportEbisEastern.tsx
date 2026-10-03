@@ -1088,7 +1088,8 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
       </div>
 
       {/* Top Performers Widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5">
+      <div className="flex flex-col gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         
         {/* Widget 1: Global Best SA */}
         <div className="glass-card p-5 flex flex-col justify-between relative overflow-hidden group">
@@ -1236,7 +1237,9 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
             )}
           </div>
         </div>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Widget 3: Best SA per District */}
         <div className="glass-card p-5 flex flex-col justify-between relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
@@ -1325,6 +1328,7 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
           )}
         </div>
       </div>
+    </div>
 
       {/* Monthly EBIS Trend Section */}
       <MonthlyEbisTrendSection
