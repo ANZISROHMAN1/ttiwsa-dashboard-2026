@@ -50,6 +50,8 @@ export interface RankingSA {
   asgarDtnIB: number;
   asgarWifiIB: number;
   ttr24jIB: number;
+  datinK2IB?: number;
+  datinK3IB?: number;
 }
 
 export interface RankingSTO {
@@ -80,6 +82,8 @@ export interface RankingSTO {
   asgarDtnIB: number;
   asgarWifiIB: number;
   ttr24jIB: number;
+  datinK2IB?: number;
+  datinK3IB?: number;
 }
 
 export interface TTITicket {

@@ -461,6 +461,8 @@ export async function fetchDashboardData(
         row.asgarDtnIB = parseVal(sa.summary?.asgarDatin?.real);
         row.asgarWifiIB = parseVal(sa.summary?.asgarWifi?.real);
         row.ttr24jIB = parseVal(sa.summary?.ttr24jRegulerIndibiz?.real);
+        row.datinK2IB = parseVal(sa.summary?.complianceDatinK2?.real);
+        row.datinK3IB = parseVal(sa.summary?.complianceDatinK3?.real);
 
         // recalculate achievement IB by looking up the FF summary
         const ffD = ibDistricts.find((x: any) => x.district === d.district);
@@ -477,6 +479,8 @@ export async function fetchDashboardData(
           stoRow.asgarDtnIB = parseVal(sto.summary?.asgarDatin?.real);
           stoRow.asgarWifiIB = parseVal(sto.summary?.asgarWifi?.real);
           stoRow.ttr24jIB = parseVal(sto.summary?.ttr24jRegulerIndibiz?.real);
+          stoRow.datinK2IB = parseVal(sto.summary?.complianceDatinK2?.real);
+          stoRow.datinK3IB = parseVal(sto.summary?.complianceDatinK3?.real);
 
           const ffSto = ffSa?.stos?.find((x: any) => x.sto.toUpperCase() === stoName);
           stoRow.achievementIB = getAverageAch(ffSto?.summary, sto.summary);
