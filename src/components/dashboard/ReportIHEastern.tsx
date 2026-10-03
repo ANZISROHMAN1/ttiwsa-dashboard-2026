@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import type {
   DistrictData,
   ServiceAreaData,
+  STOData,
   MetricSet,
   MetricData,
   MetricKey,
