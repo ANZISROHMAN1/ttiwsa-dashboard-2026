@@ -47,6 +47,7 @@ export default function DashboardLayout({
 
   const isIndependentPage =
     pathname?.startsWith("/report-ih-eastern") ||
+    pathname?.startsWith("/performance-eastern") ||
     pathname?.startsWith("/submit/ps-pi") ||
     pathname?.startsWith("/submit/unspec");
 

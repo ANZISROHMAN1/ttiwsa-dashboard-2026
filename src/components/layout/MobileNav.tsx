@@ -101,13 +101,13 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
           {NAV_ITEMS.map((item) => {
             const hasSubItems = item.subItems && item.subItems.length > 0;
             const isSubItemActive = hasSubItems && item.subItems!.some(
-              (sub) => sub.href === pathname || (sub.href !== "/" && pathname.startsWith(sub.href))
+              (sub) => sub.href === pathname || (sub.href !== "/" && (pathname === sub.href || pathname.startsWith(sub.href + "/")))
             );
             const isDropdownOpen = openDropdowns[item.label] || isSubItemActive;
 
             const isActive =
               pathname === item.href ||
-              (item.href !== "/" && pathname.startsWith(item.href)) ||
+              (item.href !== "/" && (pathname === item.href || pathname.startsWith(item.href + "/"))) ||
               isSubItemActive;
 
             const navContent = (
