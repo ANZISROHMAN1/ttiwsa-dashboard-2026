@@ -75,8 +75,8 @@ export function aggregateSymptoms(tickets: Ticket[], includeNullGdoc: boolean = 
     if (isNullGdoc) symptom = "UPDATE REASON";
     if (!symptom) continue;
 
-    const isComp = ticket.STATUS.includes("-COMP");
-    const isNonc = ticket.STATUS.includes("-NOTC");
+    const isComp = String(ticket.STATUS || "").includes("-COMP");
+    const isNonc = String(ticket.STATUS || "").includes("-NOTC");
 
     const existing = map.get(symptom);
     if (existing) {
@@ -121,8 +121,8 @@ export function aggregateSymptomsBySA(tickets: Ticket[], includeNullGdoc: boolea
     if (!symptom) continue;
 
     const sa = ticket.SA;
-    const isComp = ticket.STATUS.includes("-COMP");
-    const isNonc = ticket.STATUS.includes("-NOTC");
+    const isComp = String(ticket.STATUS || "").includes("-COMP");
+    const isNonc = String(ticket.STATUS || "").includes("-NOTC");
 
     const existing = saMap.get(sa);
     if (existing) {

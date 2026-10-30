@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     const allTickets: Ticket[] = [...data.ttiTickets, ...data.ffgTickets];
 
     // Filter tickets that need update and are NOT COMPLY, but exclude those that have been updated (isUpdated: true)
-    const needUpdateTickets = allTickets.filter(t => t.NULL_GDOC === true && t.STATUS.includes("-NOTC") && !t.isUpdated);
+    const needUpdateTickets = allTickets.filter(t => t.NULL_GDOC === true && String(t.STATUS || "").includes("-NOTC") && !t.isUpdated);
 
     // Group by Service Area (SA)
     const groupedBySA = needUpdateTickets.reduce((acc, ticket) => {

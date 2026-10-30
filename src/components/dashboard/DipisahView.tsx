@@ -201,7 +201,7 @@ export function DipisahView({
 
     return rankingSA.map(r => {
       const saTickets = filteredTickets.filter(t => t.SA === r.sa);
-      const comply = saTickets.filter(t => t.STATUS.includes('COMP')).length;
+      const comply = saTickets.filter(t => String(t.STATUS || "").includes('COMP')).length;
       const notc = saTickets.length - comply;
       
       let val = 100;
@@ -226,7 +226,7 @@ export function DipisahView({
     }
     
     const count = filtered.length;
-    const comply = filtered.filter(t => t.STATUS.includes("COMP")).length;
+    const comply = filtered.filter(t => String(t.STATUS || "").includes("COMP")).length;
     const notc = count - comply;
     const achievement = count > 0 ? (comply / count) * 100 : 100;
     const notcRate = count > 0 ? (notc / count) * 100 : 0;
@@ -382,9 +382,9 @@ export function DipisahView({
     const counts: Record<string, number> = {};
     tickets.forEach((t) => {
       if (t.NULL_GDOC || t.SYMTOM === "NULL GDOC") return;
-      if (filterNotc && !t.STATUS.includes("-NOTC")) return;
+      if (filterNotc && !String(t.STATUS || "").includes("-NOTC")) return;
       
-      const sym = t.SYMTOM.trim();
+      const sym = (t.SYMTOM || "").trim();
       if (!sym) return;
       counts[sym] = (counts[sym] || 0) + 1;
     });

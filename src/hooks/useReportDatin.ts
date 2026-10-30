@@ -21,7 +21,7 @@ const fetcher = async (url: string) => {
   parsedData = parsedData.map((district: DistrictData) => ({
     ...district,
     serviceAreas: district.serviceAreas?.filter(
-      (sa) => !sa.serviceArea.toUpperCase().includes("KPI WISA")
+      (sa) => !String(sa?.serviceArea || "").toUpperCase().includes("KPI WISA")
     ) || []
   }));
       

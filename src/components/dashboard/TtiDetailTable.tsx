@@ -213,7 +213,7 @@ export function TtiDetailTable({ tickets, isUpdatedView }: TtiDetailTableProps) 
                   <td className="px-5 py-3 whitespace-nowrap">{t.STO}</td>
                   <td className="px-5 py-3 whitespace-nowrap font-mono text-xs">{t.SC}</td>
                   <td className="px-5 py-3 whitespace-nowrap">
-                    <Badge variant={t.STATUS.includes("-COMP") ? "default" : "danger"}>
+                    <Badge variant={String(t.STATUS || "").includes("-COMP") ? "default" : "danger"}>
                       {t.STATUS}
                     </Badge>
                   </td>

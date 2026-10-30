@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { MobileNav } from "@/components/layout/MobileNav";
@@ -42,6 +43,12 @@ export default function DashboardLayout({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const isDesktop = useIsDesktop();
+  const pathname = usePathname();
+
+  const isIndependentPage =
+    pathname?.startsWith("/report-ih-eastern") ||
+    pathname?.startsWith("/submit/ps-pi") ||
+    pathname?.startsWith("/submit/unspec");
 
   const dashboardData = useDashboardData();
 
@@ -91,7 +98,7 @@ export default function DashboardLayout({
 
         <main className="p-5 lg:p-8">
           {/* Global Error State */}
-          {dashboardData.error && !dashboardData.data && (
+          {!isIndependentPage && dashboardData.error && !dashboardData.data && (
             <div className="glass-card p-8 text-center animate-fade-in">
               <div className="w-12 h-12 rounded-full bg-rose-400/10 flex items-center justify-center mx-auto mb-4">
                 <svg
@@ -126,7 +133,7 @@ export default function DashboardLayout({
           )}
 
           {/* Page Content */}
-          {(!dashboardData.error || dashboardData.data) && children}
+          {(isIndependentPage || !dashboardData.error || dashboardData.data) && children}
         </main>
       </div>
     </DashboardContext>

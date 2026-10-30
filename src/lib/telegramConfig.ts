@@ -137,7 +137,7 @@ export function formatNotComplyMessage(tickets: Ticket[], saName?: string, allTi
   let message = `\n\n${headerTitle}\n\nLink Update:\nhttps://ttiwsa-dashboard-2026.vercel.app/submit/not-comply\n\n`;
 
   tickets.forEach(t => {
-    const isTTI = t.STATUS.startsWith("TTI");
+    const isTTI = String(t.STATUS || "").startsWith("TTI");
     if (isTTI) {
       // Prioritize ORDER_TYPE, fallback to SYMTOM, else just 'Ticket'
       const type = t.ORDER_TYPE ? t.ORDER_TYPE.trim() : (t.SYMTOM ? t.SYMTOM.trim() : "Ticket");

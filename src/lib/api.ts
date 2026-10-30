@@ -148,6 +148,8 @@ export async function fetchDashboardData(
     }
 
 
+    const toStr = (val: any): string => (val != null ? String(val).trim() : "");
+
     const getMergedEvidence = (sc: string, ttiwsaEvidence: string) => {
       let teknisi = "";
       let nik = "";
@@ -155,19 +157,19 @@ export async function fetchDashboardData(
 
       const newEv = evidenceMap.get(sc);
       if (newEv) {
-        teknisi = newEv["NAMA TEKNISI"] || "";
-        nik = String(newEv["NIK TEKNISI"] || "");
-        mitra = newEv["MITRA"] || "";
+        teknisi = toStr(newEv["NAMA TEKNISI"]);
+        nik = toStr(newEv["NIK TEKNISI"]);
+        mitra = toStr(newEv["MITRA"]);
       }
 
       return {
-        EVIDENT: (ttiwsaEvidence && ttiwsaEvidence.trim()) || "",
-        EVIDENT2: newEv?.["EVIDENCE 1"] || "",
-        EVIDENT3: newEv?.["EVIDENCE 2"] || "",
-        EVIDENT4: newEv?.["EVIDENCE 3"] || "",
-        EVIDENT5: newEv?.["EVIDENCE 4"] || "",
-        EVIDENT6: newEv?.["BA GANGGUAN FFG PELANGGAN"] || "",
-        EVIDENT7: newEv?.["FOTO DENGAN PELANGGAN MEMEGANG BA"] || "",
+        EVIDENT: toStr(ttiwsaEvidence),
+        EVIDENT2: toStr(newEv?.["EVIDENCE 1"]),
+        EVIDENT3: toStr(newEv?.["EVIDENCE 2"]),
+        EVIDENT4: toStr(newEv?.["EVIDENCE 3"]),
+        EVIDENT5: toStr(newEv?.["EVIDENCE 4"]),
+        EVIDENT6: toStr(newEv?.["BA GANGGUAN FFG PELANGGAN"]),
+        EVIDENT7: toStr(newEv?.["FOTO DENGAN PELANGGAN MEMEGANG BA"]),
         NAMA_TEKNISI: teknisi,
         NIK_TEKNISI: nik,
         MITRA: mitra,
@@ -191,16 +193,20 @@ export async function fetchDashboardData(
 
     for (const row of rawData) {
       if (row['SC-TTI-IH']) {
-        matchedSCs.add(String(row['SC-TTI-IH']).trim());
-        const isNullGdoc = row['SYMTOM-TTI-IH']?.trim() === 'NULL GDOC' || row['REASON-TTI-IH']?.trim() === 'NULL GDOC';
+        const scTtiIh = toStr(row['SC-TTI-IH']);
+        if (scTtiIh) matchedSCs.add(scTtiIh);
+        const symtomTtiIh = toStr(row['SYMTOM-TTI-IH']);
+        const reasonTtiIh = toStr(row['REASON-TTI-IH']);
+        const statusTtiIh = toStr(row['STATUS-TTI-IH']);
+        const isNullGdoc = symtomTtiIh === 'NULL GDOC' || reasonTtiIh === 'NULL GDOC';
         if (isNullGdoc) totalNullGdoc++;
-        if (row['STATUS-TTI-IH'] === 'TTI-NOTC') ti_ih_notc++;
-        const evMerged = getMergedEvidence(row['SC-TTI-IH'], row['EVIDENT-TTI-IH']);
+        if (statusTtiIh === 'TTI-NOTC') ti_ih_notc++;
+        const evMerged = getMergedEvidence(scTtiIh, row['EVIDENT-TTI-IH']);
         internalTti.push({
-          SA: row['SA-TTI-IH'], STO: row['STO-TTI-IH'], SC: row['SC-TTI-IH'],
-          STATUS: row['STATUS-TTI-IH'] as any, SYMTOM: row['SYMTOM-TTI-IH']?.trim(),
+          SA: toStr(row['SA-TTI-IH']), STO: toStr(row['STO-TTI-IH']), SC: scTtiIh,
+          STATUS: statusTtiIh as any, SYMTOM: symtomTtiIh,
           NULL_GDOC: isNullGdoc,
-          REASON: row['REASON-TTI-IH'],
+          REASON: reasonTtiIh,
           EVIDENT: evMerged.EVIDENT,
           EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4, EVIDENT5: evMerged.EVIDENT5, EVIDENT6: evMerged.EVIDENT6, EVIDENT7: evMerged.EVIDENT7,
           NAMA_TEKNISI: evMerged.NAMA_TEKNISI, NIK_TEKNISI: evMerged.NIK_TEKNISI, MITRA: evMerged.MITRA,
@@ -210,17 +216,21 @@ export async function fetchDashboardData(
         });
       }
       if (row['SC-FFG-IH']) {
-        matchedSCs.add(String(row['SC-FFG-IH']).trim());
-        const isNullGdoc = row['SYMTOM-FFG-IH']?.trim() === 'NULL GDOC' || row['REASON-FFG-IH']?.trim() === 'NULL GDOC';
+        const scFfgIh = toStr(row['SC-FFG-IH']);
+        if (scFfgIh) matchedSCs.add(scFfgIh);
+        const symtomFfgIh = toStr(row['SYMTOM-FFG-IH']);
+        const reasonFfgIh = toStr(row['REASON-FFG-IH']);
+        const statusFfgIh = toStr(row['STATUS-FFG-IH']);
+        const isNullGdoc = symtomFfgIh === 'NULL GDOC' || reasonFfgIh === 'NULL GDOC';
         if (isNullGdoc) totalNullGdoc++;
-        if (row['STATUS-FFG-IH'] === 'TTR-COMP') ffg_ih_comp++;
-        if (row['STATUS-FFG-IH'] === 'TTR-NOTC') ffg_ih_notc++;
-        const evMerged = getMergedEvidence(row['SC-FFG-IH'], row['EVIDENT-FFG-IH']);
+        if (statusFfgIh === 'TTR-COMP') ffg_ih_comp++;
+        if (statusFfgIh === 'TTR-NOTC') ffg_ih_notc++;
+        const evMerged = getMergedEvidence(scFfgIh, row['EVIDENT-FFG-IH']);
         internalFfg.push({
-          SA: row['SA-FFG-IH'], STO: row['STO-FFG-IH'], SC: row['SC-FFG-IH'],
-          STATUS: row['STATUS-FFG-IH'] as any, SYMTOM: row['SYMTOM-FFG-IH']?.trim(),
+          SA: toStr(row['SA-FFG-IH']), STO: toStr(row['STO-FFG-IH']), SC: scFfgIh,
+          STATUS: statusFfgIh as any, SYMTOM: symtomFfgIh,
           NULL_GDOC: isNullGdoc,
-          REASON: row['REASON-FFG-IH'],
+          REASON: reasonFfgIh,
           EVIDENT: evMerged.EVIDENT,
           EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4, EVIDENT5: evMerged.EVIDENT5, EVIDENT6: evMerged.EVIDENT6, EVIDENT7: evMerged.EVIDENT7,
           NAMA_TEKNISI: evMerged.NAMA_TEKNISI, NIK_TEKNISI: evMerged.NIK_TEKNISI, MITRA: evMerged.MITRA,
@@ -230,37 +240,45 @@ export async function fetchDashboardData(
         });
       }
       if (row['SC-TTI-IB']) {
-        matchedSCs.add(String(row['SC-TTI-IB']).trim());
-        const isNullGdoc = row['SYMTOM-TTI-IB']?.trim() === 'NULL GDOC' || row['REASON-TTI-IB']?.trim() === 'NULL GDOC';
+        const scTtiIb = toStr(row['SC-TTI-IB']);
+        if (scTtiIb) matchedSCs.add(scTtiIb);
+        const symtomTtiIb = toStr(row['SYMTOM-TTI-IB']);
+        const reasonTtiIb = toStr(row['REASON-TTI-IB']);
+        const statusTtiIb = toStr(row['STATUS-TTI-IB']);
+        const isNullGdoc = symtomTtiIb === 'NULL GDOC' || reasonTtiIb === 'NULL GDOC';
         if (isNullGdoc) totalNullGdoc++;
-        if (row['STATUS-TTI-IB'] === 'TTI-NOTC') ti_ib_notc++;
-        const evMerged = getMergedEvidence(row['SC-TTI-IB'], row['EVIDENT-TTI-IB']);
+        if (statusTtiIb === 'TTI-NOTC') ti_ib_notc++;
+        const evMerged = getMergedEvidence(scTtiIb, row['EVIDENT-TTI-IB']);
         internalTti.push({
-          SA: row['SA-TTI-IB'], STO: row['STO-TTI-IB'], SC: row['SC-TTI-IB'],
-          STATUS: row['STATUS-TTI-IB'] as any, SYMTOM: row['SYMTOM-TTI-IB']?.trim(),
+          SA: toStr(row['SA-TTI-IB']), STO: toStr(row['STO-TTI-IB']), SC: scTtiIb,
+          STATUS: statusTtiIb as any, SYMTOM: symtomTtiIb,
           NULL_GDOC: isNullGdoc,
-          REASON: row['REASON-TTI-IB'],
+          REASON: reasonTtiIb,
           EVIDENT: evMerged.EVIDENT,
           EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4, EVIDENT5: evMerged.EVIDENT5, EVIDENT6: evMerged.EVIDENT6, EVIDENT7: evMerged.EVIDENT7,
           NAMA_TEKNISI: evMerged.NAMA_TEKNISI, NIK_TEKNISI: evMerged.NIK_TEKNISI, MITRA: evMerged.MITRA,
           DURASI: row['DURASI-TTI-IB'],
           kpi: 'TTI IB',
-          ORDER_TYPE: row['TYPETTI-IB']?.trim(),
+          ORDER_TYPE: toStr(row['TYPETTI-IB']),
           isUpdated: evMerged.isUpdated
         });
       }
       if (row['SC-FFG-IB']) {
-        matchedSCs.add(String(row['SC-FFG-IB']).trim());
-        const isNullGdoc = row['SYMTOM-FFG-IB']?.trim() === 'NULL GDOC' || row['REASON-FFG-IB']?.trim() === 'NULL GDOC';
+        const scFfgIb = toStr(row['SC-FFG-IB']);
+        if (scFfgIb) matchedSCs.add(scFfgIb);
+        const symtomFfgIb = toStr(row['SYMTOM-FFG-IB']);
+        const reasonFfgIb = toStr(row['REASON-FFG-IB']);
+        const statusFfgIb = toStr(row['STATUS-FFG-IB']);
+        const isNullGdoc = symtomFfgIb === 'NULL GDOC' || reasonFfgIb === 'NULL GDOC';
         if (isNullGdoc) totalNullGdoc++;
-        if (row['STATUS-FFG-IB'] === 'TTR-COMP') ffg_ib_comp++;
-        if (row['STATUS-FFG-IB'] === 'TTR-NOTC') ffg_ib_notc++;
-        const evMerged = getMergedEvidence(row['SC-FFG-IB'], row['EVIDENT-FFG-IB']);
+        if (statusFfgIb === 'TTR-COMP') ffg_ib_comp++;
+        if (statusFfgIb === 'TTR-NOTC') ffg_ib_notc++;
+        const evMerged = getMergedEvidence(scFfgIb, row['EVIDENT-FFG-IB']);
         internalFfg.push({
-          SA: row['SA-FFG-IB'], STO: row['STO-FFG-IB'], SC: row['SC-FFG-IB'],
-          STATUS: row['STATUS-FFG-IB'] as any, SYMTOM: row['SYMTOM-FFG-IB']?.trim(),
+          SA: toStr(row['SA-FFG-IB']), STO: toStr(row['STO-FFG-IB']), SC: scFfgIb,
+          STATUS: statusFfgIb as any, SYMTOM: symtomFfgIb,
           NULL_GDOC: isNullGdoc,
-          REASON: row['REASON-FFG-IB'],
+          REASON: reasonFfgIb,
           EVIDENT: evMerged.EVIDENT,
           EVIDENT2: evMerged.EVIDENT2, EVIDENT3: evMerged.EVIDENT3, EVIDENT4: evMerged.EVIDENT4, EVIDENT5: evMerged.EVIDENT5, EVIDENT6: evMerged.EVIDENT6, EVIDENT7: evMerged.EVIDENT7,
           NAMA_TEKNISI: evMerged.NAMA_TEKNISI, NIK_TEKNISI: evMerged.NIK_TEKNISI, MITRA: evMerged.MITRA,
@@ -270,10 +288,10 @@ export async function fetchDashboardData(
         });
       }
       if (row['PS-SA-IH']) {
-        psIhList.push({ sa: row['PS-SA-IH'], sto: row['PS-STO-IH'], jml: Number(row['Jml PS-IH']) || 0 });
+        psIhList.push({ sa: toStr(row['PS-SA-IH']), sto: toStr(row['PS-STO-IH']), jml: Number(row['Jml PS-IH']) || 0 });
       }
       if (row['PS-SA-IB']) {
-        psIbList.push({ sa: row['PS-SA-IB'], sto: row['PS-STO-IB'], jml: Number(row['Jml PS-IB']) || 0 });
+        psIbList.push({ sa: toStr(row['PS-SA-IB']), sto: toStr(row['PS-STO-IB']), jml: Number(row['Jml PS-IB']) || 0 });
       }
     }
 
@@ -283,26 +301,26 @@ export async function fetchDashboardData(
       if (sc && !matchedSCs.has(sc)) {
         internalTti.push({
           SA: "UNKNOWN",
-          STO: ev["STO"] || "UNKNOWN",
+          STO: toStr(ev["STO"]) || "UNKNOWN",
           SC: sc,
           STATUS: "UPDATED-COMP" as any,
-          SYMTOM: ev["SYMTOM KENDALA"] || "SUDAH UPDATE",
+          SYMTOM: toStr(ev["SYMTOM KENDALA"]) || "SUDAH UPDATE",
           NULL_GDOC: false,
-          REASON: ev["KETERANGAN DETAIL KENDALA"] || "",
-          EVIDENT: ev["EVIDENCE 1"] || "",
-          EVIDENT2: ev["EVIDENCE 2"] || "",
-          EVIDENT3: ev["EVIDENCE 3"] || "",
-          EVIDENT4: ev["EVIDENCE 3"] || "",
-          EVIDENT5: ev["EVIDENCE 4"] || "",
-          EVIDENT6: ev["BA GANGGUAN FFG PELANGGAN"] || "",
-          EVIDENT7: ev["FOTO DENGAN PELANGGAN MEMEGANG BA"] || "",
-          NAMA_TEKNISI: ev["NAMA TEKNISI"] || "",
-          NIK_TEKNISI: String(ev["NIK TEKNISI"] || ""),
-          MITRA: ev["MITRA"] || "",
+          REASON: toStr(ev["KETERANGAN DETAIL KENDALA"]),
+          EVIDENT: toStr(ev["EVIDENCE 1"]),
+          EVIDENT2: toStr(ev["EVIDENCE 2"]),
+          EVIDENT3: toStr(ev["EVIDENCE 3"]),
+          EVIDENT4: toStr(ev["EVIDENCE 3"]),
+          EVIDENT5: toStr(ev["EVIDENCE 4"]),
+          EVIDENT6: toStr(ev["BA GANGGUAN FFG PELANGGAN"]),
+          EVIDENT7: toStr(ev["FOTO DENGAN PELANGGAN MEMEGANG BA"]),
+          NAMA_TEKNISI: toStr(ev["NAMA TEKNISI"]),
+          NIK_TEKNISI: toStr(ev["NIK TEKNISI"]),
+          MITRA: toStr(ev["MITRA"]),
           DURASI: 0,
           kpi: 'UPDATED',
-          TIMESTAMP: ev["Timestamp"] || "",
-          ITEM_NOT_COMPLY: ev["ITEM NOT COMPLY"] || "",
+          TIMESTAMP: toStr(ev["Timestamp"]),
+          ITEM_NOT_COMPLY: toStr(ev["ITEM NOT COMPLY"]),
           isUpdated: true
         });
       }
@@ -314,7 +332,7 @@ export async function fetchDashboardData(
 
     const getMetric = (tickets: any[], kpiTag: string, target: number) => {
       const filtered = tickets.filter(t => t.kpi === kpiTag);
-      const comply = filtered.filter(t => t.STATUS.includes('COMP')).length;
+      const comply = filtered.filter(t => String(t?.STATUS || "").includes('COMP')).length;
       const notcomply = filtered.length - comply;
       const achievement = filtered.length > 0 ? (comply / filtered.length) * 100 : 100;
       return { comply, notcomply, target, achievement };
@@ -392,7 +410,8 @@ export async function fetchDashboardData(
 
     ihDistricts.forEach((d: any) => {
       d.serviceAreas?.forEach((sa: any) => {
-        const name = sa.serviceArea.toUpperCase();
+        const name = String(sa?.serviceArea || "").toUpperCase();
+        if (!name) return;
         if (!saMap.has(name)) saMap.set(name, initData(sa.serviceArea, true));
         const row = saMap.get(name);
         row.achievementIH = getAverageMetric(sa.summary);
@@ -407,7 +426,8 @@ export async function fetchDashboardData(
         row.garansiIH = parseVal(sa.summary?.ffg?.real);
         
         sa.stos?.forEach((sto: any) => {
-          const stoName = sto.sto.toUpperCase();
+          const stoName = String(sto?.sto || "").toUpperCase();
+          if (!stoName) return;
           if (!stoMap.has(stoName)) stoMap.set(stoName, initData(sto.sto, false));
           const stoRow = stoMap.get(stoName);
           stoRow.achievementIH = getAverageMetric(sto.summary);
@@ -426,7 +446,8 @@ export async function fetchDashboardData(
 
     ibDistricts.forEach((d: any) => {
       d.serviceAreas?.forEach((sa: any) => {
-        const name = sa.serviceArea.toUpperCase();
+        const name = String(sa?.serviceArea || "").toUpperCase();
+        if (!name) return;
         if (!saMap.has(name)) saMap.set(name, initData(sa.serviceArea, true));
         const row = saMap.get(name);
         row.achievementIB = getAverageAch(sa.summary);
@@ -437,7 +458,8 @@ export async function fetchDashboardData(
         row.pspiIB = parseVal(sa.summary?.psToPiRatio?.real);
         
         sa.stos?.forEach((sto: any) => {
-          const stoName = sto.sto.toUpperCase();
+          const stoName = String(sto?.sto || "").toUpperCase();
+          if (!stoName) return;
           if (!stoMap.has(stoName)) stoMap.set(stoName, initData(sto.sto, false));
           const stoRow = stoMap.get(stoName);
           stoRow.achievementIB = getAverageAch(sto.summary);
@@ -452,7 +474,8 @@ export async function fetchDashboardData(
 
     reportIbAssurance?.forEach?.((d: any) => {
       d.serviceAreas?.forEach((sa: any) => {
-        const name = sa.serviceArea.toUpperCase();
+        const name = String(sa?.serviceArea || "").toUpperCase();
+        if (!name) return;
         if (!saMap.has(name)) saMap.set(name, initData(sa.serviceArea, true));
         const row = saMap.get(name);
         
@@ -466,11 +489,12 @@ export async function fetchDashboardData(
 
         // recalculate achievement IB by looking up the FF summary
         const ffD = ibDistricts.find((x: any) => x.district === d.district);
-        const ffSa = ffD?.serviceAreas?.find((x: any) => x.serviceArea.toUpperCase() === name);
+        const ffSa = ffD?.serviceAreas?.find((x: any) => String(x.serviceArea || "").toUpperCase() === name);
         row.achievementIB = getAverageAch(ffSa?.summary, sa.summary);
 
         sa.stos?.forEach((sto: any) => {
-          const stoName = sto.sto.toUpperCase();
+          const stoName = String(sto?.sto || "").toUpperCase();
+          if (!stoName) return;
           if (!stoMap.has(stoName)) stoMap.set(stoName, initData(sto.sto, false));
           const stoRow = stoMap.get(stoName);
           
@@ -482,7 +506,7 @@ export async function fetchDashboardData(
           stoRow.datinK2IB = parseVal(sto.summary?.complianceDatinK2?.real);
           stoRow.datinK3IB = parseVal(sto.summary?.complianceDatinK3?.real);
 
-          const ffSto = ffSa?.stos?.find((x: any) => x.sto.toUpperCase() === stoName);
+          const ffSto = ffSa?.stos?.find((x: any) => String(x.sto || "").toUpperCase() === stoName);
           stoRow.achievementIB = getAverageAch(ffSto?.summary, sto.summary);
         });
       });
