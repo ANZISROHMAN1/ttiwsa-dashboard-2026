@@ -1089,7 +1089,7 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
 
       {/* Top Performers Widgets */}
       <div className="flex flex-col gap-5">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         
         {/* Widget 1: Global Best SA */}
         <div className="glass-card p-5 flex flex-col justify-between relative overflow-hidden group">
@@ -1124,44 +1124,6 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
               </div>
               <div className="h-[140px] w-full relative">
                 <Doughnut data={pieData} options={pieOptions} />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Widget 1.5: Global Best STO */}
-        <div className="glass-card p-5 flex flex-col justify-between relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-          
-          <div className="mb-4 relative z-10">
-            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-              <Crown className="w-4 h-4 text-purple-400" />
-              Global Best STO
-            </h3>
-            <p className="text-[10px] text-foreground-muted mt-1">Highest parameters achieved across all STOs</p>
-          </div>
-
-          {overallBestSTO && (
-            <div className="relative z-10 flex flex-col flex-1 h-[calc(100%-60px)]">
-              <div className="flex items-center justify-between bg-[var(--surface-hover)] p-3 rounded-xl border border-[var(--border)] mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0 border border-purple-500/20">
-                    <span className="text-purple-400 font-bold text-sm tracking-widest">{overallBestSTO.sto.sto.substring(0, 3)}</span>
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-foreground">{overallBestSTO.sto.sto}</div>
-                    <div className="text-[10px] text-purple-400 font-semibold">{overallBestSTO.district} ({overallBestSTO.sa})</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold text-purple-400 flex items-center justify-end gap-1">
-                    {overallBestSTO.achieved} <Target className="w-3 h-3" />
-                  </div>
-                  <div className="text-[10px] text-purple-500/70">{overallBestSTO.thumbsUp} Positive</div>
-                </div>
-              </div>
-              <div className="h-[140px] w-full relative">
-                <Doughnut data={pieDataSTO} options={pieOptions} />
               </div>
             </div>
           )}
