@@ -15,8 +15,11 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
 
-  const toggleDropdown = (label: string) => {
-    setOpenDropdowns((prev) => ({ ...prev, [label]: !prev[label] }));
+  const toggleDropdown = (label: string, defaultOpen: boolean) => {
+    setOpenDropdowns((prev) => {
+      const current = typeof prev[label] === "boolean" ? prev[label] : defaultOpen;
+      return { ...prev, [label]: !current };
+    });
   };
 
   return (
@@ -53,11 +56,14 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
-          const hasSubItems = item.subItems && item.subItems.length > 0;
-          const isSubItemActive = hasSubItems && item.subItems!.some(
+          const hasSubItems = Boolean(item.subItems && item.subItems.length > 0);
+          const isSubItemActive = Boolean(hasSubItems && item.subItems!.some(
             (sub) => sub.href === pathname || (sub.href !== "/" && (pathname === sub.href || pathname.startsWith(sub.href + "/")))
-          );
-          const isDropdownOpen = openDropdowns[item.label] || isSubItemActive;
+          ));
+          const isDropdownOpen =
+            typeof openDropdowns[item.label] === "boolean"
+              ? openDropdowns[item.label]
+              : isSubItemActive;
 
           const isActive =
             pathname === item.href ||
@@ -123,7 +129,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <div key={item.label} className="space-y-1">
               {hasSubItems ? (
                 <button
-                  onClick={() => toggleDropdown(item.label)}
+                  onClick={() => toggleDropdown(item.label, isSubItemActive)}
                   id={`nav-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative",

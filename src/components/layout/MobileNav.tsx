@@ -15,8 +15,11 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
   const pathname = usePathname();
   const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
 
-  const toggleDropdown = (label: string) => {
-    setOpenDropdowns((prev) => ({ ...prev, [label]: !prev[label] }));
+  const toggleDropdown = (label: string, defaultOpen: boolean) => {
+    setOpenDropdowns((prev) => {
+      const current = typeof prev[label] === "boolean" ? prev[label] : defaultOpen;
+      return { ...prev, [label]: !current };
+    });
   };
 
   // Close on route change
@@ -99,11 +102,14 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
         {/* Nav Links */}
         <nav className="px-3 py-4 space-y-1">
           {NAV_ITEMS.map((item) => {
-            const hasSubItems = item.subItems && item.subItems.length > 0;
-            const isSubItemActive = hasSubItems && item.subItems!.some(
+            const hasSubItems = Boolean(item.subItems && item.subItems.length > 0);
+            const isSubItemActive = Boolean(hasSubItems && item.subItems!.some(
               (sub) => sub.href === pathname || (sub.href !== "/" && (pathname === sub.href || pathname.startsWith(sub.href + "/")))
-            );
-            const isDropdownOpen = openDropdowns[item.label] || isSubItemActive;
+            ));
+            const isDropdownOpen =
+              typeof openDropdowns[item.label] === "boolean"
+                ? openDropdowns[item.label]
+                : isSubItemActive;
 
             const isActive =
               pathname === item.href ||
@@ -153,7 +159,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
               <div key={item.href} className="space-y-1">
                 {hasSubItems ? (
                   <button
-                    onClick={() => toggleDropdown(item.label)}
+                    onClick={() => toggleDropdown(item.label, isSubItemActive)}
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
                       isActive && !isDropdownOpen
