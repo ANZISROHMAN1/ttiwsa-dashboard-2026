@@ -60,6 +60,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
   const [selectedVariation, setSelectedVariation] = useState<SummaryVariationKey>("standard");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSegmen, setSelectedSegmen] = useState<string>("ALL");
+  const [racingFilter, setRacingFilter] = useState<"ALL" | "RACING" | "NON_RACING">("ALL");
 
   const currentSummaryList: SegmentSummaryRow[] = useMemo(() => {
     return data.summaries[selectedVariation] || [];
@@ -112,14 +113,9 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
     });
   }, [totalRow, currentSummaryList]);
 
-  // 50 KPI Racing Indicators only
-  const racingIndicators = useMemo(() => {
-    return data.indicators.filter((ind) => ind.kpiRacing);
-  }, [data.indicators]);
-
-  // Filtered Racing Indicators
-  const filteredRacingIndicators = useMemo(() => {
-    return racingIndicators.filter((ind) => {
+  // Filtered Indicators (defaults to all 90 indicators)
+  const filteredIndicators = useMemo(() => {
+    return data.indicators.filter((ind) => {
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         if (!ind.indikator.toLowerCase().includes(q)) return false;
@@ -127,18 +123,20 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
       if (selectedSegmen !== "ALL" && ind.segmen.toUpperCase() !== selectedSegmen) {
         return false;
       }
+      if (racingFilter === "RACING" && !ind.kpiRacing) return false;
+      if (racingFilter === "NON_RACING" && ind.kpiRacing) return false;
       return true;
     });
-  }, [racingIndicators, searchQuery, selectedSegmen]);
+  }, [data.indicators, searchQuery, selectedSegmen, racingFilter]);
 
   // Segments list
   const segments = useMemo(() => {
     const set = new Set<string>();
-    racingIndicators.forEach((i) => {
+    data.indicators.forEach((i) => {
       if (i.segmen) set.add(i.segmen.toUpperCase());
     });
     return Array.from(set);
-  }, [racingIndicators]);
+  }, [data.indicators]);
 
   // Export CSV
   const handleExportCSV = () => {
@@ -155,9 +153,10 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
       "Bekasi Ach",
       "Karawang Real",
       "Karawang Ach",
+      "KPI Racing",
     ];
     const rows = [headers.join(",")];
-    filteredRacingIndicators.forEach((ind) => {
+    filteredIndicators.forEach((ind) => {
       rows.push(
         [
           ind.no,
@@ -172,6 +171,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
           ind.bekasi.ach ?? "",
           ind.karawang.real ?? "",
           ind.karawang.ach ?? "",
+          ind.kpiRacing ? "YES" : "NO",
         ].join(",")
       );
     });
@@ -180,7 +180,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `leaderboard_district_racing_${Date.now()}.csv`);
+    link.setAttribute("download", `leaderboard_indicators_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -451,16 +451,16 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
         </div>
       </div>
 
-      {/* ─── Detailed 50 KPI Racing Indicators Table ─────────────────────── */}
+      {/* ─── Detailed Indicators Table ─────────────────────────────────────── */}
       <div className="glass-card p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[var(--border)]">
           <div>
             <h3 className="text-base font-bold text-foreground flex items-center gap-2">
               <Flame className="w-4 h-4 text-amber-400" />
-              Detail Head-to-Head 50 KPI Racing
+              Detail Head-to-Head Indikator KPI
             </h3>
             <p className="text-xs text-foreground-muted mt-0.5">
-              Menampilkan perbandingan nilai Real & Achievement untuk setiap indikator KPI Racing.
+              Menampilkan {filteredIndicators.length} dari {data.indicators.length} indikator KPI (Bogor, Bekasi, Karawang).
             </p>
           </div>
 
@@ -469,17 +469,17 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-hover)] text-xs font-semibold text-foreground hover:bg-[var(--surface)] transition-colors self-start sm:self-auto"
           >
             <Download className="w-3.5 h-3.5 text-accent-blue" />
-            Export CSV Racing
+            Export CSV ({filteredIndicators.length})
           </button>
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="relative">
             <Search className="w-4 h-4 text-foreground-muted absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Cari indikator racing..."
+              placeholder="Cari indikator (1-90)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl text-xs text-foreground placeholder:text-foreground-muted focus:outline-none focus:border-accent-blue transition-colors"
@@ -492,12 +492,24 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
               onChange={(e) => setSelectedSegmen(e.target.value)}
               className="w-full px-3 py-2 bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl text-xs text-foreground focus:outline-none focus:border-accent-blue transition-colors"
             >
-              <option value="ALL">Semua Segmen Racing ({racingIndicators.length})</option>
+              <option value="ALL">Semua Segmen ({data.indicators.length})</option>
               {segments.map((seg) => (
                 <option key={seg} value={seg}>
                   Segmen {seg}
                 </option>
               ))}
+            </select>
+          </div>
+
+          <div>
+            <select
+              value={racingFilter}
+              onChange={(e) => setRacingFilter(e.target.value as any)}
+              className="w-full px-3 py-2 bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl text-xs text-foreground focus:outline-none focus:border-accent-blue transition-colors"
+            >
+              <option value="ALL">Semua Indikator (90 KPI)</option>
+              <option value="RACING">Hanya 50 KPI Racing</option>
+              <option value="NON_RACING">Non Racing (40 KPI)</option>
             </select>
           </div>
         </div>
@@ -508,8 +520,9 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
             <thead className="sticky top-0 z-10 bg-[var(--background)]/95 backdrop-blur-md border-b border-[var(--border)]">
               <tr className="text-foreground-muted">
                 <th className="px-3 py-3 font-semibold text-center w-12">NO</th>
-                <th className="px-4 py-3 font-semibold min-w-[260px]">INDIKATOR RACING</th>
+                <th className="px-4 py-3 font-semibold min-w-[260px]">INDIKATOR</th>
                 <th className="px-3 py-3 font-semibold text-center">SEGMEN</th>
+                <th className="px-3 py-3 font-semibold text-center">TIPE</th>
                 <th className="px-3 py-3 font-semibold text-right">TARGET</th>
                 <th className="px-3 py-3 font-semibold text-center bg-accent-blue/5">EASTERN</th>
                 <th className="px-3 py-3 font-semibold text-center">BOGOR</th>
@@ -518,7 +531,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
-              {filteredRacingIndicators.map((ind, idx) => {
+              {filteredIndicators.map((ind, idx) => {
                 const segColor = SEGMEN_COLORS[ind.segmen.toUpperCase()] || {
                   bg: "bg-zinc-500/10",
                   text: "text-zinc-400",
@@ -531,7 +544,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                 const karawangAch = typeof ind.karawang.ach === "number" ? ind.karawang.ach : parseFloat(String(ind.karawang.ach || 0));
 
                 return (
-                  <tr key={`racing-${ind.no}-${idx}`} className="hover:bg-[var(--surface-hover)] transition-colors">
+                  <tr key={`ind-${ind.no}-${idx}`} className="hover:bg-[var(--surface-hover)] transition-colors">
                     <td className="px-3 py-3 text-center text-foreground-muted font-mono">{ind.no}</td>
                     <td className="px-4 py-3 font-medium text-foreground">
                       <div className="leading-snug" title={ind.indikator}>
@@ -549,6 +562,17 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                       >
                         {ind.segmen}
                       </span>
+                    </td>
+                    <td className="px-3 py-3 text-center whitespace-nowrap">
+                      {ind.kpiRacing ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                          RACING
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-500/10 text-foreground-muted border border-zinc-500/20">
+                          NON RACING
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-3 text-right font-mono text-foreground whitespace-nowrap">
                       {ind.target ?? "-"}
@@ -605,10 +629,10 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                 );
               })}
 
-              {filteredRacingIndicators.length === 0 && (
+              {filteredIndicators.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-foreground-muted">
-                    Tidak ada indikator racing yang sesuai filter.
+                  <td colSpan={9} className="px-4 py-12 text-center text-foreground-muted">
+                    Tidak ada indikator yang sesuai filter.
                   </td>
                 </tr>
               )}
