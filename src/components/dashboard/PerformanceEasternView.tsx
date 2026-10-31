@@ -97,7 +97,7 @@ export function PerformanceEasternView({ data }: PerformanceEasternViewProps) {
   const { data: wisaData } = useReportIHEastern();
 
   // State
-  const [selectedVariation, setSelectedVariation] = useState<SummaryVariationKey>("standard");
+  const selectedVariation: SummaryVariationKey = "standard";
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>("CURRENT");
   const [selectedDistrict, setSelectedDistrict] = useState<DistrictFilterKey>("ALL");
   const [selectedSegmen, setSelectedSegmen] = useState<string>("ALL");
@@ -405,43 +405,6 @@ export function PerformanceEasternView({ data }: PerformanceEasternViewProps) {
                 {data.periods.prevPeriod || "FM September 2026"}
               </option>
             </select>
-          </div>
-
-          {/* Variation Switcher */}
-          <div className="glass-card p-1 flex gap-1 rounded-xl">
-            <button
-              onClick={() => setSelectedVariation("standard")}
-              className={cn(
-                "px-2.5 py-1 rounded-lg text-xs font-semibold transition-all",
-                selectedVariation === "standard"
-                  ? "bg-accent-blue text-white shadow-sm"
-                  : "text-foreground-muted hover:text-foreground"
-              )}
-            >
-              Standard
-            </button>
-            <button
-              onClick={() => setSelectedVariation("naDianggapAch")}
-              className={cn(
-                "px-2.5 py-1 rounded-lg text-xs font-semibold transition-all",
-                selectedVariation === "naDianggapAch"
-                  ? "bg-accent-blue text-white shadow-sm"
-                  : "text-foreground-muted hover:text-foreground"
-              )}
-            >
-              NA=ACH
-            </button>
-            <button
-              onClick={() => setSelectedVariation("naDiexclude")}
-              className={cn(
-                "px-2.5 py-1 rounded-lg text-xs font-semibold transition-all",
-                selectedVariation === "naDiexclude"
-                  ? "bg-accent-blue text-white shadow-sm"
-                  : "text-foreground-muted hover:text-foreground"
-              )}
-            >
-              Excl NA
-            </button>
           </div>
         </div>
       </div>
