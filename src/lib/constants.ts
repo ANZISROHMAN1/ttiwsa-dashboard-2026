@@ -79,6 +79,10 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/performance-eastern",
     icon: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6",
     description: "Eastern & District Performance",
+    subItems: [
+      { label: "Performance Eastern", href: "/performance-eastern", description: "Report & Detail KPI" },
+      { label: "Leaderboard", href: "/performance-eastern/leaderboard", description: "Ranking District Eastern" },
+    ],
   },
   {
     label: "Performance",
