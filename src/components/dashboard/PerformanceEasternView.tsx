@@ -387,7 +387,7 @@ export function PerformanceEasternView({ data }: PerformanceEasternViewProps) {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs font-bold text-amber-400 hover:bg-amber-500/20 transition-all shadow-sm"
           >
             <Trophy className="w-3.5 h-3.5 text-amber-400" />
-            Leaderboard 50 KPI
+            Leaderboard KPI Eastern
           </Link>
 
           {/* Period Selector */}

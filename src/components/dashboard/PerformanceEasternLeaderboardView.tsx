@@ -57,7 +57,7 @@ function parsePercent(val: string): number {
 }
 
 export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLeaderboardViewProps) {
-  const [selectedVariation, setSelectedVariation] = useState<SummaryVariationKey>("standard");
+  const selectedVariation: SummaryVariationKey = "standard";
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSegmen, setSelectedSegmen] = useState<string>("ALL");
   const [racingFilter, setRacingFilter] = useState<"ALL" | "RACING" | "NON_RACING">("ALL");
@@ -227,48 +227,11 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
           </div>
           <h1 className="text-xl lg:text-2xl font-black text-foreground flex items-center gap-2.5">
             <Trophy className="w-6 h-6 text-amber-400" />
-            Leaderboard 50 KPI Racing District
+            Leaderboard KPI Eastern
           </h1>
           <p className="text-xs text-foreground-muted mt-1">
-            Peringkat dan evaluasi performa 3 District (Bogor, Bekasi, Karawang) berdasarkan 50 KPI Racing.
+            Peringkat dan evaluasi performa 3 District (Bogor, Bekasi, Karawang) berdasarkan indikator KPI Eastern.
           </p>
-        </div>
-
-        {/* Variation Switcher */}
-        <div className="glass-card p-1 flex gap-1 rounded-xl self-start md:self-auto">
-          <button
-            onClick={() => setSelectedVariation("standard")}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
-              selectedVariation === "standard"
-                ? "bg-accent-blue text-white shadow-md shadow-blue-500/20"
-                : "text-foreground-muted hover:text-foreground"
-            )}
-          >
-            Standard
-          </button>
-          <button
-            onClick={() => setSelectedVariation("naDianggapAch")}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
-              selectedVariation === "naDianggapAch"
-                ? "bg-accent-blue text-white shadow-md shadow-blue-500/20"
-                : "text-foreground-muted hover:text-foreground"
-            )}
-          >
-            NA dianggap ACH
-          </button>
-          <button
-            onClick={() => setSelectedVariation("naDiexclude")}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
-              selectedVariation === "naDiexclude"
-                ? "bg-accent-blue text-white shadow-md shadow-blue-500/20"
-                : "text-foreground-muted hover:text-foreground"
-            )}
-          >
-            NA diexclude
-          </button>
         </div>
       </div>
 
