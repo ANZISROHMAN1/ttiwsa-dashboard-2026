@@ -16,6 +16,9 @@ export const REPORT_EBIS_ASSURANCE_API_URL = process.env.API_ASS_EBIS || "";
 export const PERFORMANCE_EASTERN_SHEET_URL =
   process.env.PERFORMANCE_EASTERN_SHEET_URL ||
   "https://docs.google.com/spreadsheets/d/1ci9rn9w0wnoBho2g6ydnUix30e8n2Jpz4-9zEkQ-_dI/export?format=csv&gid=2076853928";
+export const LEADERBOARD_WISA_SHEET_URL =
+  process.env.LEADERBOARD_WISA_SHEET_URL ||
+  "https://docs.google.com/spreadsheets/d/1ci9rn9w0wnoBho2g6ydnUix30e8n2Jpz4-9zEkQ-_dI/export?format=csv&gid=1681865020";
 
 /** Auto-refresh interval in milliseconds (5 minutes) */
 export const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
