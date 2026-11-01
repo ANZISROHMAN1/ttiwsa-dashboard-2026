@@ -9,6 +9,7 @@ export interface DistrictRacingIndicator {
 
 export interface DistrictRacingItem {
   rank: number;
+  initialIndex: number;
   district: string;
   area: string;
   regional: string;
@@ -17,6 +18,8 @@ export interface DistrictRacingItem {
   na: number;
   total: number;
   percent: number;
+  achRate: string;
+  average: string;
   indicators: DistrictRacingIndicator[];
 }
 
@@ -26,4 +29,3 @@ export interface LeaderboardWisaData {
   regionals: string[];
   totalDistricts: number;
 }
-
