@@ -134,15 +134,20 @@ export function parsePerformanceEasternCSV(csvText: string): PerformanceEasternD
   const naDianggapAch = parseSummaryBlock(16);
   const naDiexclude = parseSummaryBlock(27);
 
-  // Indicators: Rows 3 to end of indicators list (until no indicator name)
+  // Indicators: Exactly 90 KPI indicators (Rows with valid No 1 to 90)
   const indicators: IndicatorRow[] = [];
   for (let r = 3; r < rows.length; r++) {
     const row = rows[r];
+    const rawNo = cleanString(row[0]);
+    if (!rawNo) continue;
+    const no = parseInt(rawNo);
+    if (isNaN(no) || no < 1 || no > 90) continue;
+
     const indikatorName = cleanString(row[1]);
     if (!indikatorName) continue;
 
     indicators.push({
-      no: parseInt(row[0]) || indicators.length + 1,
+      no,
       indikator: indikatorName,
       segmen: cleanString(row[2]),
       target: parseNum(row[3]),
@@ -170,6 +175,8 @@ export function parsePerformanceEasternCSV(csvText: string): PerformanceEasternD
       },
       kpiRacing: cleanString(row[16]).toUpperCase() === "YES",
     });
+
+    if (indicators.length >= 90) break;
   }
 
   return {
