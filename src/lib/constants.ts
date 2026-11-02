@@ -1,6 +1,8 @@
 // ─── API Configuration ──────────────────────────────────────────────────────
 
-export const SUBMIT_ENDPOINT_URL = process.env.SUBMIT_API_URL || "";
+export const SUBMIT_ENDPOINT_URL =
+  process.env.SUBMIT_API_URL ||
+  "https://script.google.com/macros/s/AKfycbyvSKc516ZFVM4AjIat-VhYM6tg5hFtITXhqUV9iJWWmCSkuOHSCc_SK5ivHmQL7bvCUA/exec";
 export const API_BASE_URL = process.env.TTIWSA_API_URL || "";
 export const SALDO_PSPI_API_URL = process.env.PSPI_API_URL || "";
 export const UNSPEC_API_URL = process.env.UNSPEC_API_URL || "";

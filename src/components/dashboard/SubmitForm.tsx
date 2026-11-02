@@ -132,6 +132,7 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
   
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const updateField = useCallback(
     (field: keyof FormData, value: string) => {
@@ -284,11 +285,18 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
         body: JSON.stringify(payload)
       });
 
+      const responseData = await response.json().catch(() => null);
+
       if (!response.ok) {
-        throw new Error("Failed to submit");
+        const errorMsg =
+          responseData?.error ||
+          responseData?.message ||
+          `Gagal melakukan submit (${response.status} ${response.statusText})`;
+        throw new Error(errorMsg);
       }
 
       setSubmitState("success");
+      setErrorMessage(null);
 
       // Auto-refresh ONLY the regular TTIWSA API data
       refreshTargetApi("regular").catch(console.error);
@@ -296,9 +304,11 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
       setTimeout(() => {
         router.back();
       }, 1500);
-    } catch {
+    } catch (err: any) {
       setSubmitState("error");
-      setTimeout(() => setSubmitState("idle"), 3000);
+      const msg = err?.message || "Gagal melakukan submit. Silakan coba lagi.";
+      setErrorMessage(msg);
+      setTimeout(() => setSubmitState("idle"), 8000);
     }
   };
 
@@ -602,6 +612,26 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
                 })}
               </div>
             </div>
+
+            {errorMessage && submitState === "error" && (
+              <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2.5 animate-fade-in">
+                <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="space-y-1.5 flex-1">
+                  <div className="font-bold text-rose-300">Gagal Submit ke Google Apps Script:</div>
+                  <div className="text-foreground-muted leading-relaxed break-words">{errorMessage}</div>
+                  {errorMessage.includes("DriveApp") && (
+                    <div className="mt-2 text-amber-300 text-[11px] bg-amber-500/10 p-3 rounded-lg border border-amber-500/20 leading-relaxed">
+                      ⚠️ <strong>Penyebab:</strong> Script Google Apps Script membutuhkan otorisasi izin untuk Google Drive (<code className="font-mono text-[10px]">DriveApp.getFolderById</code>). Pemilik script perlu membuka editor Google Apps Script dan memberikan izin akses Google Drive.
+                      <div className="mt-1 font-semibold text-emerald-300">
+                        👉 Solusi Sementara: Hapus lampiran foto evidence terlebih dahulu, lalu klik Submit kembali.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="pt-4 pb-2 flex justify-between items-center">
               <button
