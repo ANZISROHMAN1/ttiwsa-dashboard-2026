@@ -40,8 +40,9 @@ export function useReportIHEastern(): UseReportIHEasternReturn {
     "/api/report-ih-eastern",
     fetcher,
     {
-      refreshInterval: 60000,
-      revalidateOnFocus: true,
+      refreshInterval: 120000,
+      revalidateOnFocus: false,
+      dedupingInterval: 30000,
     }
   );
 
