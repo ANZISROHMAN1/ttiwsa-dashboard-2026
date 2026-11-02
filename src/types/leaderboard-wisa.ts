@@ -20,6 +20,7 @@ export interface DistrictRacingItem {
   percent: number;
   achRate: string;
   average: string;
+  avgNum?: number;
   indicators: DistrictRacingIndicator[];
 }
 
