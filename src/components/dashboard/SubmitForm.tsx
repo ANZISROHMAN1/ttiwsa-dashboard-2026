@@ -614,18 +614,22 @@ export function SubmitForm({ stoList }: SubmitFormProps) {
             </div>
 
             {errorMessage && submitState === "error" && (
-              <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2.5 animate-fade-in">
-                <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs flex items-start gap-2.5 animate-fade-in">
+                <svg className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <div className="space-y-1.5 flex-1">
-                  <div className="font-bold text-rose-300">Gagal Submit ke Google Apps Script:</div>
-                  <div className="text-foreground-muted leading-relaxed break-words">{errorMessage}</div>
+                <div className="space-y-2 flex-1">
+                  <div className="font-bold text-rose-700 dark:text-rose-300 text-sm">Gagal Submit ke Google Apps Script:</div>
+                  <div className="text-foreground/90 font-mono text-[11px] bg-background/50 p-2.5 rounded-lg border border-[var(--border)] leading-relaxed break-words">
+                    {errorMessage}
+                  </div>
                   {errorMessage.includes("DriveApp") && (
-                    <div className="mt-2 text-amber-300 text-[11px] bg-amber-500/10 p-3 rounded-lg border border-amber-500/20 leading-relaxed">
-                      ⚠️ <strong>Penyebab:</strong> Script Google Apps Script membutuhkan otorisasi izin untuk Google Drive (<code className="font-mono text-[10px]">DriveApp.getFolderById</code>). Pemilik script perlu membuka editor Google Apps Script dan memberikan izin akses Google Drive.
-                      <div className="mt-1 font-semibold text-emerald-300">
-                        👉 Solusi Sementara: Hapus lampiran foto evidence terlebih dahulu, lalu klik Submit kembali.
+                    <div className="text-amber-900 dark:text-amber-200 text-xs bg-amber-500/15 dark:bg-amber-500/20 p-3 rounded-xl border border-amber-500/30 leading-relaxed space-y-1.5">
+                      <div>
+                        ⚠️ <strong>Penyebab:</strong> Script Google Apps Script membutuhkan izin (OAuth Authorization) untuk menyimpan file ke Google Drive (<code className="font-mono text-[11px] font-bold">DriveApp.getFolderById</code>).
+                      </div>
+                      <div className="font-semibold text-emerald-800 dark:text-emerald-300 pt-1">
+                        👉 <strong>Solusi Cepat (Sementara):</strong> Hapus lampiran foto evidence (klik ikon tong sampah merah pada Evidence 1–4), lalu klik Submit kembali agar data teks langsung masuk ke spreadsheet.
                       </div>
                     </div>
                   )}
