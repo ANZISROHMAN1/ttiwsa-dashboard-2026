@@ -83,23 +83,29 @@ export function AreaAchievementSection({
 
   const backgroundColors = useMemo(() => {
     return chartItems.map((item) => {
-      const isEastern = "isEastern" in item ? item.isEastern : item.area === "AREA 2";
+      const isEastern =
+        scopeMode === "regional"
+          ? "regional" in item && (Boolean((item as any).isEastern) || String((item as any).regional).includes("EASTERN"))
+          : item.area === "AREA 2";
       if (isEastern) {
-        return "rgba(37, 99, 235, 0.9)"; // Vibrant Accent Blue for Eastern
+        return "rgba(37, 99, 235, 0.9)"; // Highlight biru khusus Regional Eastern Jabotabek
       }
-      return "#4a6882"; // Exact slate-navy from WISA screenshot
+      return "#4a6882"; // Warna slate-navy standar WISA
     });
-  }, [chartItems]);
+  }, [chartItems, scopeMode]);
 
   const borderColors = useMemo(() => {
     return chartItems.map((item) => {
-      const isEastern = "isEastern" in item ? item.isEastern : item.area === "AREA 2";
+      const isEastern =
+        scopeMode === "regional"
+          ? "regional" in item && (Boolean((item as any).isEastern) || String((item as any).regional).includes("EASTERN"))
+          : item.area === "AREA 2";
       if (isEastern) {
         return "#60a5fa";
       }
       return "#38526a";
     });
-  }, [chartItems]);
+  }, [chartItems, scopeMode]);
 
   // Chart configuration matching WISA screenshot
   const chartData = {
