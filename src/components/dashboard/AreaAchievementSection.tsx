@@ -344,7 +344,7 @@ export function AreaAchievementSection({
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
                 <span className="text-xs font-black uppercase tracking-wider text-accent-blue">
-                  Pencapaian Regional 06-EASTERN JABOTABEK
+                  Pencapaian Regional EASTERN JABOTABEK
                 </span>
                 <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                   🥈 RANK #2 NASIONAL

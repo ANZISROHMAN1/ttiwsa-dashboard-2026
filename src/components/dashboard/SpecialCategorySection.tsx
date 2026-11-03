@@ -225,7 +225,7 @@ export function SpecialCategorySection({
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
                 <span className="text-xs font-black uppercase tracking-wider text-accent-blue">
-                  Pencapaian Regional Anda: 06-EASTERN JABOTABEK
+                  Pencapaian Regional Anda: EASTERN JABOTABEK
                 </span>
               </div>
               <p className="text-xs text-foreground-muted">
