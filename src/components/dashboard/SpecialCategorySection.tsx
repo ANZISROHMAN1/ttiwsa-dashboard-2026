@@ -353,7 +353,6 @@ export function SpecialCategorySection({
         {(activeCategoryTab === "ALL" || activeCategoryTab === "DATIN") && (
           <CategoryLeaderboardCard
             title="ENTERPRISE SUPPORT"
-            kpiName={data.datin?.kpiName || "ASR-ENT-TTR Compliance K2 dan K1 Repair DATIN 3,6 Jam"}
             themeColor="purple"
             items={filteredDatinList}
             week={data.week}
@@ -365,7 +364,6 @@ export function SpecialCategorySection({
         {(activeCategoryTab === "ALL" || activeCategoryTab === "PREMIUM") && (
           <CategoryLeaderboardCard
             title="MOBILE SUPPORT"
-            kpiName={data.premiumSite?.kpiName || "ASR-WHM-MTTRi Premium Site Compliance"}
             themeColor="cyan"
             items={filteredPremiumList}
             isMobileSupport={true}
@@ -474,7 +472,6 @@ export function SpecialCategorySection({
 // ─────────────────────────────────────────────────────────────────────────────
 interface CategoryLeaderboardCardProps {
   title: string;
-  kpiName: string;
   themeColor: "purple" | "cyan";
   items: SpecialCategoryLeaderboardItem[];
   isMobileSupport?: boolean;
@@ -484,7 +481,6 @@ interface CategoryLeaderboardCardProps {
 
 function CategoryLeaderboardCard({
   title,
-  kpiName,
   themeColor,
   items,
   isMobileSupport = false,
@@ -505,26 +501,21 @@ function CategoryLeaderboardCard({
       {/* Top Details */}
       <div className="space-y-4">
         {/* Category Header */}
-        <div className="flex items-start justify-between gap-3 pb-4 border-b border-[var(--border)]">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider",
-                  themeColor === "purple"
-                    ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
-                    : "bg-cyan-500/15 text-cyan-400 border border-cyan-500/30"
-                )}
-              >
-                {title}
-              </span>
-              <span className="text-xs font-semibold text-foreground-muted">
-                {items.length} Peserta
-              </span>
-            </div>
-            <h3 className="text-base font-extrabold text-foreground line-clamp-2" title={kpiName}>
-              {kpiName}
-            </h3>
+        <div className="flex items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                "px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider",
+                themeColor === "purple"
+                  ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
+                  : "bg-cyan-500/15 text-cyan-400 border border-cyan-500/30"
+              )}
+            >
+              {title}
+            </span>
+            <span className="text-xs font-semibold text-foreground-muted">
+              {items.length} Peserta
+            </span>
           </div>
         </div>
 
