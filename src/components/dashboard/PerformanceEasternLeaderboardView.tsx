@@ -5,6 +5,8 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { PerformanceEasternData, SegmentSummaryRow } from "@/types/performance-eastern";
 import { useLeaderboardWisa } from "@/hooks/useLeaderboardWisa";
+import { useSpecialCategory } from "@/hooks/useSpecialCategory";
+import { SpecialCategorySection } from "@/components/dashboard/SpecialCategorySection";
 import type { DistrictRacingItem } from "@/types/leaderboard-wisa";
 import {
   Trophy,
@@ -64,8 +66,11 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
   // WISA Hook
   const { data: wisaData, isLoading: wisaLoading, refetch: refetchWisa } = useLeaderboardWisa();
 
-  // Tab switcher: "wisa" (61 District) vs "eastern" (3 District Eastern)
-  const [activeTab, setActiveTab] = useState<"wisa" | "eastern">("wisa");
+  // Special Category Hook
+  const { data: specialData, isLoading: specialLoading, refetch: refetchSpecial } = useSpecialCategory();
+
+  // Tab switcher: "wisa" (61 District) vs "special" (Regional Awards) vs "eastern" (3 District Eastern)
+  const [activeTab, setActiveTab] = useState<"wisa" | "special" | "eastern">("wisa");
 
   // Filter state for WISA tab
   const [rankingViewMode, setRankingViewMode] = useState<"top10" | "all">("top10");
@@ -296,23 +301,35 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
         </div>
 
         {/* Tab Switcher Pills */}
-        <div className="inline-flex items-center p-1 bg-[var(--surface-hover)] border border-[var(--border)] rounded-2xl shrink-0 self-start md:self-center">
+        <div className="inline-flex items-center p-1 bg-[var(--surface-hover)] border border-[var(--border)] rounded-2xl shrink-0 self-start md:self-center overflow-x-auto max-w-full">
           <button
             onClick={() => setActiveTab("wisa")}
             className={cn(
-              "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2",
+              "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap",
               activeTab === "wisa"
                 ? "bg-accent-blue text-white shadow-md shadow-accent-blue/20"
                 : "text-foreground-muted hover:text-foreground"
             )}
           >
             <Trophy className="w-3.5 h-3.5" />
-            Leaderboard 61 District (WISA)
+            District Racing (61 District)
+          </button>
+          <button
+            onClick={() => setActiveTab("special")}
+            className={cn(
+              "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap",
+              activeTab === "special"
+                ? "bg-accent-blue text-white shadow-md shadow-accent-blue/20"
+                : "text-foreground-muted hover:text-foreground"
+            )}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            Special Category (Regional)
           </button>
           <button
             onClick={() => setActiveTab("eastern")}
             className={cn(
-              "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2",
+              "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap",
               activeTab === "eastern"
                 ? "bg-accent-blue text-white shadow-md shadow-accent-blue/20"
                 : "text-foreground-muted hover:text-foreground"
@@ -862,7 +879,18 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
       )}
 
       {/* ═════════════════════════════════════════════════════════════════════ */}
-      {/* TAB 2: DETAIL PERFORMA EASTERN (3 DISTRICT)                           */}
+      {/* TAB 2: SPECIAL CATEGORY (REGIONAL SPECIAL AWARDS)                     */}
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      {activeTab === "special" && (
+        <SpecialCategorySection
+          data={specialData}
+          isLoading={specialLoading}
+          onRefresh={refetchSpecial}
+        />
+      )}
+
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      {/* TAB 3: DETAIL PERFORMA EASTERN (3 DISTRICT)                           */}
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {activeTab === "eastern" && (
         <div className="space-y-6">
