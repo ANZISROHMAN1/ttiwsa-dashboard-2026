@@ -1,0 +1,150 @@
+{
+  "month": "OCT 2026",
+  "week": "W4",
+  "regional": [
+    {
+      "rank": 10,
+      "regional": "01-SUMBAGUT",
+      "name": "SUMBAGUT",
+      "area": "AREA 1",
+      "achRate": 55.42,
+      "kpiAchieved": 23,
+      "totalKpi": 42
+    },
+    {
+      "rank": 9,
+      "regional": "02-SUMBAGTENG",
+      "name": "SUMBAGTENG",
+      "area": "AREA 1",
+      "achRate": 58.33,
+      "kpiAchieved": 24,
+      "totalKpi": 42
+    },
+    {
+      "rank": 5,
+      "regional": "03-SUMBAGSEL",
+      "name": "SUMBAGSEL",
+      "area": "AREA 1",
+      "achRate": 66.67,
+      "kpiAchieved": 28,
+      "totalKpi": 42
+    },
+    {
+      "rank": 3,
+      "regional": "04-JAKARTA & BANTEN",
+      "name": "JAKARTA & BANTEN",
+      "area": "AREA 2",
+      "achRate": 72.94,
+      "kpiAchieved": 31,
+      "totalKpi": 42
+    },
+    {
+      "rank": 6,
+      "regional": "05-JABAR",
+      "name": "JABAR",
+      "area": "AREA 2",
+      "achRate": 65.48,
+      "kpiAchieved": 27,
+      "totalKpi": 42
+    },
+    {
+      "rank": 2,
+      "regional": "06-EASTERN JABOTABEK",
+      "name": "EASTERN JABOTABEK",
+      "area": "AREA 2",
+      "achRate": 80.95,
+      "kpiAchieved": 34,
+      "totalKpi": 42,
+      "isEastern": true
+    },
+    {
+      "rank": 4,
+      "regional": "07-JATENG DIY",
+      "name": "JATENG DIY",
+      "area": "AREA 3",
+      "achRate": 68.67,
+      "kpiAchieved": 29,
+      "totalKpi": 42
+    },
+    {
+      "rank": 1,
+      "regional": "08-JATIM",
+      "name": "JATIM",
+      "area": "AREA 3",
+      "achRate": 83.33,
+      "kpiAchieved": 35,
+      "totalKpi": 42
+    },
+    {
+      "rank": 12,
+      "regional": "09-BALINUSRA",
+      "name": "BALINUSRA",
+      "area": "AREA 3",
+      "achRate": 54.22,
+      "kpiAchieved": 22,
+      "totalKpi": 42
+    },
+    {
+      "rank": 7,
+      "regional": "10-KALIMANTAN",
+      "name": "KALIMANTAN",
+      "area": "AREA 4",
+      "achRate": 63.1,
+      "kpiAchieved": 26,
+      "totalKpi": 42
+    },
+    {
+      "rank": 8,
+      "regional": "11-SULAWESI",
+      "name": "SULAWESI",
+      "area": "AREA 4",
+      "achRate": 60.71,
+      "kpiAchieved": 25,
+      "totalKpi": 42
+    },
+    {
+      "rank": 11,
+      "regional": "12-MALUKU PAPUA",
+      "name": "MALUKU PAPUA",
+      "area": "AREA 4",
+      "achRate": 55.42,
+      "kpiAchieved": 23,
+      "totalKpi": 42
+    }
+  ],
+  "area": [
+    {
+      "rank": 3,
+      "area": "AREA 1",
+      "name": "AREA 1 (SUMATERA)",
+      "achRate": 60.14,
+      "kpiAchieved": 75,
+      "totalKpi": 126
+    },
+    {
+      "rank": 1,
+      "area": "AREA 2",
+      "name": "AREA 2 (JABOTABEK & JABAR)",
+      "achRate": 73.12,
+      "kpiAchieved": 92,
+      "totalKpi": 126
+    },
+    {
+      "rank": 2,
+      "area": "AREA 3",
+      "name": "AREA 3 (JATENG, JATIM, BALINUSRA)",
+      "achRate": 68.74,
+      "kpiAchieved": 86,
+      "totalKpi": 126
+    },
+    {
+      "rank": 4,
+      "area": "AREA 4",
+      "name": "AREA 4 (KALIMANTAN, SULAWESI, MALPAP)",
+      "achRate": 59.74,
+      "kpiAchieved": 74,
+      "totalKpi": 126
+    }
+  ]
+}
+

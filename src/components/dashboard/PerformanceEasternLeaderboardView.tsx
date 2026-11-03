@@ -7,6 +7,8 @@ import type { PerformanceEasternData, SegmentSummaryRow } from "@/types/performa
 import { useLeaderboardWisa } from "@/hooks/useLeaderboardWisa";
 import { useSpecialCategory } from "@/hooks/useSpecialCategory";
 import { SpecialCategorySection } from "@/components/dashboard/SpecialCategorySection";
+import { useAreaAchievement } from "@/hooks/useAreaAchievement";
+import { AreaAchievementSection } from "@/components/dashboard/AreaAchievementSection";
 import type { DistrictRacingItem } from "@/types/leaderboard-wisa";
 import {
   Trophy,
@@ -68,6 +70,10 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
 
   // Special Category Hook
   const { data: specialData, isLoading: specialLoading, refetch: refetchSpecial } = useSpecialCategory();
+
+  // Area Achievement Hook
+  const { data: areaData, isLoading: areaLoading, refetch: refetchArea } = useAreaAchievement();
+  const [regionalViewSubTab, setRegionalViewSubTab] = useState<"areaAchievement" | "specialAwards">("areaAchievement");
 
   // Tab switcher: "wisa" (61 District) vs "special" (Regional Awards) vs "eastern" (3 District Eastern)
   const [activeTab, setActiveTab] = useState<"wisa" | "special" | "eastern">("wisa");
@@ -323,8 +329,8 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                 : "text-foreground-muted hover:text-foreground"
             )}
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            Special Category (Regional)
+            <BarChart3 className="w-3.5 h-3.5 text-amber-400" />
+            Area & Regional Achievement
           </button>
           <button
             onClick={() => setActiveTab("eastern")}
@@ -879,14 +885,59 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
       )}
 
       {/* ═════════════════════════════════════════════════════════════════════ */}
-      {/* TAB 2: SPECIAL CATEGORY (REGIONAL SPECIAL AWARDS)                     */}
+      {/* TAB 2: AREA & REGIONAL ACHIEVEMENT                                    */}
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {activeTab === "special" && (
-        <SpecialCategorySection
-          data={specialData}
-          isLoading={specialLoading}
-          onRefresh={refetchSpecial}
-        />
+        <div className="space-y-4">
+          {/* Sub-view switcher between Area Achievement (Primary) & Special Awards */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1.5 bg-[var(--surface-hover)] border border-[var(--border)] rounded-2xl">
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              <button
+                onClick={() => setRegionalViewSubTab("areaAchievement")}
+                className={cn(
+                  "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap",
+                  regionalViewSubTab === "areaAchievement"
+                    ? "bg-accent-blue text-white shadow-sm shadow-accent-blue/20"
+                    : "text-foreground-muted hover:text-foreground"
+                )}
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                Area Achievement (Regional Comparison)
+              </button>
+              <button
+                onClick={() => setRegionalViewSubTab("specialAwards")}
+                className={cn(
+                  "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap",
+                  regionalViewSubTab === "specialAwards"
+                    ? "bg-accent-blue text-white shadow-sm shadow-accent-blue/20"
+                    : "text-foreground-muted hover:text-foreground"
+                )}
+              >
+                <Trophy className="w-3.5 h-3.5" />
+                Special Awards (Datin & Mobile)
+              </button>
+            </div>
+            <span className="text-[11px] font-semibold text-foreground-muted pr-3 hidden md:inline">
+              {regionalViewSubTab === "areaAchievement"
+                ? "Snapshot Area Achievement WISA"
+                : "Snapshot Special Awards WISA"}
+            </span>
+          </div>
+
+          {regionalViewSubTab === "areaAchievement" ? (
+            <AreaAchievementSection
+              data={areaData}
+              isLoading={areaLoading}
+              onRefresh={refetchArea}
+            />
+          ) : (
+            <SpecialCategorySection
+              data={specialData}
+              isLoading={specialLoading}
+              onRefresh={refetchSpecial}
+            />
+          )}
+        </div>
       )}
 
       {/* ═════════════════════════════════════════════════════════════════════ */}
