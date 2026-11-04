@@ -258,10 +258,10 @@ export function AreaAchievementSection({
 
           {/* Controls: Racing KPI Badge, Ach Rate/KPI Toggle, Area/Regional Toggle */}
           <div className="flex items-center gap-2.5 flex-wrap">
-            {/* Racing KPI Badge */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-amber-400">
-              <Flame className="w-3.5 h-3.5 text-amber-400" />
-              Racing KPI
+            {/* Non-Racing KPI Badge */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs font-bold text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              Non-Racing KPI
             </div>
 
             {/* Toggle 1: Ach Rate vs KPI */}

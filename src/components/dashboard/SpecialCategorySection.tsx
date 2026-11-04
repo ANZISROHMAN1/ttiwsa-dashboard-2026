@@ -734,8 +734,8 @@ function CategoryLeaderboardCard({
                         isEastern
                           ? "bg-accent-blue"
                           : themeColor === "purple"
-                          ? "bg-purple-500/70"
-                          : "bg-cyan-500/70"
+                            ? "bg-purple-500/70"
+                            : "bg-cyan-500/70"
                       )}
                       style={{ width: `${scorePercent}%` }}
                     />

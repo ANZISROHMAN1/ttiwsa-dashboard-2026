@@ -75,8 +75,8 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
   const { data: areaData, isLoading: areaLoading, refetch: refetchArea } = useAreaAchievement();
   const [regionalViewSubTab, setRegionalViewSubTab] = useState<"areaAchievement" | "specialAwards">("areaAchievement");
 
-  // Tab switcher: "wisa" (61 District) vs "special" (Regional Awards) vs "eastern" (3 District Eastern)
-  const [activeTab, setActiveTab] = useState<"wisa" | "special" | "eastern">("wisa");
+  // Tab switcher: "area" (Area & Regional Achievement) vs "wisa" (61 District) vs "eastern" (3 District Eastern)
+  const [activeTab, setActiveTab] = useState<"area" | "wisa" | "eastern">("area");
 
   // Filter state for WISA tab
   const [rankingViewMode, setRankingViewMode] = useState<"top10" | "all">("top10");
@@ -91,7 +91,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
   const selectedVariation: SummaryVariationKey = "standard";
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSegmen, setSelectedSegmen] = useState<string>("ALL");
-  const [racingFilter, setRacingFilter] = useState<"ALL" | "RACING" | "NON_RACING">("ALL");
+  const [racingFilter, setRacingFilter] = useState<"ALL" | "RACING" | "NON_RACING">("NON_RACING");
 
   const currentSummaryList: SegmentSummaryRow[] = useMemo(() => {
     return data.summaries[selectedVariation] || [];
@@ -302,12 +302,24 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
             Leaderboard KPI Eastern
           </h1>
           <p className="text-xs text-foreground-muted mt-1">
-            Data pemeringkatan 61 District se-Indonesia (WISA Racing) serta perbandingan performa District Eastern.
+            Data pencapaian Area & Regional se-Indonesia (WISA) serta evaluasi performa District Eastern (Non-Racing).
           </p>
         </div>
 
         {/* Tab Switcher Pills */}
         <div className="inline-flex items-center p-1 bg-[var(--surface-hover)] border border-[var(--border)] rounded-2xl shrink-0 self-start md:self-center overflow-x-auto max-w-full">
+          <button
+            onClick={() => setActiveTab("area")}
+            className={cn(
+              "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap",
+              activeTab === "area"
+                ? "bg-accent-blue text-white shadow-md shadow-accent-blue/20"
+                : "text-foreground-muted hover:text-foreground"
+            )}
+          >
+            <BarChart3 className="w-3.5 h-3.5 text-amber-400" />
+            Area & Regional Achievement (WISA)
+          </button>
           <button
             onClick={() => setActiveTab("wisa")}
             className={cn(
@@ -318,19 +330,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
             )}
           >
             <Trophy className="w-3.5 h-3.5" />
-            District Racing (61 District)
-          </button>
-          <button
-            onClick={() => setActiveTab("special")}
-            className={cn(
-              "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap",
-              activeTab === "special"
-                ? "bg-accent-blue text-white shadow-md shadow-accent-blue/20"
-                : "text-foreground-muted hover:text-foreground"
-            )}
-          >
-            <BarChart3 className="w-3.5 h-3.5 text-amber-400" />
-            Area & Regional Achievement
+            District Leaderboard (61 District)
           </button>
           <button
             onClick={() => setActiveTab("eastern")}
@@ -885,9 +885,9 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
       )}
 
       {/* ═════════════════════════════════════════════════════════════════════ */}
-      {/* TAB 2: AREA & REGIONAL ACHIEVEMENT                                    */}
+      {/* TAB 1: AREA & REGIONAL ACHIEVEMENT (WISA)                            */}
       {/* ═════════════════════════════════════════════════════════════════════ */}
-      {activeTab === "special" && (
+      {activeTab === "area" && (
         <div className="space-y-4">
           {/* Sub-view switcher between Area Achievement (Primary) & Special Awards */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1.5 bg-[var(--surface-hover)] border border-[var(--border)] rounded-2xl">
@@ -989,7 +989,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                       {style.badge}
                     </span>
                     <span className="text-[11px] font-semibold text-foreground-muted uppercase tracking-wider">
-                      65 KPI RACING
+                      65 KPI NON-RACING
                     </span>
                   </div>
 
@@ -1001,7 +1001,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                       <span className="text-4xl font-extrabold text-foreground tabular-nums tracking-tight">
                         {item.percentStr}
                       </span>
-                      <span className="text-xs text-foreground-muted">Pencapaian Racing</span>
+                      <span className="text-xs text-foreground-muted">Pencapaian Non-Racing</span>
                     </div>
 
                     <div className="w-full bg-[var(--surface-hover)] h-2 rounded-full mt-3 overflow-hidden border border-[var(--border)]">
