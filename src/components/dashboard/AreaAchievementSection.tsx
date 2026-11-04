@@ -357,9 +357,9 @@ export function AreaAchievementSection({
                 </span>
               </div>
               <p className="text-xs text-foreground-muted">
-                Eastern Jabotabek meraih pencapaian tertinggi ke-2 se-Indonesia dengan Achievement{" "}
+                Eastern Jabotabek meraih peringkat tertinggi ke-2 se-Indonesia dengan Achievement Rate{" "}
                 <span className="font-extrabold text-foreground">{easternRegional.achRate}%</span>{" "}
-                ({easternRegional.kpiAchieved} dari {easternRegional.totalKpi} Racing KPI tercapai).
+                sesuai tabel evaluasi Regional.
               </p>
             </div>
 
@@ -437,7 +437,7 @@ export function AreaAchievementSection({
                       {item.achRate.toFixed(2)}%
                     </div>
                     <div className="text-[10px] text-foreground-muted font-mono">
-                      {item.kpiAchieved}/{item.totalKpi} KPI
+                      Rank #{idx + 1}
                     </div>
                   </div>
                 </div>
@@ -469,7 +469,9 @@ export function AreaAchievementSection({
                     {scopeMode === "regional" ? "Regional" : "Area"}
                   </th>
                   <th className="py-2.5 px-3 text-left font-bold">Area TIF</th>
-                  <th className="py-2.5 px-3 text-right font-bold">KPI Achieved</th>
+                  {metricMode === "kpi" && (
+                    <th className="py-2.5 px-3 text-right font-bold">KPI Achieved</th>
+                  )}
                   <th className="py-2.5 px-3 text-right font-bold">Achievement Rate</th>
                   <th className="py-2.5 px-3 text-left font-bold pl-4">Progress</th>
                 </tr>
@@ -517,10 +519,12 @@ export function AreaAchievementSection({
                         </div>
                       </td>
                       <td className="py-2.5 px-3 text-foreground-muted font-mono">{item.area}</td>
-                      <td className="py-2.5 px-3 text-right font-mono">
-                        <span className="font-bold text-foreground">{item.kpiAchieved}</span>
-                        <span className="text-foreground-muted">/{item.totalKpi}</span>
-                      </td>
+                      {metricMode === "kpi" && (
+                        <td className="py-2.5 px-3 text-right font-mono">
+                          <span className="font-bold text-foreground">{item.kpiAchieved}</span>
+                          <span className="text-foreground-muted">/{item.totalKpi}</span>
+                        </td>
+                      )}
                       <td className="py-2.5 px-3 text-right font-mono font-black text-foreground">
                         {item.achRate.toFixed(2)}%
                       </td>
