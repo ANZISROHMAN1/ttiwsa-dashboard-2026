@@ -927,8 +927,12 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
           {regionalViewSubTab === "areaAchievement" ? (
             <AreaAchievementSection
               data={areaData}
-              isLoading={areaLoading}
-              onRefresh={refetchArea}
+              wisaData={wisaData}
+              isLoading={areaLoading || wisaLoading}
+              onRefresh={() => {
+                refetchArea();
+                refetchWisa();
+              }}
             />
           ) : (
             <SpecialCategorySection

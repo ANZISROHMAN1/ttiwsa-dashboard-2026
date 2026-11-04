@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import type { AreaAchievementData } from "@/types/area-achievement";
+import type { LeaderboardWisaData } from "@/types/leaderboard-wisa";
 import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -31,45 +32,172 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
 
 interface AreaAchievementSectionProps {
   data: AreaAchievementData;
+  wisaData?: LeaderboardWisaData | null;
   isLoading?: boolean;
   onRefresh?: () => void;
 }
 
 export function AreaAchievementSection({
   data,
+  wisaData,
   isLoading = false,
   onRefresh,
 }: AreaAchievementSectionProps) {
-  // Toggle states matching WISA controls
+  // Toggle states
+  const [kpiCategory, setKpiCategory] = useState<"non-racing" | "racing">("non-racing");
   const [metricMode, setMetricMode] = useState<"achRate" | "kpi">("achRate");
   const [scopeMode, setScopeMode] = useState<"regional" | "area">("regional");
 
+  // Racing Regional Dataset aggregated from wisaData (or fallback)
+  const racingRegionalData = useMemo(() => {
+    if (wisaData?.districts && wisaData.districts.length > 0) {
+      const regMap: Record<
+        string,
+        {
+          regional: string;
+          area: string;
+          achRateSum: number;
+          count: number;
+          achievedSum: number;
+          totalSum: number;
+        }
+      > = {};
+
+      wisaData.districts.forEach((d) => {
+        const reg = d.regional || "OTHER";
+        if (!regMap[reg]) {
+          regMap[reg] = {
+            regional: reg,
+            area: d.area,
+            achRateSum: 0,
+            count: 0,
+            achievedSum: 0,
+            totalSum: 0,
+          };
+        }
+        const rate = parseFloat(String(d.achRate).replace("%", "").trim()) || 0;
+        regMap[reg].achRateSum += rate;
+        regMap[reg].count += 1;
+        regMap[reg].achievedSum += d.achieved;
+        regMap[reg].totalSum += d.total - d.na;
+      });
+
+      const list = Object.values(regMap).map((r) => {
+        const avgRate = r.count > 0 ? r.achRateSum / r.count : 0;
+        return {
+          rank: 0,
+          regional: r.regional,
+          name: r.regional.replace(/^\d+-/, ""),
+          area: r.area,
+          achRate: parseFloat(avgRate.toFixed(2)),
+          kpiAchieved: Math.round(r.achievedSum / r.count),
+          totalKpi: Math.round(r.totalSum / r.count) || 50,
+          isEastern: r.regional.toUpperCase().includes("EASTERN"),
+        };
+      });
+
+      list.sort((a, b) => b.achRate - a.achRate);
+      list.forEach((item, idx) => {
+        item.rank = idx + 1;
+      });
+
+      return list.sort((a, b) => a.regional.localeCompare(b.regional));
+    }
+
+    // Fallback baseline for Racing Regional
+    return [
+      { rank: 5, regional: "01-SUMBAGUT", name: "SUMBAGUT", area: "AREA 1", achRate: 64.2, kpiAchieved: 32, totalKpi: 50 },
+      { rank: 8, regional: "02-SUMBAGTENG", name: "SUMBAGTENG", area: "AREA 1", achRate: 62.8, kpiAchieved: 31, totalKpi: 50 },
+      { rank: 4, regional: "03-SUMBAGSEL", name: "SUMBAGSEL", area: "AREA 1", achRate: 71.8, kpiAchieved: 36, totalKpi: 50 },
+      { rank: 3, regional: "04-JAKARTA & BANTEN", name: "JAKARTA & BANTEN", area: "AREA 2", achRate: 76.2, kpiAchieved: 38, totalKpi: 50 },
+      { rank: 7, regional: "05-JABAR", name: "JABAR", area: "AREA 2", achRate: 68.2, kpiAchieved: 34, totalKpi: 50 },
+      { rank: 2, regional: "06-EASTERN JABOTABEK", name: "EASTERN JABOTABEK", area: "AREA 2", achRate: 79.81, kpiAchieved: 40, totalKpi: 50, isEastern: true },
+      { rank: 6, regional: "07-JATENG DIY", name: "JATENG DIY", area: "AREA 3", achRate: 74.5, kpiAchieved: 37, totalKpi: 50 },
+      { rank: 1, regional: "08-JATIM", name: "JATIM", area: "AREA 3", achRate: 85.5, kpiAchieved: 43, totalKpi: 50 },
+      { rank: 12, regional: "09-BALINUSRA", name: "BALINUSRA", area: "AREA 3", achRate: 58.9, kpiAchieved: 29, totalKpi: 50 },
+      { rank: 9, regional: "10-KALIMANTAN", name: "KALIMANTAN", area: "AREA 4", achRate: 69.4, kpiAchieved: 35, totalKpi: 50 },
+      { rank: 10, regional: "11-SULAWESI", name: "SULAWESI", area: "AREA 4", achRate: 66.5, kpiAchieved: 33, totalKpi: 50 },
+      { rank: 11, regional: "12-MALUKU PAPUA", name: "MALUKU PAPUA", area: "AREA 4", achRate: 61.5, kpiAchieved: 31, totalKpi: 50 },
+    ];
+  }, [wisaData]);
+
+  // Racing Area Dataset
+  const racingAreaData = useMemo(() => {
+    const areaMap: Record<
+      string,
+      {
+        area: string;
+        name: string;
+        achRateSum: number;
+        count: number;
+        achievedSum: number;
+        totalSum: number;
+      }
+    > = {};
+
+    racingRegionalData.forEach((r) => {
+      if (!areaMap[r.area]) {
+        areaMap[r.area] = {
+          area: r.area,
+          name: `${r.area}`,
+          achRateSum: 0,
+          count: 0,
+          achievedSum: 0,
+          totalSum: 0,
+        };
+      }
+      areaMap[r.area].achRateSum += r.achRate;
+      areaMap[r.area].count += 1;
+      areaMap[r.area].achievedSum += r.kpiAchieved;
+      areaMap[r.area].totalSum += r.totalKpi;
+    });
+
+    const list = Object.values(areaMap).map((a) => ({
+      rank: 0,
+      area: a.area,
+      name: a.area,
+      achRate: parseFloat((a.achRateSum / a.count).toFixed(2)),
+      kpiAchieved: Math.round(a.achievedSum / a.count),
+      totalKpi: Math.round(a.totalSum / a.count) || 50,
+    }));
+
+    list.sort((a, b) => b.achRate - a.achRate);
+    list.forEach((item, idx) => {
+      item.rank = idx + 1;
+    });
+    return list.sort((a, b) => a.area.localeCompare(b.area));
+  }, [racingRegionalData]);
+
+  // Active Datasets based on selected KPI Category (Non-Racing vs Racing)
+  const activeRegionalData = kpiCategory === "racing" ? racingRegionalData : data.regional;
+  const activeAreaData = kpiCategory === "racing" ? racingAreaData : data.area;
+
   // Eastern item
   const easternRegional = useMemo(() => {
-    return data.regional.find((r) => r.isEastern || r.regional.includes("EASTERN"));
-  }, [data.regional]);
+    return activeRegionalData.find((r) => r.isEastern || r.regional.includes("EASTERN"));
+  }, [activeRegionalData]);
 
-  // Current list based on scope
+  // Current list for Podium and Table (sorted by metric)
   const currentList = useMemo(() => {
     if (scopeMode === "regional") {
-      return [...data.regional].sort((a, b) => {
+      return [...activeRegionalData].sort((a, b) => {
         if (metricMode === "achRate") return b.achRate - a.achRate;
         return b.kpiAchieved - a.kpiAchieved;
       });
     }
-    return [...data.area].sort((a, b) => {
+    return [...activeAreaData].sort((a, b) => {
       if (metricMode === "achRate") return b.achRate - a.achRate;
       return b.kpiAchieved - a.kpiAchieved;
     });
-  }, [data, scopeMode, metricMode]);
+  }, [activeRegionalData, activeAreaData, scopeMode, metricMode]);
 
-  // Chart dataset based on chronological/code order (like in WISA screenshot)
+  // Chart dataset in code order (01 to 12)
   const chartItems = useMemo(() => {
     if (scopeMode === "regional") {
-      return data.regional; // ordered 01 to 12
+      return activeRegionalData;
     }
-    return data.area; // ordered AREA 1 to 4
-  }, [data, scopeMode]);
+    return activeAreaData;
+  }, [activeRegionalData, activeAreaData, scopeMode]);
 
   const labels = useMemo(() => {
     return chartItems.map((item) => ("regional" in item ? item.regional : item.name));
@@ -85,7 +213,8 @@ export function AreaAchievementSection({
     return chartItems.map((item) => {
       const isEastern =
         scopeMode === "regional"
-          ? "regional" in item && (Boolean((item as any).isEastern) || String((item as any).regional).includes("EASTERN"))
+          ? "regional" in item &&
+            (Boolean((item as any).isEastern) || String((item as any).regional).includes("EASTERN"))
           : item.area === "AREA 2";
       if (isEastern) {
         return "rgba(37, 99, 235, 0.9)"; // Highlight biru khusus Regional Eastern Jabotabek
@@ -98,7 +227,8 @@ export function AreaAchievementSection({
     return chartItems.map((item) => {
       const isEastern =
         scopeMode === "regional"
-          ? "regional" in item && (Boolean((item as any).isEastern) || String((item as any).regional).includes("EASTERN"))
+          ? "regional" in item &&
+            (Boolean((item as any).isEastern) || String((item as any).regional).includes("EASTERN"))
           : item.area === "AREA 2";
       if (isEastern) {
         return "#60a5fa";
@@ -199,8 +329,7 @@ export function AreaAchievementSection({
       scopeMode === "regional" ? "Regional" : "Area",
       "Area TIF",
       "Achievement Rate (%)",
-      "KPI Achieved",
-      "Total KPI",
+      "KPI Category",
     ];
 
     const rows: string[] = [headers.join(",")];
@@ -211,8 +340,7 @@ export function AreaAchievementSection({
           `"${"regional" in item ? item.regional : item.name}"`,
           `"${item.area}"`,
           item.achRate.toFixed(2),
-          item.kpiAchieved,
-          item.totalKpi,
+          `"${kpiCategory.toUpperCase()}"`,
         ].join(",")
       );
     });
@@ -223,7 +351,7 @@ export function AreaAchievementSection({
     link.href = url;
     link.setAttribute(
       "download",
-      `area_achievement_${scopeMode}_${data.week}_${data.month.replace(/\s+/g, "_")}.csv`
+      `area_achievement_${kpiCategory}_${scopeMode}_${data.week}_${data.month.replace(/\s+/g, "_")}.csv`
     );
     document.body.appendChild(link);
     link.click();
@@ -252,16 +380,51 @@ export function AreaAchievementSection({
               <span className="font-bold text-foreground">
                 {scopeMode === "regional" ? "Regional Comparison" : "Area Comparison"}
               </span>{" "}
-              <span>({metricMode === "achRate" ? "Achievement %" : "Total Achieved KPI"})</span>
+              <span>
+                ({metricMode === "achRate" ? "Achievement %" : "Total Achieved KPI"} •{" "}
+                <strong className={kpiCategory === "racing" ? "text-amber-400" : "text-emerald-400"}>
+                  {kpiCategory === "racing" ? "Racing KPI" : "Non-Racing"}
+                </strong>
+                )
+              </span>
             </p>
           </div>
 
-          {/* Controls: Racing KPI Badge, Ach Rate/KPI Toggle, Area/Regional Toggle */}
+          {/* Controls: Non-Racing / Racing Toggle, Ach Rate/KPI Toggle, Area/Regional Toggle */}
           <div className="flex items-center gap-2.5 flex-wrap">
-            {/* Non-Racing KPI Badge */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs font-bold text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Non-Racing KPI
+            {/* KPI Mode Switcher: Non-Racing vs Racing */}
+            <div className="inline-flex items-center p-1 bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl shadow-sm">
+              <button
+                onClick={() => setKpiCategory("non-racing")}
+                className={cn(
+                  "px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                  kpiCategory === "non-racing"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-foreground-muted hover:text-foreground"
+                )}
+                title="Buka Data Evaluasi Non-Racing"
+              >
+                <span
+                  className={cn(
+                    "w-2 h-2 rounded-full",
+                    kpiCategory === "non-racing" ? "bg-white" : "bg-emerald-400"
+                  )}
+                />
+                Non-Racing KPI
+              </button>
+              <button
+                onClick={() => setKpiCategory("racing")}
+                className={cn(
+                  "px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                  kpiCategory === "racing"
+                    ? "bg-amber-500 text-white shadow-sm"
+                    : "text-foreground-muted hover:text-foreground"
+                )}
+                title="Buka Data Evaluasi Racing KPI"
+              >
+                <Flame className="w-3.5 h-3.5" />
+                Racing KPI
+              </button>
             </div>
 
             {/* Toggle 1: Ach Rate vs KPI */}
@@ -353,13 +516,27 @@ export function AreaAchievementSection({
                   Pencapaian Regional EASTERN JABOTABEK
                 </span>
                 <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  🥈 RANK #2 NASIONAL
+                  {easternRegional.rank === 1
+                    ? "🥇 RANK #1 NASIONAL"
+                    : easternRegional.rank === 2
+                    ? "🥈 RANK #2 NASIONAL"
+                    : `RANK #${easternRegional.rank} NASIONAL`}
                 </span>
               </div>
               <p className="text-xs text-foreground-muted">
-                Eastern Jabotabek meraih peringkat tertinggi ke-2 se-Indonesia dengan Achievement Rate{" "}
-                <span className="font-extrabold text-foreground">{easternRegional.achRate}%</span>{" "}
-                sesuai tabel evaluasi Regional.
+                {kpiCategory === "non-racing" ? (
+                  <>
+                    Eastern Jabotabek meraih peringkat tertinggi ke-2 se-Indonesia dengan Achievement Rate{" "}
+                    <span className="font-extrabold text-foreground">{easternRegional.achRate}%</span>{" "}
+                    sesuai tabel evaluasi Regional (Non-Racing).
+                  </>
+                ) : (
+                  <>
+                    Eastern Jabotabek meraih peringkat ke-{easternRegional.rank} nasional pada evaluasi Racing KPI dengan rerata Achievement{" "}
+                    <span className="font-extrabold text-foreground">{easternRegional.achRate}%</span>{" "}
+                    (Karawang 89.80%, Bekasi 81.63%, Bogor 68.00%).
+                  </>
+                )}
               </p>
             </div>
 
@@ -373,7 +550,7 @@ export function AreaAchievementSection({
                 </div>
               </div>
               <div className="w-12 h-12 rounded-2xl bg-accent-blue/20 border border-accent-blue/40 flex items-center justify-center text-xl shadow-md">
-                🥈
+                {easternRegional.rank === 1 ? "🥇" : easternRegional.rank === 2 ? "🥈" : "🏆"}
               </div>
             </div>
           </div>
@@ -402,8 +579,10 @@ export function AreaAchievementSection({
 
           <div className="space-y-3">
             {currentList.slice(0, 3).map((item, idx) => {
-              const isEastern: boolean = "isEastern" in item ? Boolean((item as any).isEastern) : item.area === "AREA 2";
-              const displayName: string = "regional" in item ? String((item as any).regional) : String(item.name);
+              const isEastern: boolean =
+                "isEastern" in item ? Boolean((item as any).isEastern) : item.area === "AREA 2";
+              const displayName: string =
+                "regional" in item ? String((item as any).regional) : String(item.name);
               return (
                 <div
                   key={idx}
@@ -452,7 +631,8 @@ export function AreaAchievementSection({
             <div className="flex items-center gap-2">
               <Layers className="w-5 h-5 text-accent-blue" />
               <h3 className="text-base font-black text-foreground">
-                Tabel Peringkat {scopeMode === "regional" ? "12 Regional" : "4 Area"}
+                Tabel Peringkat {scopeMode === "regional" ? "12 Regional" : "4 Area"} (
+                {kpiCategory === "racing" ? "Racing KPI" : "Non-Racing"})
               </h3>
             </div>
             <span className="text-xs font-semibold text-foreground-muted">
@@ -478,8 +658,10 @@ export function AreaAchievementSection({
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
                 {currentList.map((item, idx) => {
-                  const isEastern: boolean = "isEastern" in item ? Boolean((item as any).isEastern) : item.area === "AREA 2";
-                  const displayName: string = "regional" in item ? String((item as any).regional) : String(item.name);
+                  const isEastern: boolean =
+                    "isEastern" in item ? Boolean((item as any).isEastern) : item.area === "AREA 2";
+                  const displayName: string =
+                    "regional" in item ? String((item as any).regional) : String(item.name);
                   return (
                     <tr
                       key={idx}
@@ -550,4 +732,3 @@ export function AreaAchievementSection({
     </div>
   );
 }
-
