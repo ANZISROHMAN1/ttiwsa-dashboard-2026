@@ -38,6 +38,8 @@ const ASSURANCE_METRIC_CONFIGS: EbisMetricConfig[] = [
   { key: "asgarDatin", label: "ASGAR DATIN", shortLabel: "ASGAR DTN", target: 90.00, count1: { key: "gaul", label: "Gaul" }, count2: { key: "tiketGgn", label: "Tiket Ggn" }, trendKey: "asgarDatin" },
   { key: "asgarWifi", label: "ASGAR WIFI", shortLabel: "ASGAR WIFI", target: 90.50, count1: { key: "gaul", label: "Gaul" }, count2: { key: "terganggu", label: "Terganggu" }, trendKey: "asgarWifi" },
   { key: "ttr24jRegulerIndibiz", label: "TTR 24J Reguler Indibiz", shortLabel: "TTR 24J", target: 91.00, count1: { key: "comply", label: "Comply" }, count2: { key: "notComp", label: "Not Comply" }, trendKey: "ttr24jRegulerIndibiz" },
+  { key: "complianceDatinK2", label: "Compliance Datin K2", shortLabel: "COMPLIANCE K2", target: 95.00, count1: { key: "comply", label: "Comply" }, count2: { key: "notCmply", label: "Not Comply" } },
+  { key: "complianceDatinK3", label: "Compliance Datin K3", shortLabel: "COMPLIANCE K3", target: 92.00, count1: { key: "comply", label: "Comply" }, count2: { key: "notCmply", label: "Not Comply" } },
 ];
 
 function isMetricAchieved(realVal: number, config?: EbisMetricConfig | null): boolean {
@@ -1382,7 +1384,7 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
             </button>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className={cn("grid gap-3", configs.length > 5 ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5")}>
             {configs.filter(c => !unachievingOnly || isMetricUnachieving((district.districtSummary as any)[c.key], c)).map((card) => {
               const metric = (district.districtSummary as any)[card.key];
               if (!metric) return null;
@@ -1532,7 +1534,7 @@ export function ReportEbisEastern({ data, assuranceData, trendData }: ReportEbis
                       const m = (sto as any)[mc.key];
                       const target = mc.target;
                       const count1Val = mc.count1 ? m?.[mc.count1.key] : undefined;
-                      const count2Val = mc.count2 ? m?.[mc.count2.key] : undefined;
+                      const count2Val = mc.count2 ? (m?.[mc.count2.key] ?? m?.notCmply ?? m?.notComply ?? m?.notComp) : undefined;
                       const realVal = m ? (typeof m.real === 'number' ? m.real : parseFloat(String(m.real ?? "").replace(',', '.'))) : NaN;
                       const isAchieved = isMetricAchieved(realVal, mc);
 

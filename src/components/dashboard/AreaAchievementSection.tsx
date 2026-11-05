@@ -580,7 +580,9 @@ export function AreaAchievementSection({
           <div className="space-y-3">
             {currentList.slice(0, 3).map((item, idx) => {
               const isEastern: boolean =
-                "isEastern" in item ? Boolean((item as any).isEastern) : item.area === "AREA 2";
+                scopeMode === "regional"
+                  ? Boolean((item as any).isEastern || String((item as any).regional || item.name).includes("EASTERN"))
+                  : item.name === "AREA 2" || item.area === "AREA 2";
               const displayName: string =
                 "regional" in item ? String((item as any).regional) : String(item.name);
               return (
@@ -659,7 +661,9 @@ export function AreaAchievementSection({
               <tbody className="divide-y divide-[var(--border)]">
                 {currentList.map((item, idx) => {
                   const isEastern: boolean =
-                    "isEastern" in item ? Boolean((item as any).isEastern) : item.area === "AREA 2";
+                    scopeMode === "regional"
+                      ? Boolean((item as any).isEastern || String((item as any).regional || item.name).includes("EASTERN"))
+                      : item.name === "AREA 2" || item.area === "AREA 2";
                   const displayName: string =
                     "regional" in item ? String((item as any).regional) : String(item.name);
                   return (

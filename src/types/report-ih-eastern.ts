@@ -14,6 +14,9 @@ export interface MetricData {
   gaul?: number;
   comply?: number;
   notComply?: number;
+  notComp?: number;
+  notCmply?: number;
+  grandTotal?: number;
   thresholdNc?: number;
   dev?: number;
   jmlPs?: number;
