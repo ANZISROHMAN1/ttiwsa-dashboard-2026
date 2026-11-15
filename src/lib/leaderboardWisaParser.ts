@@ -128,16 +128,16 @@ export function parseLeaderboardWisaCSV(csvText: string): LeaderboardWisaData {
   });
 
   // Sort:
-  // 1. achieved descending
+  // 1. percent descending (Ach Rate)
   // 2. average descending (ties broken by average achievement across achieved KPIs only capped at 110%)
-  // 3. percent descending
+  // 3. achieved descending
   // 4. initialIndex ascending (preserves the exact WISA order from file!)
   districts.sort((a, b) => {
-    if (b.achieved !== a.achieved) return b.achieved - a.achieved;
+    if (b.percent !== a.percent) return b.percent - a.percent;
     const aAvg = a.avgNum ?? 0;
     const bAvg = b.avgNum ?? 0;
     if (bAvg !== aAvg) return bAvg - aAvg;
-    if (b.percent !== a.percent) return b.percent - a.percent;
+    if (b.achieved !== a.achieved) return b.achieved - a.achieved;
     return a.initialIndex - b.initialIndex;
   });
 

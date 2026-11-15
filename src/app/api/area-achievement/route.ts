@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const refresh = url.searchParams.get("refresh") === "true";
-    const cacheKey = "area_achievement_data";
+    const cacheKey = "area_achievement_data_v2";
 
     if (!refresh) {
       const cached = await getCachedData<AreaAchievementData>(cacheKey);

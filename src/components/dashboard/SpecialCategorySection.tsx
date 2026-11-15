@@ -237,7 +237,9 @@ export function SpecialCategorySection({
               {/* Enterprise Support Pill */}
               <div className="p-3 rounded-xl bg-[var(--surface)]/80 border border-purple-500/30 flex items-center gap-3 shadow-sm">
                 <div className="w-9 h-9 rounded-lg bg-purple-500/15 border border-purple-500/30 flex items-center justify-center shrink-0">
-                  <span className="text-lg">🥈</span>
+                  <span className="text-lg">
+                    {easternDatin?.rank === 1 ? "🥇" : easternDatin?.rank === 2 ? "🥈" : easternDatin?.rank === 3 ? "🥉" : "💼"}
+                  </span>
                 </div>
                 <div>
                   <div className="text-[10px] uppercase font-bold text-purple-400 tracking-wider">
@@ -245,14 +247,14 @@ export function SpecialCategorySection({
                   </div>
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-base font-black text-foreground">
-                      Rank #{easternDatin?.rank ?? 2}
+                      Rank #{easternDatin?.rank ?? 6}
                     </span>
                     <span className="text-xs font-bold text-amber-400">
-                      {(easternDatin?.totalScore ?? 108.81).toFixed(1)}
+                      {(easternDatin?.totalScore ?? 101.5).toFixed(1)}
                     </span>
                   </div>
                   <div className="text-[10px] text-foreground-muted">
-                    Ach {(easternDatin?.monthlyBreakdown[0]?.achievement ?? 102.81).toFixed(1)}% • Bonus +{easternDatin?.monthlyBreakdown[0]?.bonus ?? 6}
+                    Ach {(easternDatin?.monthlyBreakdown[0]?.achievement ?? 95.5).toFixed(1)}% • Bonus +{easternDatin?.monthlyBreakdown[0]?.bonus ?? 6}
                   </div>
                 </div>
               </div>
@@ -260,7 +262,9 @@ export function SpecialCategorySection({
               {/* Mobile Support Pill */}
               <div className="p-3 rounded-xl bg-[var(--surface)]/80 border border-cyan-500/30 flex items-center gap-3 shadow-sm">
                 <div className="w-9 h-9 rounded-lg bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center shrink-0">
-                  <span className="text-lg">📱</span>
+                  <span className="text-lg">
+                    {easternPremium?.rank === 1 ? "🥇" : easternPremium?.rank === 2 ? "🥈" : easternPremium?.rank === 3 ? "🥉" : "📱"}
+                  </span>
                 </div>
                 <div>
                   <div className="text-[10px] uppercase font-bold text-cyan-400 tracking-wider">
@@ -268,14 +272,14 @@ export function SpecialCategorySection({
                   </div>
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-base font-black text-foreground">
-                      Rank #{easternPremium?.rank ?? 9}
+                      Rank #{easternPremium?.rank ?? 11}
                     </span>
                     <span className="text-xs font-bold text-cyan-400">
-                      {(easternPremium?.totalScore ?? 111.29).toFixed(1)}
+                      {(easternPremium?.totalScore ?? 111.4).toFixed(1)}
                     </span>
                   </div>
                   <div className="text-[10px] text-foreground-muted">
-                    Ach {(easternPremium?.monthlyBreakdown[0]?.achievement ?? 101.49).toFixed(1)}% • Site 100%
+                    Ach {(easternPremium?.monthlyBreakdown[0]?.achievement ?? 106.4).toFixed(1)}% • Site 100%
                   </div>
                 </div>
               </div>

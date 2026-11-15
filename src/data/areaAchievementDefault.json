@@ -1,60 +1,60 @@
 {
-  "month": "OCT 2026",
-  "week": "W4",
+  "month": "NOV 2026",
+  "week": "W2",
   "regional": [
     {
-      "rank": 10,
+      "rank": 9,
       "regional": "01-SUMBAGUT",
       "name": "SUMBAGUT",
       "area": "AREA 1",
-      "achRate": 55.42,
-      "kpiAchieved": 23,
-      "totalKpi": 42
+      "achRate": 52.05,
+      "kpiAchieved": 38,
+      "totalKpi": 73
     },
     {
-      "rank": 9,
+      "rank": 12,
       "regional": "02-SUMBAGTENG",
       "name": "SUMBAGTENG",
       "area": "AREA 1",
-      "achRate": 58.33,
-      "kpiAchieved": 24,
-      "totalKpi": 42
+      "achRate": 45.21,
+      "kpiAchieved": 33,
+      "totalKpi": 73
     },
     {
-      "rank": 5,
+      "rank": 7,
       "regional": "03-SUMBAGSEL",
       "name": "SUMBAGSEL",
       "area": "AREA 1",
-      "achRate": 66.67,
-      "kpiAchieved": 28,
-      "totalKpi": 42
+      "achRate": 57.53,
+      "kpiAchieved": 42,
+      "totalKpi": 73
     },
     {
       "rank": 3,
       "regional": "04-JAKARTA & BANTEN",
       "name": "JAKARTA & BANTEN",
       "area": "AREA 2",
-      "achRate": 72.94,
-      "kpiAchieved": 31,
-      "totalKpi": 42
+      "achRate": 76.62,
+      "kpiAchieved": 59,
+      "totalKpi": 77
     },
     {
-      "rank": 6,
+      "rank": 5,
       "regional": "05-JABAR",
       "name": "JABAR",
       "area": "AREA 2",
-      "achRate": 65.48,
-      "kpiAchieved": 27,
-      "totalKpi": 42
+      "achRate": 61.64,
+      "kpiAchieved": 45,
+      "totalKpi": 73
     },
     {
-      "rank": 2,
+      "rank": 1,
       "regional": "06-EASTERN JABOTABEK",
       "name": "EASTERN JABOTABEK",
       "area": "AREA 2",
-      "achRate": 80.95,
-      "kpiAchieved": 34,
-      "totalKpi": 42,
+      "achRate": 79.45,
+      "kpiAchieved": 58,
+      "totalKpi": 73,
       "isEastern": true
     },
     {
@@ -62,89 +62,88 @@
       "regional": "07-JATENG DIY",
       "name": "JATENG DIY",
       "area": "AREA 3",
-      "achRate": 68.67,
-      "kpiAchieved": 29,
-      "totalKpi": 42
+      "achRate": 65.75,
+      "kpiAchieved": 48,
+      "totalKpi": 73
     },
     {
-      "rank": 1,
+      "rank": 2,
       "regional": "08-JATIM",
       "name": "JATIM",
       "area": "AREA 3",
-      "achRate": 83.33,
-      "kpiAchieved": 35,
-      "totalKpi": 42
+      "achRate": 78.38,
+      "kpiAchieved": 58,
+      "totalKpi": 74
     },
     {
-      "rank": 12,
+      "rank": 11,
       "regional": "09-BALINUSRA",
       "name": "BALINUSRA",
       "area": "AREA 3",
-      "achRate": 54.22,
-      "kpiAchieved": 22,
-      "totalKpi": 42
+      "achRate": 50.7,
+      "kpiAchieved": 36,
+      "totalKpi": 71
     },
     {
-      "rank": 7,
+      "rank": 10,
       "regional": "10-KALIMANTAN",
       "name": "KALIMANTAN",
       "area": "AREA 4",
-      "achRate": 63.1,
-      "kpiAchieved": 26,
-      "totalKpi": 42
+      "achRate": 51.39,
+      "kpiAchieved": 37,
+      "totalKpi": 72
     },
     {
       "rank": 8,
       "regional": "11-SULAWESI",
       "name": "SULAWESI",
       "area": "AREA 4",
-      "achRate": 60.71,
-      "kpiAchieved": 25,
-      "totalKpi": 42
+      "achRate": 56.94,
+      "kpiAchieved": 41,
+      "totalKpi": 72
     },
     {
-      "rank": 11,
+      "rank": 6,
       "regional": "12-MALUKU PAPUA",
       "name": "MALUKU PAPUA",
       "area": "AREA 4",
-      "achRate": 55.42,
-      "kpiAchieved": 23,
-      "totalKpi": 42
+      "achRate": 59.15,
+      "kpiAchieved": 42,
+      "totalKpi": 71
     }
   ],
   "area": [
     {
-      "rank": 3,
+      "rank": 4,
       "area": "AREA 1",
       "name": "AREA 1 (SUMATERA)",
-      "achRate": 60.14,
-      "kpiAchieved": 75,
-      "totalKpi": 126
+      "achRate": 51.6,
+      "kpiAchieved": 113,
+      "totalKpi": 219
     },
     {
       "rank": 1,
       "area": "AREA 2",
       "name": "AREA 2 (JABOTABEK & JABAR)",
-      "achRate": 73.12,
-      "kpiAchieved": 92,
-      "totalKpi": 126
+      "achRate": 72.65,
+      "kpiAchieved": 162,
+      "totalKpi": 223
     },
     {
       "rank": 2,
       "area": "AREA 3",
       "name": "AREA 3 (JATENG, JATIM, BALINUSRA)",
-      "achRate": 68.74,
-      "kpiAchieved": 86,
-      "totalKpi": 126
+      "achRate": 65.14,
+      "kpiAchieved": 142,
+      "totalKpi": 218
     },
     {
-      "rank": 4,
+      "rank": 3,
       "area": "AREA 4",
       "name": "AREA 4 (KALIMANTAN, SULAWESI, MALPAP)",
-      "achRate": 59.74,
-      "kpiAchieved": 74,
-      "totalKpi": 126
+      "achRate": 55.81,
+      "kpiAchieved": 120,
+      "totalKpi": 215
     }
   ]
 }
-

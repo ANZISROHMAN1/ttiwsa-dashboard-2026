@@ -357,16 +357,12 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
             {/* WISA Header Section */}
             <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5 pb-5 border-b border-[var(--border)]">
               <div className="space-y-2 max-w-3xl">
-                <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   <h2 className="text-2xl lg:text-3xl font-black text-foreground tracking-tight">
                     District Racing — {rankingViewMode === "top10" ? "Top 10" : `Full Ranking (${baseFilteredWisaDistricts.length})`}
                   </h2>
-                </div>
-
-                {/* Period Subtitle */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-foreground-muted tracking-wide">
-                    Week 4 • OCT 2026
+                  <span className="text-xl font-bold text-foreground-muted">
+                    • Week 2 • NOV 2026
                   </span>
                 </div>
 
@@ -867,7 +863,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                   4. Periode Data & Total KPI
                 </div>
                 <p className="text-foreground-muted pl-3.5">
-                  Data terkini bersumber dari <strong className="text-foreground">Week 4 • OCT 2026</strong> mencakup total 65 indikator Racing KPI di 61 District seluruh Indonesia.
+                  Data terkini bersumber dari <strong className="text-foreground">Week 2 • NOV 2026</strong> mencakup total 65 indikator Racing KPI di 61 District seluruh Indonesia.
                 </p>
               </div>
             </div>

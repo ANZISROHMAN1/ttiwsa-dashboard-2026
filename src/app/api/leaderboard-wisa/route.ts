@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const refresh = url.searchParams.get("refresh") === "true";
-    const cacheKey = "leaderboard_wisa_data";
+    const cacheKey = "leaderboard_wisa_data_v2";
 
     if (!refresh) {
       // 1. Try Redis

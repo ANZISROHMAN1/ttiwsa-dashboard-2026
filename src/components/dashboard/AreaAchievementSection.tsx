@@ -526,7 +526,7 @@ export function AreaAchievementSection({
               <p className="text-xs text-foreground-muted">
                 {kpiCategory === "non-racing" ? (
                   <>
-                    Eastern Jabotabek meraih peringkat tertinggi ke-2 se-Indonesia dengan Achievement Rate{" "}
+                    Eastern Jabotabek meraih peringkat tertinggi {easternRegional.rank === 1 ? "ke-1 (#1)" : `ke-${easternRegional.rank}`} se-Indonesia dengan Achievement Rate{" "}
                     <span className="font-extrabold text-foreground">{easternRegional.achRate}%</span>{" "}
                     sesuai tabel evaluasi Regional (Non-Racing).
                   </>

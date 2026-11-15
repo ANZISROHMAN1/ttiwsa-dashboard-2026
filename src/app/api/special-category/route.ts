@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const refresh = url.searchParams.get("refresh") === "true";
-    const cacheKey = "special_category_data";
+    const cacheKey = "special_category_data_v2";
 
     if (!refresh) {
       // 1. Try Redis cache

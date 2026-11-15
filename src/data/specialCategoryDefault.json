@@ -1,10 +1,10 @@
 {
-  "from": "OCT 2026",
-  "to": "OCT 2026",
+  "from": "NOV 2026",
+  "to": "NOV 2026",
   "months": [
-    "OCT 2026"
+    "NOV 2026"
   ],
-  "week": "W4",
+  "week": "W2",
   "datin": {
     "kpiName": "ASR-ENT-TTR Compliance K2 dan K1 Repair DATIN 3,6 Jam",
     "skippedMonths": [],
@@ -13,53 +13,53 @@
     "leaderboard": [
       {
         "rank": 1,
-        "regional": "08-JATIM",
-        "displayName": "08-JATIM",
-        "area_tif": "AREA 3",
+        "regional": "12-MALUKU PAPUA",
+        "displayName": "12-MALUKU PAPUA",
+        "area_tif": "AREA 4",
         "totalPoints": 12,
-        "totalScore": 111.14,
+        "totalScore": 108.2,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 12,
-            "score": 111.14,
-            "achievement": 103.14,
-            "bonus": 8,
-            "bonusDetail": null
-          }
-        ]
-      },
-      {
-        "rank": 2,
-        "regional": "06-EASTERN JABOTABEK",
-        "displayName": "06-EASTERN JABOTABEK",
-        "area_tif": "AREA 2",
-        "totalPoints": 11,
-        "totalScore": 108.81,
-        "monthlyBreakdown": [
-          {
-            "month": "OCT 2026",
-            "points": 11,
-            "score": 108.81,
-            "achievement": 102.81,
+            "score": 108.2,
+            "achievement": 102.2,
             "bonus": 6,
             "bonusDetail": null
           }
         ]
       },
       {
-        "rank": 3,
-        "regional": "10-KALIMANTAN",
-        "displayName": "10-KALIMANTAN",
-        "area_tif": "AREA 4",
-        "totalPoints": 10,
-        "totalScore": 108.17,
+        "rank": 2,
+        "regional": "05-JABAR",
+        "displayName": "05-JABAR",
+        "area_tif": "AREA 2",
+        "totalPoints": 11,
+        "totalScore": 107.4,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
+            "points": 11,
+            "score": 107.4,
+            "achievement": 99.4,
+            "bonus": 8,
+            "bonusDetail": null
+          }
+        ]
+      },
+      {
+        "rank": 3,
+        "regional": "04-JAKARTA & BANTEN",
+        "displayName": "04-JAKARTA & BANTEN",
+        "area_tif": "AREA 2",
+        "totalPoints": 10,
+        "totalScore": 106.7,
+        "monthlyBreakdown": [
+          {
+            "month": "NOV 2026",
             "points": 10,
-            "score": 108.17,
-            "achievement": 102.17,
+            "score": 106.7,
+            "achievement": 100.7,
             "bonus": 6,
             "bonusDetail": null
           }
@@ -71,13 +71,13 @@
         "displayName": "07-JATENG DIY",
         "area_tif": "AREA 3",
         "totalPoints": 9,
-        "totalScore": 106.47,
+        "totalScore": 104.9,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 9,
-            "score": 106.47,
-            "achievement": 98.47,
+            "score": 104.9,
+            "achievement": 96.9,
             "bonus": 8,
             "bonusDetail": null
           }
@@ -89,13 +89,13 @@
         "displayName": "03-SUMBAGSEL",
         "area_tif": "AREA 1",
         "totalPoints": 8,
-        "totalScore": 105.95,
+        "totalScore": 102.2,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 8,
-            "score": 105.95,
-            "achievement": 99.95,
+            "score": 102.2,
+            "achievement": 96.2,
             "bonus": 6,
             "bonusDetail": null
           }
@@ -103,18 +103,18 @@
       },
       {
         "rank": 6,
-        "regional": "12-MALUKU PAPUA",
-        "displayName": "12-MALUKU PAPUA",
-        "area_tif": "AREA 4",
+        "regional": "06-EASTERN JABOTABEK",
+        "displayName": "06-EASTERN JABOTABEK",
+        "area_tif": "AREA 2",
         "totalPoints": 7,
-        "totalScore": 103.57,
+        "totalScore": 101.5,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 7,
-            "score": 103.57,
-            "achievement": 99.57,
-            "bonus": 4,
+            "score": 101.5,
+            "achievement": 95.5,
+            "bonus": 6,
             "bonusDetail": null
           }
         ]
@@ -125,13 +125,13 @@
         "displayName": "01-SUMBAGUT",
         "area_tif": "AREA 1",
         "totalPoints": 6,
-        "totalScore": 101.5,
+        "totalScore": 100.7,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 6,
-            "score": 101.5,
-            "achievement": 95.5,
+            "score": 100.7,
+            "achievement": 94.7,
             "bonus": 6,
             "bonusDetail": null
           }
@@ -139,71 +139,71 @@
       },
       {
         "rank": 8,
-        "regional": "04-JAKARTA & BANTEN",
-        "displayName": "04-JAKARTA & BANTEN",
-        "area_tif": "AREA 2",
+        "regional": "08-JATIM",
+        "displayName": "08-JATIM",
+        "area_tif": "AREA 3",
         "totalPoints": 5,
-        "totalScore": 101.04,
+        "totalScore": 100.6,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 5,
-            "score": 101.04,
-            "achievement": 91.04,
-            "bonus": 10,
-            "bonusDetail": null
-          }
-        ]
-      },
-      {
-        "rank": 9,
-        "regional": "11-SULAWESI",
-        "displayName": "11-SULAWESI",
-        "area_tif": "AREA 4",
-        "totalPoints": 4,
-        "totalScore": 94.79,
-        "monthlyBreakdown": [
-          {
-            "month": "OCT 2026",
-            "points": 4,
-            "score": 94.79,
-            "achievement": 86.79,
+            "score": 100.6,
+            "achievement": 92.6,
             "bonus": 8,
             "bonusDetail": null
           }
         ]
       },
       {
-        "rank": 10,
-        "regional": "02-SUMBAGTENG",
-        "displayName": "02-SUMBAGTENG",
-        "area_tif": "AREA 1",
-        "totalPoints": 3,
-        "totalScore": 92.19,
+        "rank": 9,
+        "regional": "10-KALIMANTAN",
+        "displayName": "10-KALIMANTAN",
+        "area_tif": "AREA 4",
+        "totalPoints": 4,
+        "totalScore": 98.3,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
+            "points": 4,
+            "score": 98.3,
+            "achievement": 92.3,
+            "bonus": 6,
+            "bonusDetail": null
+          }
+        ]
+      },
+      {
+        "rank": 10,
+        "regional": "09-BALINUSRA",
+        "displayName": "09-BALINUSRA",
+        "area_tif": "AREA 3",
+        "totalPoints": 3,
+        "totalScore": 94.3,
+        "monthlyBreakdown": [
+          {
+            "month": "NOV 2026",
             "points": 3,
-            "score": 92.19,
-            "achievement": 88.19,
-            "bonus": 4,
+            "score": 94.3,
+            "achievement": 88.3,
+            "bonus": 6,
             "bonusDetail": null
           }
         ]
       },
       {
         "rank": 11,
-        "regional": "09-BALINUSRA",
-        "displayName": "09-BALINUSRA",
-        "area_tif": "AREA 3",
+        "regional": "11-SULAWESI",
+        "displayName": "11-SULAWESI",
+        "area_tif": "AREA 4",
         "totalPoints": 2,
-        "totalScore": 86.36,
+        "totalScore": 93.7,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 2,
-            "score": 86.36,
-            "achievement": 80.36,
+            "score": 93.7,
+            "achievement": 87.7,
             "bonus": 6,
             "bonusDetail": null
           }
@@ -211,18 +211,18 @@
       },
       {
         "rank": 12,
-        "regional": "05-JABAR",
-        "displayName": "05-JABAR",
-        "area_tif": "AREA 2",
+        "regional": "02-SUMBAGTENG",
+        "displayName": "02-SUMBAGTENG",
+        "area_tif": "AREA 1",
         "totalPoints": 1,
-        "totalScore": 79.05,
+        "totalScore": 69.1,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 1,
-            "score": 79.05,
-            "achievement": 71.05,
-            "bonus": 8,
+            "score": 69.1,
+            "achievement": 65.1,
+            "bonus": 4,
             "bonusDetail": null
           }
         ]
@@ -241,248 +241,260 @@
         "displayName": "03-SUMBAGSEL",
         "area_tif": "AREA 1",
         "totalPoints": 12,
-        "totalScore": 120.69,
+        "totalScore": 120.7,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 12,
-            "score": 120.69,
-            "achievement": 109.89,
+            "score": 120.7,
+            "achievement": 109.9,
             "bonus": 10.8,
             "bonusDetail": {
-              "sitePremium": 100,
-              "bonusScore": 10.8
+              "siteCompliance": 100,
+              "bonusScore": 10.8,
+              "bonusTier": 1
             }
           }
         ]
       },
       {
         "rank": 2,
-        "regional": "04-JAKARTA & BANTEN",
-        "displayName": "04-JAKARTA & BANTEN",
-        "area_tif": "AREA 2",
+        "regional": "09-BALINUSRA",
+        "displayName": "09-BALINUSRA",
+        "area_tif": "AREA 3",
         "totalPoints": 11,
-        "totalScore": 115.6,
+        "totalScore": 116.6,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 11,
-            "score": 115.6,
+            "score": 116.6,
             "achievement": 110,
-            "bonus": 5.6,
+            "bonus": 6.6,
             "bonusDetail": {
-              "sitePremium": 0,
-              "bonusScore": 5.6
+              "siteCompliance": 100,
+              "bonusScore": 6.6,
+              "bonusTier": 1
             }
           }
         ]
       },
       {
         "rank": 3,
-        "regional": "10-KALIMANTAN",
-        "displayName": "10-KALIMANTAN",
-        "area_tif": "AREA 4",
+        "regional": "04-JAKARTA & BANTEN",
+        "displayName": "04-JAKARTA & BANTEN",
+        "area_tif": "AREA 2",
         "totalPoints": 10,
-        "totalScore": 115.4,
+        "totalScore": 115.5,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 10,
-            "score": 115.4,
+            "score": 115.5,
             "achievement": 110,
-            "bonus": 5.4,
+            "bonus": 5.5,
             "bonusDetail": {
-              "sitePremium": 0,
-              "bonusScore": 5.4
+              "siteCompliance": 0,
+              "bonusScore": 5.5,
+              "bonusTier": 2
             }
           }
         ]
       },
       {
         "rank": 4,
-        "regional": "11-SULAWESI",
-        "displayName": "11-SULAWESI",
+        "regional": "10-KALIMANTAN",
+        "displayName": "10-KALIMANTAN",
         "area_tif": "AREA 4",
         "totalPoints": 9,
-        "totalScore": 113.6,
+        "totalScore": 115.4,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 9,
-            "score": 113.6,
+            "score": 115.4,
             "achievement": 110,
-            "bonus": 3.6,
+            "bonus": 5.4,
             "bonusDetail": {
-              "sitePremium": 0,
-              "bonusScore": 3.6
+              "siteCompliance": 0,
+              "bonusScore": 5.4,
+              "bonusTier": 2
             }
           }
         ]
       },
       {
         "rank": 5,
-        "regional": "07-JATENG DIY",
-        "displayName": "07-JATENG DIY",
-        "area_tif": "AREA 3",
+        "regional": "11-SULAWESI",
+        "displayName": "11-SULAWESI",
+        "area_tif": "AREA 4",
         "totalPoints": 8,
-        "totalScore": 113,
+        "totalScore": 113.6,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 8,
-            "score": 113,
-            "achievement": 110,
-            "bonus": 3,
+            "score": 113.6,
+            "achievement": 108.6,
+            "bonus": 5,
             "bonusDetail": {
-              "sitePremium": 0,
-              "bonusScore": 3
+              "siteCompliance": 0,
+              "bonusScore": 5,
+              "bonusTier": 2
             }
           }
         ]
       },
       {
         "rank": 6,
-        "regional": "08-JATIM",
-        "displayName": "08-JATIM",
-        "area_tif": "AREA 3",
+        "regional": "02-SUMBAGTENG",
+        "displayName": "02-SUMBAGTENG",
+        "area_tif": "AREA 1",
         "totalPoints": 7,
-        "totalScore": 112.6,
+        "totalScore": 113,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 7,
-            "score": 112.6,
-            "achievement": 110,
-            "bonus": 2.6,
+            "score": 113,
+            "achievement": 108,
+            "bonus": 5,
             "bonusDetail": {
-              "sitePremium": 0,
-              "bonusScore": 2.6
+              "siteCompliance": 0,
+              "bonusScore": 5,
+              "bonusTier": 2
             }
           }
         ]
       },
       {
         "rank": 7,
-        "regional": "01-SUMBAGUT",
-        "displayName": "01-SUMBAGUT",
-        "area_tif": "AREA 1",
+        "regional": "07-JATENG DIY",
+        "displayName": "07-JATENG DIY",
+        "area_tif": "AREA 3",
         "totalPoints": 6,
-        "totalScore": 111.8,
+        "totalScore": 113,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 6,
-            "score": 111.8,
-            "achievement": 110,
-            "bonus": 1.8,
+            "score": 113,
+            "achievement": 108,
+            "bonus": 5,
             "bonusDetail": {
-              "sitePremium": 0,
-              "bonusScore": 1.8
+              "siteCompliance": 0,
+              "bonusScore": 5,
+              "bonusTier": 2
             }
           }
         ]
       },
       {
         "rank": 8,
-        "regional": "05-JABAR",
-        "displayName": "05-JABAR",
-        "area_tif": "AREA 2",
+        "regional": "08-JATIM",
+        "displayName": "08-JATIM",
+        "area_tif": "AREA 3",
         "totalPoints": 5,
-        "totalScore": 111.6,
+        "totalScore": 112.6,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 5,
-            "score": 111.6,
-            "achievement": 110,
-            "bonus": 1.6,
+            "score": 112.6,
+            "achievement": 107.6,
+            "bonus": 5,
             "bonusDetail": {
-              "sitePremium": 0,
-              "bonusScore": 1.6
+              "siteCompliance": 0,
+              "bonusScore": 5,
+              "bonusTier": 2
             }
           }
         ]
       },
       {
         "rank": 9,
-        "regional": "06-EASTERN JABOTABEK",
-        "displayName": "06-EASTERN JABOTABEK",
-        "area_tif": "AREA 2",
+        "regional": "01-SUMBAGUT",
+        "displayName": "01-SUMBAGUT",
+        "area_tif": "AREA 1",
         "totalPoints": 4,
-        "totalScore": 111.29,
+        "totalScore": 111.8,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 4,
-            "score": 111.29,
-            "achievement": 109.89,
-            "bonus": 1.4,
+            "score": 111.8,
+            "achievement": 106.8,
+            "bonus": 5,
             "bonusDetail": {
-              "sitePremium": 100,
-              "bonusScore": 1.4
+              "siteCompliance": 0,
+              "bonusScore": 5,
+              "bonusTier": 2
             }
           }
         ]
       },
       {
         "rank": 10,
-        "regional": "12-MALUKU PAPUA",
-        "displayName": "12-MALUKU PAPUA",
-        "area_tif": "AREA 4",
+        "regional": "05-JABAR",
+        "displayName": "05-JABAR",
+        "area_tif": "AREA 2",
         "totalPoints": 3,
-        "totalScore": 110.4,
+        "totalScore": 111.6,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 3,
-            "score": 110.4,
-            "achievement": 110,
-            "bonus": 0.4,
+            "score": 111.6,
+            "achievement": 106.6,
+            "bonus": 5,
             "bonusDetail": {
-              "sitePremium": 0,
-              "bonusScore": 0.4
+              "siteCompliance": 0,
+              "bonusScore": 5,
+              "bonusTier": 2
             }
           }
         ]
       },
       {
         "rank": 11,
-        "regional": "02-SUMBAGTENG",
-        "displayName": "02-SUMBAGTENG",
-        "area_tif": "AREA 1",
+        "regional": "06-EASTERN JABOTABEK",
+        "displayName": "06-EASTERN JABOTABEK",
+        "area_tif": "AREA 2",
         "totalPoints": 2,
-        "totalScore": 57.95,
+        "totalScore": 111.4,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 2,
-            "score": 57.95,
-            "achievement": 54.95,
-            "bonus": 3,
+            "score": 111.4,
+            "achievement": 106.4,
+            "bonus": 5,
             "bonusDetail": {
-              "sitePremium": 50,
-              "bonusScore": 3
+              "siteCompliance": 100,
+              "bonusScore": 5,
+              "bonusTier": 1
             }
           }
         ]
       },
       {
         "rank": 12,
-        "regional": "09-BALINUSRA",
-        "displayName": "09-BALINUSRA",
-        "area_tif": "AREA 3",
+        "regional": "12-MALUKU PAPUA",
+        "displayName": "12-MALUKU PAPUA",
+        "area_tif": "AREA 4",
         "totalPoints": 1,
-        "totalScore": 0,
+        "totalScore": 110.4,
         "monthlyBreakdown": [
           {
-            "month": "OCT 2026",
+            "month": "NOV 2026",
             "points": 1,
-            "score": 0,
-            "achievement": 0,
-            "bonus": 0,
+            "score": 110.4,
+            "achievement": 105.4,
+            "bonus": 5,
             "bonusDetail": {
-              "sitePremium": 0,
-              "bonusScore": 0
+              "siteCompliance": 0,
+              "bonusScore": 5,
+              "bonusTier": 2
             }
           }
         ]
@@ -490,4 +502,3 @@
     ]
   }
 }
-
