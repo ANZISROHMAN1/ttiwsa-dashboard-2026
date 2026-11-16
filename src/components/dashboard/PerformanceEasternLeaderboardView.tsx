@@ -542,8 +542,28 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
               </div>
             </div>
 
+            {/* Column Header for alignment (Desktop) */}
+            <div className="hidden md:flex items-center gap-4 lg:gap-6 px-4 py-1.5 text-[10px] font-bold text-foreground-muted uppercase tracking-wider border-b border-[var(--border)] mb-1">
+              <div className="w-full md:w-[340px] lg:w-[360px] shrink-0">
+                DISTRICT / REGIONAL
+              </div>
+              <div className="w-[220px] shrink-0 grid grid-cols-3 gap-2 text-center">
+                <span>ACHIEVED</span>
+                <span>NOT ACH</span>
+                <span>N/A</span>
+              </div>
+              <div className="hidden lg:block flex-1 min-w-[60px] mx-2 text-center">
+                PROGRESS
+              </div>
+              <div className="shrink-0 flex items-center gap-4 justify-end md:ml-auto">
+                <span className="w-16 text-right">ACH RATE</span>
+                <span className="w-16 text-right">AVERAGE</span>
+                <span className="w-24 text-center">DETAIL</span>
+              </div>
+            </div>
+
             {/* List Rows Matching WISA Layout */}
-            <div className="space-y-3 pt-2">
+            <div className="space-y-3 pt-1">
               {displayedWisaDistricts.length === 0 ? (
                 <div className="p-8 text-center rounded-2xl border border-[var(--border)] bg-[var(--surface-hover)]/30 space-y-2">
                   <p className="text-sm font-semibold text-foreground">Tidak ada district yang sesuai dengan filter.</p>
@@ -564,6 +584,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                 displayedWisaDistricts.map((item) => {
                   const isEastern = EASTERN_DISTRICTS.includes(item.district.toUpperCase());
                   const isExpanded = expandedDistrict === item.district;
+                  const displayName = item.district.replace(/\b(SOUTHERN|NORTHERN|EASTERN|WESTERN|CENTRAL)(JAKARTA)\b/gi, "$1 $2");
 
                   return (
                     <div
@@ -576,9 +597,9 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                       )}
                     >
                       {/* Main Row */}
-                      <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="p-4 flex flex-col md:flex-row md:items-center gap-4 lg:gap-6">
                         {/* Left: Rank & District Name & Regional */}
-                        <div className="flex items-center gap-3.5 w-full md:w-[320px] lg:w-[340px] shrink-0">
+                        <div className="flex items-center gap-3.5 w-full md:w-[340px] lg:w-[360px] shrink-0">
                           {/* Circular Rank Badge */}
                           <div className="shrink-0 flex items-center justify-center">
                             {item.rank === 1 ? (
@@ -604,7 +625,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
                               <span className="font-extrabold text-foreground text-sm tracking-wide truncate">
-                                {item.district}
+                                {displayName}
                               </span>
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20 shrink-0">
                                 {item.regional}
@@ -652,7 +673,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                         </div>
 
                         {/* Middle-Right: Progress Bar */}
-                        <div className="hidden lg:block flex-1 min-w-[70px] max-w-[180px] mx-2">
+                        <div className="hidden lg:block flex-1 min-w-[60px] mx-2">
                           <div className="w-full bg-[var(--surface)] h-2 rounded-full overflow-hidden border border-[var(--border)]">
                             <div
                               className={cn(
@@ -669,7 +690,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                         </div>
 
                         {/* Right: Ach Rate, Average, and Detail button */}
-                        <div className="flex items-center gap-4 justify-between md:justify-end shrink-0">
+                        <div className="flex items-center gap-4 justify-between md:justify-end shrink-0 md:ml-auto">
                           <div className="w-16 text-right">
                             <div className="text-[9px] font-bold text-foreground-muted uppercase tracking-wider">
                               ACH RATE
