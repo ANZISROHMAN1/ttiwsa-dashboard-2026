@@ -578,7 +578,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                       {/* Main Row */}
                       <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         {/* Left: Rank & District Name & Regional */}
-                        <div className="flex items-center gap-3.5 min-w-[240px]">
+                        <div className="flex items-center gap-3.5 w-full md:w-[320px] lg:w-[340px] shrink-0">
                           {/* Circular Rank Badge */}
                           <div className="shrink-0 flex items-center justify-center">
                             {item.rank === 1 ? (
@@ -601,28 +601,28 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                           </div>
 
                           {/* District Name and Tag */}
-                          <div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-extrabold text-foreground text-sm tracking-wide">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-extrabold text-foreground text-sm tracking-wide truncate">
                                 {item.district}
                               </span>
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20 shrink-0">
                                 {item.regional}
                               </span>
+                            </div>
+                            <div className="text-[10px] text-foreground-muted mt-0.5 flex items-center gap-1.5">
+                              <span>{item.area}</span>
                               {isEastern && (
-                                <span className="px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase bg-accent-blue text-white shadow-sm shadow-accent-blue/30">
+                                <span className="px-1.5 py-0.5 rounded text-[8px] font-black tracking-wider uppercase bg-accent-blue text-white shadow-sm shadow-accent-blue/30">
                                   EASTERN
                                 </span>
                               )}
                             </div>
-                            <div className="text-[10px] text-foreground-muted mt-0.5">
-                              {item.area}
-                            </div>
                           </div>
                         </div>
 
-                        {/* Middle: Achieved / Not Achieved / N/A (Exactly as in WISA) */}
-                        <div className="flex items-center gap-6 shrink-0 text-center">
+                        {/* Middle: Achieved / Not Achieved / N/A (Fixed 3-column grid for perfect vertical alignment) */}
+                        <div className="grid grid-cols-3 gap-2 w-full md:w-[220px] shrink-0 text-center">
                           <div>
                             <div className="text-[9px] font-bold text-foreground-muted uppercase tracking-wider">
                               ACHIEVED
@@ -652,7 +652,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                         </div>
 
                         {/* Middle-Right: Progress Bar */}
-                        <div className="hidden lg:block w-36 xl:w-48 shrink-0">
+                        <div className="hidden lg:block flex-1 min-w-[70px] max-w-[180px] mx-2">
                           <div className="w-full bg-[var(--surface)] h-2 rounded-full overflow-hidden border border-[var(--border)]">
                             <div
                               className={cn(
@@ -669,8 +669,8 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                         </div>
 
                         {/* Right: Ach Rate, Average, and Detail button */}
-                        <div className="flex items-center gap-5 justify-between md:justify-end shrink-0">
-                          <div className="text-right">
+                        <div className="flex items-center gap-4 justify-between md:justify-end shrink-0">
+                          <div className="w-16 text-right">
                             <div className="text-[9px] font-bold text-foreground-muted uppercase tracking-wider">
                               ACH RATE
                             </div>
@@ -679,7 +679,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                             </div>
                           </div>
 
-                          <div className="text-right">
+                          <div className="w-16 text-right">
                             <div className="text-[9px] font-bold text-foreground-muted uppercase tracking-wider">
                               AVERAGE
                             </div>
@@ -691,7 +691,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                           {/* Expand Button with Dynamic KPI Count */}
                           <button
                             onClick={() => setExpandedDistrict(isExpanded ? null : item.district)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs font-bold text-foreground hover:bg-[var(--surface-hover)] transition-colors ml-2"
+                            className="inline-flex items-center justify-center gap-1 w-24 px-3 py-1.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs font-bold text-foreground hover:bg-[var(--surface-hover)] transition-colors"
                           >
                             {isExpanded ? "Tutup" : `${item.total || 65} KPI`}
                             {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
