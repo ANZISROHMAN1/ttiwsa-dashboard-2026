@@ -80,12 +80,14 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
 
   // Filter state for WISA tab
   const [rankingViewMode, setRankingViewMode] = useState<"top10" | "all">("top10");
+  const [wisaKpiMode, setWisaKpiMode] = useState<"racing" | "all">("racing");
   const [showGuideModal, setShowGuideModal] = useState<boolean>(false);
   const [wisaSearch, setWisaSearch] = useState("");
   const [selectedArea, setSelectedArea] = useState<string>("ALL");
   const [selectedRegional, setSelectedRegional] = useState<string>("ALL");
   const [onlyEastern, setOnlyEastern] = useState<boolean>(false);
   const [expandedDistrict, setExpandedDistrict] = useState<string | null>(null);
+  const [detailStatusFilter, setDetailStatusFilter] = useState<"ALL" | "ACHIEVED" | "NOT_ACHIEVED" | "NA">("ALL");
 
   // Eastern internal view state
   const selectedVariation: SummaryVariationKey = "standard";
@@ -162,7 +164,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
   const baseFilteredWisaDistricts = useMemo(() => {
     if (!wisaData?.districts) return [];
 
-    return wisaData.districts.filter((item) => {
+    let list = wisaData.districts.filter((item) => {
       if (onlyEastern && !EASTERN_DISTRICTS.includes(item.district.toUpperCase())) {
         return false;
       }
@@ -181,7 +183,36 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
       }
       return true;
     });
-  }, [wisaData, onlyEastern, selectedArea, selectedRegional, wisaSearch]);
+
+    if (wisaKpiMode === "all") {
+      // In "all" (Evaluasi 65 KPI):
+      // Calculate percent against all 65 KPIs:
+      list = list.map((d) => {
+        const totalAll = d.total || 65;
+        const percentAll = totalAll > 0 ? (d.achieved / totalAll) * 100 : 0;
+        return {
+          ...d,
+          percent: parseFloat(percentAll.toFixed(2)),
+          achRate: `${percentAll.toFixed(2)}%`,
+        };
+      });
+
+      // Sort by percentAll descending, then achieved, then avgNum
+      list.sort((a, b) => {
+        if (b.percent !== a.percent) return b.percent - a.percent;
+        if (b.achieved !== a.achieved) return b.achieved - a.achieved;
+        return (b.avgNum || 0) - (a.avgNum || 0);
+      });
+
+      // Re-assign ranks for this mode
+      list = list.map((d, idx) => ({
+        ...d,
+        rank: idx + 1,
+      }));
+    }
+
+    return list;
+  }, [wisaData, onlyEastern, selectedArea, selectedRegional, wisaSearch, wisaKpiMode]);
 
   // Displayed WISA Districts (respects Top 10 vs All toggle)
   const displayedWisaDistricts = useMemo(() => {
@@ -191,7 +222,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
     return baseFilteredWisaDistricts;
   }, [baseFilteredWisaDistricts, rankingViewMode]);
 
-  // Export CSV for WISA Racing
+  // Export CSV for WISA Racing / Evaluasi 65 KPI
   const handleExportWisaCSV = () => {
     const listToExport = baseFilteredWisaDistricts.length > 0 ? baseFilteredWisaDistricts : (wisaData?.districts || []);
     if (!listToExport.length) return;
@@ -206,7 +237,9 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
       "Total KPI",
       "Ach Rate",
       "Average",
+      "Evaluation Mode",
     ];
+    const modeLabel = wisaKpiMode === "racing" ? "Racing KPI" : "Evaluasi 65 KPI";
     const rows = [headers.join(",")];
     listToExport.forEach((d) => {
       rows.push(
@@ -221,6 +254,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
           d.total,
           `"${d.achRate}"`,
           `"${d.average}"`,
+          `"${modeLabel}"`,
         ].join(",")
       );
     });
@@ -229,7 +263,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `district_racing_wisa_${Date.now()}.csv`);
+    link.setAttribute("download", `district_leaderboard_${wisaKpiMode}_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -359,7 +393,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
               <div className="space-y-2 max-w-3xl">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <h2 className="text-2xl lg:text-3xl font-black text-foreground tracking-tight">
-                    District Racing — {rankingViewMode === "top10" ? "Top 10" : `Full Ranking (${baseFilteredWisaDistricts.length})`}
+                    {wisaKpiMode === "racing" ? "District Racing" : "District Evaluasi 65 KPI"} — {rankingViewMode === "top10" ? "Top 10" : `Full Ranking (${baseFilteredWisaDistricts.length})`}
                   </h2>
                   <span className="text-xl font-bold text-foreground-muted">
                     • Week 2 • NOV 2026
@@ -368,18 +402,41 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
 
                 {/* Formula Description (Exact from WISA) */}
                 <p className="text-xs text-foreground-muted leading-relaxed">
-                  Ranked by achieved KPIs; ties broken by average achievement across achieved KPIs only (each capped at 110%). NO TICKET on an assurance KPI scores 110% for that KPI.
+                  {wisaKpiMode === "racing"
+                    ? "Ranked by achieved KPIs; ties broken by average achievement across achieved KPIs only (each capped at 110%). NO TICKET on an assurance KPI scores 110% for that KPI."
+                    : "Ranked by total achievement rate across all 65 KPIs; ties broken by achieved KPIs then average. Evaluasi menyeluruh terhadap seluruh 65 indikator."}
                 </p>
 
-                {/* Status Badges */}
+                {/* Status Badges as Clickable Mode Switcher */}
                 <div className="flex items-center gap-2 flex-wrap pt-1">
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-500 border border-amber-500/30 flex items-center gap-1.5">
-                    <Flame className="w-3.5 h-3.5 text-amber-500" />
+                  <button
+                    onClick={() => setWisaKpiMode("racing")}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer",
+                      wisaKpiMode === "racing"
+                        ? "bg-amber-500 text-white shadow-sm ring-1 ring-amber-400/50"
+                        : "bg-[var(--surface-hover)] text-foreground-muted hover:text-foreground border border-[var(--border)]"
+                    )}
+                    title="Beralih ke evaluasi Racing KPI Only"
+                  >
+                    <Flame className={cn("w-3.5 h-3.5", wisaKpiMode === "racing" ? "text-white" : "text-amber-500")} />
                     Racing KPI Only
-                  </span>
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[var(--surface-hover)] text-foreground-muted border border-[var(--border)]">
+                  </button>
+
+                  <button
+                    onClick={() => setWisaKpiMode("all")}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer",
+                      wisaKpiMode === "all"
+                        ? "bg-teal-600 text-white shadow-sm ring-1 ring-teal-400/50"
+                        : "bg-[var(--surface-hover)] text-foreground-muted hover:text-foreground border border-[var(--border)]"
+                    )}
+                    title="Beralih ke Evaluasi Semua 65 KPI"
+                  >
+                    <Layers className={cn("w-3.5 h-3.5", wisaKpiMode === "all" ? "text-white" : "text-teal-400")} />
                     Evaluasi 65 KPI
-                  </span>
+                  </button>
+
                   {onlyEastern && (
                     <span className="px-3 py-1 rounded-full text-xs font-bold bg-accent-blue/15 text-accent-blue border border-accent-blue/30 flex items-center gap-1">
                       <Sparkles className="w-3 h-3" />
@@ -401,11 +458,29 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                   Guide
                 </button>
 
-                {/* Racing KPI Badge */}
-                <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-amber-400">
-                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                  Racing KPI
-                </div>
+                {/* Racing KPI / Evaluasi 65 KPI Interactive Toggle Button */}
+                <button
+                  onClick={() => setWisaKpiMode(wisaKpiMode === "racing" ? "all" : "racing")}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer",
+                    wisaKpiMode === "racing"
+                      ? "bg-amber-500/15 border border-amber-500/40 text-amber-400 hover:bg-amber-500/25 ring-1 ring-amber-400/20"
+                      : "bg-teal-500/15 border border-teal-500/40 text-teal-400 hover:bg-teal-500/25 ring-1 ring-teal-400/20"
+                  )}
+                  title={
+                    wisaKpiMode === "racing"
+                      ? "Klik untuk beralih ke Evaluasi 65 KPI"
+                      : "Klik untuk beralih ke Hanya Racing KPI"
+                  }
+                >
+                  <span
+                    className={cn(
+                      "w-2 h-2 rounded-full animate-pulse",
+                      wisaKpiMode === "racing" ? "bg-amber-400" : "bg-teal-400"
+                    )}
+                  />
+                  {wisaKpiMode === "racing" ? "Racing KPI" : "Evaluasi 65 KPI"}
+                </button>
 
                 {/* Download All KPI Button */}
                 <button
@@ -723,14 +798,59 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                       {/* Expandable KPI Indicators Detail */}
                       {isExpanded && (
                         <div className="border-t border-[var(--border)] p-4 bg-[var(--surface)] space-y-3 animate-fade-in">
-                          <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[var(--border)]">
                             <div className="font-bold text-sm text-foreground flex items-center gap-2">
                               <Sparkles className="w-4 h-4 text-accent-blue" />
-                              Rincian {item.indicators.length} KPI Racing: {item.district} ({item.regional})
+                              Rincian {item.indicators.length} KPI ({wisaKpiMode === "racing" ? "Racing KPI" : "Evaluasi 65 KPI"}): {displayName} ({item.regional})
                             </div>
-                            <span className="text-xs text-foreground-muted">
-                              Total {item.indicators.length} Indikator Racing (Achieved: {item.achieved}, Not Achieved: {item.notAchieved}, N/A: {item.na})
-                            </span>
+                            
+                            {/* Filter Status Pills inside Detail */}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <button
+                                onClick={() => setDetailStatusFilter("ALL")}
+                                className={cn(
+                                  "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
+                                  detailStatusFilter === "ALL"
+                                    ? "bg-accent-blue text-white shadow-sm"
+                                    : "bg-[var(--surface-hover)] text-foreground-muted hover:text-foreground border border-[var(--border)]"
+                                )}
+                              >
+                                Semua ({item.indicators.length})
+                              </button>
+                              <button
+                                onClick={() => setDetailStatusFilter("ACHIEVED")}
+                                className={cn(
+                                  "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
+                                  detailStatusFilter === "ACHIEVED"
+                                    ? "bg-emerald-500 text-white shadow-sm"
+                                    : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20"
+                                )}
+                              >
+                                Achieved ({item.achieved})
+                              </button>
+                              <button
+                                onClick={() => setDetailStatusFilter("NOT_ACHIEVED")}
+                                className={cn(
+                                  "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
+                                  detailStatusFilter === "NOT_ACHIEVED"
+                                    ? "bg-rose-500 text-white shadow-sm"
+                                    : "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20"
+                                )}
+                              >
+                                Not Achieved ({item.notAchieved})
+                              </button>
+                              <button
+                                onClick={() => setDetailStatusFilter("NA")}
+                                className={cn(
+                                  "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
+                                  detailStatusFilter === "NA"
+                                    ? "bg-zinc-500 text-white shadow-sm"
+                                    : "bg-zinc-500/10 text-zinc-400 hover:bg-zinc-500/20 border border-zinc-500/20"
+                                )}
+                              >
+                                N/A ({item.na})
+                              </button>
+                            </div>
                           </div>
 
                           <div className="max-h-80 overflow-y-auto rounded-xl border border-[var(--border)]">
@@ -746,37 +866,52 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-[var(--border)]">
-                                {item.indicators.map((ind, iIdx) => (
-                                  <tr key={`ind-${item.district}-${iIdx}`} className="hover:bg-[var(--surface-hover)] transition-colors">
-                                    <td className="px-3 py-2 text-center text-foreground-muted font-mono">
-                                      {ind.no || iIdx + 1}
-                                    </td>
-                                    <td className="px-3 py-2 font-semibold text-foreground">{ind.indikator}</td>
-                                    <td className="px-3 py-2 text-center text-foreground-muted tabular-nums">
-                                      {ind.target}
-                                    </td>
-                                    <td className="px-3 py-2 text-center font-bold text-foreground tabular-nums">
-                                      {ind.realisasi}
-                                    </td>
-                                    <td className="px-3 py-2 text-center font-bold text-foreground tabular-nums">
-                                      {ind.ach}
-                                    </td>
-                                    <td className="px-3 py-2 text-center">
-                                      <span
-                                        className={cn(
-                                          "px-2.5 py-0.5 rounded-full text-[10px] font-bold border",
-                                          ind.status.toUpperCase() === "ACHIEVED"
-                                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                                            : ind.status.toUpperCase().includes("NOT")
-                                            ? "bg-rose-500/10 text-rose-400 border-rose-500/30"
-                                            : "bg-zinc-500/10 text-zinc-400 border-zinc-500/30"
-                                        )}
-                                      >
-                                        {ind.status}
-                                      </span>
-                                    </td>
-                                  </tr>
-                                ))}
+                                {item.indicators
+                                  .filter((ind) => {
+                                    if (detailStatusFilter === "ALL") return true;
+                                    const sUpper = ind.status.toUpperCase();
+                                    if (detailStatusFilter === "ACHIEVED") {
+                                      return sUpper === "ACHIEVED" || sUpper === "ACH";
+                                    }
+                                    if (detailStatusFilter === "NOT_ACHIEVED") {
+                                      return sUpper.includes("NOT");
+                                    }
+                                    if (detailStatusFilter === "NA") {
+                                      return sUpper === "N/A" || (!sUpper.includes("ACH") && !sUpper.includes("NOT"));
+                                    }
+                                    return true;
+                                  })
+                                  .map((ind, iIdx) => (
+                                    <tr key={`ind-${item.district}-${iIdx}`} className="hover:bg-[var(--surface-hover)] transition-colors">
+                                      <td className="px-3 py-2 text-center text-foreground-muted font-mono">
+                                        {ind.no || iIdx + 1}
+                                      </td>
+                                      <td className="px-3 py-2 font-semibold text-foreground">{ind.indikator}</td>
+                                      <td className="px-3 py-2 text-center text-foreground-muted tabular-nums">
+                                        {ind.target}
+                                      </td>
+                                      <td className="px-3 py-2 text-center font-bold text-foreground tabular-nums">
+                                        {ind.realisasi}
+                                      </td>
+                                      <td className="px-3 py-2 text-center font-bold text-foreground tabular-nums">
+                                        {ind.ach}
+                                      </td>
+                                      <td className="px-3 py-2 text-center">
+                                        <span
+                                          className={cn(
+                                            "px-2.5 py-0.5 rounded-full text-[10px] font-bold border",
+                                            ind.status.toUpperCase() === "ACHIEVED" || ind.status.toUpperCase() === "ACH"
+                                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                              : ind.status.toUpperCase().includes("NOT")
+                                              ? "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                                              : "bg-zinc-500/10 text-zinc-400 border-zinc-500/30"
+                                          )}
+                                        >
+                                          {ind.status}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ))}
                               </tbody>
                             </table>
                           </div>
@@ -885,6 +1020,17 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                 </div>
                 <p className="text-foreground-muted pl-3.5">
                   Data terkini bersumber dari <strong className="text-foreground">Week 2 • NOV 2026</strong> mencakup total 65 indikator Racing KPI di 61 District seluruh Indonesia.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-[var(--surface-hover)] border border-[var(--border)] space-y-2">
+                <div className="font-bold text-amber-400 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                  5. Mode Evaluasi (Toggle Racing vs 65 KPI)
+                </div>
+                <p className="text-foreground-muted pl-3.5">
+                  • <strong>Racing KPI Only</strong>: Evaluasi pencapaian hanya menghitung KPI aktif (Achieved vs Not Achieved). Rumus: Achieved / (Achieved + Not Achieved).<br/>
+                  • <strong>Evaluasi 65 KPI</strong>: Evaluasi menyeluruh terhadap total 65 KPI. Rumus: Achieved / 65 Total KPI.
                 </p>
               </div>
             </div>
