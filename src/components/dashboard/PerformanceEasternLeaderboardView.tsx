@@ -724,7 +724,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                         {/* Middle: Achieved / Not Achieved / N/A (Fixed 3-column grid for perfect vertical alignment) */}
                         <div className="grid grid-cols-3 gap-2 w-full md:w-[220px] shrink-0 text-center">
                           <div>
-                            <div className="text-[9px] font-bold text-foreground-muted uppercase tracking-wider">
+                            <div className="md:hidden text-[9px] font-bold text-foreground-muted uppercase tracking-wider">
                               ACHIEVED
                             </div>
                             <div className="text-base font-black text-emerald-500 tabular-nums">
@@ -733,7 +733,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                           </div>
 
                           <div>
-                            <div className="text-[9px] font-bold text-foreground-muted uppercase tracking-wider">
+                            <div className="md:hidden text-[9px] font-bold text-foreground-muted uppercase tracking-wider">
                               NOT ACHIEVED
                             </div>
                             <div className="text-base font-black text-rose-500 tabular-nums">
@@ -742,7 +742,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                           </div>
 
                           <div>
-                            <div className="text-[9px] font-bold text-foreground-muted uppercase tracking-wider">
+                            <div className="md:hidden text-[9px] font-bold text-foreground-muted uppercase tracking-wider">
                               N/A
                             </div>
                             <div className="text-base font-bold text-foreground-muted tabular-nums">
@@ -771,7 +771,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                         {/* Right: Ach Rate, Average, and Detail button */}
                         <div className="flex items-center gap-4 justify-between md:justify-end shrink-0 md:ml-auto">
                           <div className="w-16 text-right">
-                            <div className="text-[9px] font-bold text-foreground-muted uppercase tracking-wider">
+                            <div className="md:hidden text-[9px] font-bold text-foreground-muted uppercase tracking-wider">
                               ACH RATE
                             </div>
                             <div className="text-xs font-bold text-foreground tabular-nums">
@@ -780,7 +780,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                           </div>
 
                           <div className="w-16 text-right">
-                            <div className="text-[9px] font-bold text-foreground-muted uppercase tracking-wider">
+                            <div className="md:hidden text-[9px] font-bold text-foreground-muted uppercase tracking-wider">
                               AVERAGE
                             </div>
                             <div className="text-xs font-black text-foreground tabular-nums">
