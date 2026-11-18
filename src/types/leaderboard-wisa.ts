@@ -5,6 +5,7 @@ export interface DistrictRacingIndicator {
   realisasi: string | number;
   ach: string | number;
   status: string;
+  isRacing?: boolean;
 }
 
 export interface DistrictRacingItem {
@@ -22,6 +23,16 @@ export interface DistrictRacingItem {
   average: string;
   avgNum?: number;
   indicators: DistrictRacingIndicator[];
+
+  // 65 KPI Total metrics (Evaluasi 65 KPI)
+  achieved65?: number;
+  notAchieved65?: number;
+  na65?: number;
+  total65?: number;
+  percent65?: number;
+  achRate65?: string;
+  average65?: string;
+  avgNum65?: number;
 }
 
 export interface LeaderboardWisaData {

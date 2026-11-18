@@ -186,22 +186,26 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
 
     if (wisaKpiMode === "all") {
       // In "all" (Evaluasi 65 KPI):
-      // Calculate percent against all 65 KPIs:
-      list = list.map((d) => {
-        const totalAll = d.total || 65;
-        const percentAll = totalAll > 0 ? (d.achieved / totalAll) * 100 : 0;
-        return {
-          ...d,
-          percent: parseFloat(percentAll.toFixed(2)),
-          achRate: `${percentAll.toFixed(2)}%`,
-        };
-      });
+      list = list.map((d) => ({
+        ...d,
+        achieved: d.achieved65 ?? d.achieved,
+        notAchieved: d.notAchieved65 ?? d.notAchieved,
+        na: d.na65 ?? d.na,
+        total: d.total65 ?? 65,
+        percent: d.percent65 ?? d.percent,
+        achRate: d.achRate65 ?? d.achRate,
+        average: d.average65 ?? d.average,
+        avgNum: d.avgNum65 ?? d.avgNum,
+      }));
 
-      // Sort by percentAll descending, then achieved, then avgNum
+      // Sort by percent65 descending, then average desc, then achieved
       list.sort((a, b) => {
         if (b.percent !== a.percent) return b.percent - a.percent;
+        const aAvg = a.avgNum ?? 0;
+        const bAvg = b.avgNum ?? 0;
+        if (bAvg !== aAvg) return bAvg - aAvg;
         if (b.achieved !== a.achieved) return b.achieved - a.achieved;
-        return (b.avgNum || 0) - (a.avgNum || 0);
+        return a.initialIndex - b.initialIndex;
       });
 
       // Re-assign ranks for this mode
@@ -393,7 +397,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
               <div className="space-y-2 max-w-3xl">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <h2 className="text-2xl lg:text-3xl font-black text-foreground tracking-tight">
-                    {wisaKpiMode === "racing" ? "District Racing" : "District Evaluasi 65 KPI"} — {rankingViewMode === "top10" ? "Top 10" : `Full Ranking (${baseFilteredWisaDistricts.length})`}
+                    {wisaKpiMode === "racing" ? "District Racing (50 KPI)" : "District Evaluasi (65 KPI)"} — {rankingViewMode === "top10" ? "Top 10" : `Full Ranking (${baseFilteredWisaDistricts.length})`}
                   </h2>
                   <span className="text-xl font-bold text-foreground-muted">
                     • Week 2 • NOV 2026
@@ -403,7 +407,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                 {/* Formula Description (Exact from WISA) */}
                 <p className="text-xs text-foreground-muted leading-relaxed">
                   {wisaKpiMode === "racing"
-                    ? "Ranked by achieved KPIs; ties broken by average achievement across achieved KPIs only (each capped at 110%). NO TICKET on an assurance KPI scores 110% for that KPI."
+                    ? "Ranked by achieved KPIs (50 Racing KPI); ties broken by average achievement across achieved KPIs only (each capped at 110%). NO TICKET on an assurance KPI scores 110% for that KPI."
                     : "Ranked by total achievement rate across all 65 KPIs; ties broken by achieved KPIs then average. Evaluasi menyeluruh terhadap seluruh 65 indikator."}
                 </p>
 
@@ -417,10 +421,10 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                         ? "bg-amber-500 text-white shadow-sm ring-1 ring-amber-400/50"
                         : "bg-[var(--surface-hover)] text-foreground-muted hover:text-foreground border border-[var(--border)]"
                     )}
-                    title="Beralih ke evaluasi Racing KPI Only"
+                    title="Beralih ke evaluasi Racing KPI (50 Indikator WISA)"
                   >
                     <Flame className={cn("w-3.5 h-3.5", wisaKpiMode === "racing" ? "text-white" : "text-amber-500")} />
-                    Racing KPI Only
+                    Racing KPI Only (50 KPI)
                   </button>
 
                   <button
@@ -434,7 +438,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                     title="Beralih ke Evaluasi Semua 65 KPI"
                   >
                     <Layers className={cn("w-3.5 h-3.5", wisaKpiMode === "all" ? "text-white" : "text-teal-400")} />
-                    Evaluasi 65 KPI
+                    Evaluasi Semua (65 KPI)
                   </button>
 
                   {onlyEastern && (
@@ -479,7 +483,7 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                       wisaKpiMode === "racing" ? "bg-amber-400" : "bg-teal-400"
                     )}
                   />
-                  {wisaKpiMode === "racing" ? "Racing KPI" : "Evaluasi 65 KPI"}
+                  {wisaKpiMode === "racing" ? "Racing KPI (50)" : "Evaluasi 65 KPI"}
                 </button>
 
                 {/* Download All KPI Button */}
@@ -796,92 +800,97 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                       </div>
 
                       {/* Expandable KPI Indicators Detail */}
-                      {isExpanded && (
-                        <div className="border-t border-[var(--border)] p-4 bg-[var(--surface)] space-y-3 animate-fade-in">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[var(--border)]">
-                            <div className="font-bold text-sm text-foreground flex items-center gap-2">
-                              <Sparkles className="w-4 h-4 text-accent-blue" />
-                              Rincian {item.indicators.length} KPI ({wisaKpiMode === "racing" ? "Racing KPI" : "Evaluasi 65 KPI"}): {displayName} ({item.regional})
-                            </div>
-                            
-                            {/* Filter Status Pills inside Detail */}
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <button
-                                onClick={() => setDetailStatusFilter("ALL")}
-                                className={cn(
-                                  "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
-                                  detailStatusFilter === "ALL"
-                                    ? "bg-accent-blue text-white shadow-sm"
-                                    : "bg-[var(--surface-hover)] text-foreground-muted hover:text-foreground border border-[var(--border)]"
-                                )}
-                              >
-                                Semua ({item.indicators.length})
-                              </button>
-                              <button
-                                onClick={() => setDetailStatusFilter("ACHIEVED")}
-                                className={cn(
-                                  "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
-                                  detailStatusFilter === "ACHIEVED"
-                                    ? "bg-emerald-500 text-white shadow-sm"
-                                    : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20"
-                                )}
-                              >
-                                Achieved ({item.achieved})
-                              </button>
-                              <button
-                                onClick={() => setDetailStatusFilter("NOT_ACHIEVED")}
-                                className={cn(
-                                  "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
-                                  detailStatusFilter === "NOT_ACHIEVED"
-                                    ? "bg-rose-500 text-white shadow-sm"
-                                    : "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20"
-                                )}
-                              >
-                                Not Achieved ({item.notAchieved})
-                              </button>
-                              <button
-                                onClick={() => setDetailStatusFilter("NA")}
-                                className={cn(
-                                  "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
-                                  detailStatusFilter === "NA"
-                                    ? "bg-zinc-500 text-white shadow-sm"
-                                    : "bg-zinc-500/10 text-zinc-400 hover:bg-zinc-500/20 border border-zinc-500/20"
-                                )}
-                              >
-                                N/A ({item.na})
-                              </button>
-                            </div>
-                          </div>
+                      {isExpanded && (() => {
+                        const indicatorsToDisplay = wisaKpiMode === "racing"
+                          ? item.indicators.filter((ind) => ind.isRacing)
+                          : item.indicators;
 
-                          <div className="max-h-80 overflow-y-auto rounded-xl border border-[var(--border)]">
-                            <table className="w-full text-left text-xs">
-                              <thead className="bg-[var(--surface-hover)] text-foreground-muted sticky top-0 z-10 border-b border-[var(--border)]">
-                                <tr>
-                                  <th className="px-3 py-2 w-10 text-center font-bold">NO</th>
-                                  <th className="px-3 py-2 font-bold">INDIKATOR</th>
-                                  <th className="px-3 py-2 text-center font-bold">TARGET</th>
-                                  <th className="px-3 py-2 text-center font-bold">REALISASI</th>
-                                  <th className="px-3 py-2 text-center font-bold">ACH (%)</th>
-                                  <th className="px-3 py-2 text-center font-bold">STATUS</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-[var(--border)]">
-                                {item.indicators
-                                  .filter((ind) => {
-                                    if (detailStatusFilter === "ALL") return true;
-                                    const sUpper = ind.status.toUpperCase();
-                                    if (detailStatusFilter === "ACHIEVED") {
-                                      return sUpper === "ACHIEVED" || sUpper === "ACH";
-                                    }
-                                    if (detailStatusFilter === "NOT_ACHIEVED") {
-                                      return sUpper.includes("NOT");
-                                    }
-                                    if (detailStatusFilter === "NA") {
-                                      return sUpper === "N/A" || (!sUpper.includes("ACH") && !sUpper.includes("NOT"));
-                                    }
-                                    return true;
-                                  })
-                                  .map((ind, iIdx) => (
+                        return (
+                          <div className="border-t border-[var(--border)] p-4 bg-[var(--surface)] space-y-3 animate-fade-in">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[var(--border)]">
+                              <div className="font-bold text-sm text-foreground flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-accent-blue" />
+                                Rincian {indicatorsToDisplay.length} KPI ({wisaKpiMode === "racing" ? "50 Racing KPI" : "Evaluasi 65 KPI"}): {displayName} ({item.regional})
+                              </div>
+                              
+                              {/* Filter Status Pills inside Detail */}
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <button
+                                  onClick={() => setDetailStatusFilter("ALL")}
+                                  className={cn(
+                                    "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
+                                    detailStatusFilter === "ALL"
+                                      ? "bg-accent-blue text-white shadow-sm"
+                                      : "bg-[var(--surface-hover)] text-foreground-muted hover:text-foreground border border-[var(--border)]"
+                                  )}
+                                >
+                                  Semua ({indicatorsToDisplay.length})
+                                </button>
+                                <button
+                                  onClick={() => setDetailStatusFilter("ACHIEVED")}
+                                  className={cn(
+                                    "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
+                                    detailStatusFilter === "ACHIEVED"
+                                      ? "bg-emerald-500 text-white shadow-sm"
+                                      : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20"
+                                  )}
+                                >
+                                  Achieved ({item.achieved})
+                                </button>
+                                <button
+                                  onClick={() => setDetailStatusFilter("NOT_ACHIEVED")}
+                                  className={cn(
+                                    "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
+                                    detailStatusFilter === "NOT_ACHIEVED"
+                                      ? "bg-rose-500 text-white shadow-sm"
+                                      : "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20"
+                                  )}
+                                >
+                                  Not Achieved ({item.notAchieved})
+                                </button>
+                                <button
+                                  onClick={() => setDetailStatusFilter("NA")}
+                                  className={cn(
+                                    "px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
+                                    detailStatusFilter === "NA"
+                                      ? "bg-zinc-500 text-white shadow-sm"
+                                      : "bg-zinc-500/10 text-zinc-400 hover:bg-zinc-500/20 border border-zinc-500/20"
+                                  )}
+                                >
+                                  N/A ({item.na})
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="max-h-80 overflow-y-auto rounded-xl border border-[var(--border)]">
+                              <table className="w-full text-left text-xs">
+                                <thead className="bg-[var(--surface-hover)] text-foreground-muted sticky top-0 z-10 border-b border-[var(--border)]">
+                                  <tr>
+                                    <th className="px-3 py-2 w-10 text-center font-bold">NO</th>
+                                    <th className="px-3 py-2 font-bold">INDIKATOR</th>
+                                    <th className="px-3 py-2 text-center font-bold">TARGET</th>
+                                    <th className="px-3 py-2 text-center font-bold">REALISASI</th>
+                                    <th className="px-3 py-2 text-center font-bold">ACH (%)</th>
+                                    <th className="px-3 py-2 text-center font-bold">STATUS</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[var(--border)]">
+                                  {indicatorsToDisplay
+                                    .filter((ind) => {
+                                      if (detailStatusFilter === "ALL") return true;
+                                      const sUpper = ind.status.toUpperCase();
+                                      if (detailStatusFilter === "ACHIEVED") {
+                                        return sUpper === "ACHIEVED" || sUpper === "ACH";
+                                      }
+                                      if (detailStatusFilter === "NOT_ACHIEVED") {
+                                        return sUpper.includes("NOT");
+                                      }
+                                      if (detailStatusFilter === "NA") {
+                                        return sUpper === "N/A" || (!sUpper.includes("ACH") && !sUpper.includes("NOT"));
+                                      }
+                                      return true;
+                                    })
+                                    .map((ind, iIdx) => (
                                     <tr key={`ind-${item.district}-${iIdx}`} className="hover:bg-[var(--surface-hover)] transition-colors">
                                       <td className="px-3 py-2 text-center text-foreground-muted font-mono">
                                         {ind.no || iIdx + 1}
@@ -914,9 +923,10 @@ export function PerformanceEasternLeaderboardView({ data }: PerformanceEasternLe
                                   ))}
                               </tbody>
                             </table>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   );
                 })

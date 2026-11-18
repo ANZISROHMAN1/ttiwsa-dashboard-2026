@@ -30,6 +30,28 @@ function parseCSV(text: string): string[][] {
   return rows;
 }
 
+export const NON_RACING_INDICATOR_PATTERNS = [
+  /mttri premium site compliance/i,
+  /ttr compliance k2 dan k1 repair datin/i,
+  /ticket non-\s*numbering/i,
+  /underspec warranty guarantee non hsi/i,
+  /compliance order aging/i,
+  /fallout order compliance/i,
+  /compliance sl wdm/i,
+  /who-ttd compliance datin/i,
+  /who-ttd compliance in/i,
+  /who-ttd compliance sip trunk/i,
+  /ttr compliance k1 datin 43 menit/i,
+  /ttr indibiz hvc \(4 jam\)/i,
+  /mttrq ran to core major/i,
+  /mttrq ran to core minor/i,
+  /mttrq ran to core critical/i,
+];
+
+export function isRacingIndicator(indikatorName: string): boolean {
+  return !NON_RACING_INDICATOR_PATTERNS.some((p) => p.test(indikatorName));
+}
+
 export function parseLeaderboardWisaCSV(csvText: string): LeaderboardWisaData {
   const rows = parseCSV(csvText);
   if (rows.length < 2) {
@@ -76,15 +98,7 @@ export function parseLeaderboardWisaCSV(csvText: string): LeaderboardWisaData {
     }
 
     const d = districtMap.get(district)!;
-    d.total++;
-    const sUpper = status.toUpperCase();
-    if (sUpper === "ACHIEVED" || sUpper === "ACH") {
-      d.achieved++;
-    } else if (sUpper.includes("NOT") || sUpper === "NOT ACHIEVED") {
-      d.notAchieved++;
-    } else {
-      d.na++;
-    }
+    const isRacing = isRacingIndicator(indikator);
 
     d.indicators.push({
       no,
@@ -93,37 +107,93 @@ export function parseLeaderboardWisaCSV(csvText: string): LeaderboardWisaData {
       realisasi,
       ach,
       status,
+      isRacing,
     });
   });
 
   const districts = Array.from(districtMap.values()).map((d) => {
-    const evaluated = d.achieved + d.notAchieved;
-    const percent = evaluated > 0 ? (d.achieved / evaluated) * 100 : 0;
-    const achRate = evaluated > 0 ? `${percent.toFixed(2)}%` : "-";
+    // 1. Compute 50 Racing KPI metrics (Official District Racing WISA)
+    const racingIndicators = d.indicators.filter((ind) => ind.isRacing);
+    let racingAch = 0;
+    let racingNotAch = 0;
+    let racingNa = 0;
+    let sumAchRacing = 0;
+    let countAchRacing = 0;
 
-    // Calculate average achievement across achieved KPIs (each capped at 110%)
-    let sumAch = 0;
-    let countAch = 0;
-    d.indicators.forEach((ind) => {
+    racingIndicators.forEach((ind) => {
       const sUpper = ind.status.toUpperCase();
       if (sUpper === "ACHIEVED" || sUpper === "ACH") {
+        racingAch++;
         const cleanAch = String(ind.ach).replace("%", "").replace(",", ".").trim();
         const num = parseFloat(cleanAch);
         if (!isNaN(num)) {
-          sumAch += Math.min(110, num);
-          countAch++;
+          sumAchRacing += Math.min(110, num);
+          countAchRacing++;
         }
+      } else if (sUpper.includes("NOT") || sUpper === "NOT ACHIEVED") {
+        racingNotAch++;
+      } else {
+        racingNa++;
       }
     });
-    const avgNum = countAch > 0 ? sumAch / countAch : 0;
-    const average = `${avgNum.toFixed(2)}%`;
+
+    const evaluatedRacing = racingAch + racingNotAch;
+    const percentRacing = evaluatedRacing > 0 ? (racingAch / evaluatedRacing) * 100 : 0;
+    const achRateRacing = evaluatedRacing > 0 ? `${percentRacing.toFixed(2)}%` : "-";
+    const avgNumRacing = countAchRacing > 0 ? sumAchRacing / countAchRacing : 0;
+    const averageRacing = `${avgNumRacing.toFixed(2)}%`;
+
+    // 2. Compute 65 KPI Total metrics (Evaluasi 65 KPI)
+    let ach65 = 0;
+    let notAch65 = 0;
+    let na65 = 0;
+    let sumAch65 = 0;
+    let countAch65 = 0;
+
+    d.indicators.forEach((ind) => {
+      const sUpper = ind.status.toUpperCase();
+      if (sUpper === "ACHIEVED" || sUpper === "ACH") {
+        ach65++;
+        const cleanAch = String(ind.ach).replace("%", "").replace(",", ".").trim();
+        const num = parseFloat(cleanAch);
+        if (!isNaN(num)) {
+          sumAch65 += Math.min(110, num);
+          countAch65++;
+        }
+      } else if (sUpper.includes("NOT") || sUpper === "NOT ACHIEVED") {
+        notAch65++;
+      } else {
+        na65++;
+      }
+    });
+
+    const evaluated65 = ach65 + notAch65;
+    const percent65 = evaluated65 > 0 ? (ach65 / evaluated65) * 100 : 0;
+    const achRate65 = evaluated65 > 0 ? `${percent65.toFixed(2)}%` : "-";
+    const avgNum65 = countAch65 > 0 ? sumAch65 / countAch65 : 0;
+    const average65 = `${avgNum65.toFixed(2)}%`;
 
     return {
       ...d,
-      percent: parseFloat(percent.toFixed(2)),
-      achRate,
-      average,
-      avgNum,
+      // Default metrics: EXACTLY 50 Racing KPIs matching WISA District Racing!
+      achieved: racingAch,
+      notAchieved: racingNotAch,
+      na: racingNa,
+      total: racingIndicators.length || 50,
+      percent: parseFloat(percentRacing.toFixed(2)),
+      achRate: achRateRacing,
+      average: averageRacing,
+      avgNum: avgNumRacing,
+
+      // Also store 65 KPI metrics
+      achieved65: ach65,
+      notAchieved65: notAch65,
+      na65: na65,
+      total65: d.indicators.length || 65,
+      percent65: parseFloat(percent65.toFixed(2)),
+      achRate65,
+      average65,
+      avgNum65,
     };
   });
 

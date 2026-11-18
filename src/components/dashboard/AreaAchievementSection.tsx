@@ -177,6 +177,16 @@ export function AreaAchievementSection({
     return activeRegionalData.find((r) => r.isEastern || r.regional.includes("EASTERN"));
   }, [activeRegionalData]);
 
+  // Eastern districts summary for narrative
+  const easternDistrictsSummary = useMemo(() => {
+    if (!wisaData?.districts) return "";
+    const eastern = wisaData.districts.filter((d) =>
+      ["BEKASI", "KARAWANG", "BOGOR"].includes(d.district.toUpperCase())
+    );
+    if (!eastern.length) return "";
+    return `(${eastern.map((d) => `${d.district} ${d.achRate}`).join(", ")})`;
+  }, [wisaData]);
+
   // Current list for Podium and Table (sorted by metric)
   const currentList = useMemo(() => {
     if (scopeMode === "regional") {
@@ -532,9 +542,9 @@ export function AreaAchievementSection({
                   </>
                 ) : (
                   <>
-                    Eastern Jabotabek meraih peringkat ke-{easternRegional.rank} nasional pada evaluasi Racing KPI dengan rerata Achievement{" "}
-                    <span className="font-extrabold text-foreground">{easternRegional.achRate}%</span>{" "}
-                    (Karawang 89.80%, Bekasi 81.63%, Bogor 68.00%).
+                    Eastern Jabotabek meraih peringkat ke-{easternRegional.rank} nasional pada evaluasi Racing KPI (50 KPI) dengan rerata Achievement{" "}
+                    <span className="font-extrabold text-foreground">{easternRegional.achRate}%</span>
+                    {easternDistrictsSummary ? ` ${easternDistrictsSummary}.` : "."}
                   </>
                 )}
               </p>
