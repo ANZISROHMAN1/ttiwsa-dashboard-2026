@@ -145,5 +145,116 @@
       "kpiAchieved": 105,
       "totalKpi": 219
     }
+  ],
+  "racingRegional": [
+    {
+      "rank": 8,
+      "regional": "01-SUMBAGUT",
+      "name": "SUMBAGUT",
+      "area": "AREA 1",
+      "achRate": 50,
+      "kpiAchieved": 35,
+      "totalKpi": 70
+    },
+    {
+      "rank": 12,
+      "regional": "02-SUMBAGTENG",
+      "name": "SUMBAGTENG",
+      "area": "AREA 1",
+      "achRate": 43.48,
+      "kpiAchieved": 30,
+      "totalKpi": 69
+    },
+    {
+      "rank": 6,
+      "regional": "03-SUMBAGSEL",
+      "name": "SUMBAGSEL",
+      "area": "AREA 1",
+      "achRate": 53.62,
+      "kpiAchieved": 37,
+      "totalKpi": 69
+    },
+    {
+      "rank": 3,
+      "regional": "04-JAKARTA & BANTEN",
+      "name": "JAKARTA & BANTEN",
+      "area": "AREA 2",
+      "achRate": 77.03,
+      "kpiAchieved": 57,
+      "totalKpi": 74
+    },
+    {
+      "rank": 5,
+      "regional": "05-JABAR",
+      "name": "JABAR",
+      "area": "AREA 2",
+      "achRate": 57.14,
+      "kpiAchieved": 40,
+      "totalKpi": 70
+    },
+    {
+      "rank": 1,
+      "regional": "06-EASTERN JABOTABEK",
+      "name": "EASTERN JABOTABEK",
+      "area": "AREA 2",
+      "achRate": 78.87,
+      "kpiAchieved": 56,
+      "totalKpi": 71,
+      "isEastern": true
+    },
+    {
+      "rank": 4,
+      "regional": "07-JATENG DIY",
+      "name": "JATENG DIY",
+      "area": "AREA 3",
+      "achRate": 64.79,
+      "kpiAchieved": 46,
+      "totalKpi": 71
+    },
+    {
+      "rank": 2,
+      "regional": "08-JATIM",
+      "name": "JATIM",
+      "area": "AREA 3",
+      "achRate": 78.38,
+      "kpiAchieved": 58,
+      "totalKpi": 74
+    },
+    {
+      "rank": 7,
+      "regional": "09-BALINUSRA",
+      "name": "BALINUSRA",
+      "area": "AREA 3",
+      "achRate": 51.47,
+      "kpiAchieved": 35,
+      "totalKpi": 68
+    },
+    {
+      "rank": 9,
+      "regional": "10-KALIMANTAN",
+      "name": "KALIMANTAN",
+      "area": "AREA 4",
+      "achRate": 48.57,
+      "kpiAchieved": 34,
+      "totalKpi": 70
+    },
+    {
+      "rank": 11,
+      "regional": "11-SULAWESI",
+      "name": "SULAWESI",
+      "area": "AREA 4",
+      "achRate": 46.38,
+      "kpiAchieved": 32,
+      "totalKpi": 69
+    },
+    {
+      "rank": 10,
+      "regional": "12-MALUKU PAPUA",
+      "name": "MALUKU PAPUA",
+      "area": "AREA 4",
+      "achRate": 48.53,
+      "kpiAchieved": 33,
+      "totalKpi": 68
+    }
   ]
 }

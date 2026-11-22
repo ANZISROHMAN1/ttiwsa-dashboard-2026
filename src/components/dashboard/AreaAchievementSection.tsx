@@ -50,6 +50,10 @@ export function AreaAchievementSection({
 
   // Racing Regional Dataset aggregated from wisaData (or fallback)
   const racingRegionalData = useMemo(() => {
+    // Prefer official WISA Regional Racing values (regional-level KPIs, not a district average)
+    if (data.racingRegional && data.racingRegional.length > 0) {
+      return data.racingRegional;
+    }
     if (wisaData?.districts && wisaData.districts.length > 0) {
       const regMap: Record<
         string,
@@ -119,7 +123,7 @@ export function AreaAchievementSection({
       { rank: 10, regional: "11-SULAWESI", name: "SULAWESI", area: "AREA 4", achRate: 66.5, kpiAchieved: 33, totalKpi: 50 },
       { rank: 11, regional: "12-MALUKU PAPUA", name: "MALUKU PAPUA", area: "AREA 4", achRate: 61.5, kpiAchieved: 31, totalKpi: 50 },
     ];
-  }, [wisaData]);
+  }, [wisaData, data.racingRegional]);
 
   // Racing Area Dataset
   const racingAreaData = useMemo(() => {
@@ -156,7 +160,9 @@ export function AreaAchievementSection({
       rank: 0,
       area: a.area,
       name: a.area,
-      achRate: parseFloat((a.achRateSum / a.count).toFixed(2)),
+      achRate: parseFloat(
+        (a.totalSum > 0 ? (a.achievedSum / a.totalSum) * 100 : a.achRateSum / a.count).toFixed(2)
+      ),
       kpiAchieved: Math.round(a.achievedSum / a.count),
       totalKpi: Math.round(a.totalSum / a.count) || 50,
     }));
@@ -184,7 +190,7 @@ export function AreaAchievementSection({
       ["BEKASI", "KARAWANG", "BOGOR"].includes(d.district.toUpperCase())
     );
     if (!eastern.length) return "";
-    return `(${eastern.map((d) => `${d.district} ${d.achRate}`).join(", ")})`;
+    return `(District Racing: ${eastern.map((d) => `${d.district} ${d.achRate}`).join(", ")})`;
   }, [wisaData]);
 
   // Current list for Podium and Table (sorted by metric)
@@ -542,7 +548,7 @@ export function AreaAchievementSection({
                   </>
                 ) : (
                   <>
-                    Eastern Jabotabek meraih peringkat ke-{easternRegional.rank} nasional pada evaluasi Racing KPI (50 KPI) dengan rerata Achievement{" "}
+                    Eastern Jabotabek meraih peringkat ke-{easternRegional.rank} nasional pada evaluasi Racing KPI dengan Achievement Rate{" "}
                     <span className="font-extrabold text-foreground">{easternRegional.achRate}%</span>
                     {easternDistrictsSummary ? ` ${easternDistrictsSummary}.` : "."}
                   </>
