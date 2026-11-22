@@ -63,17 +63,37 @@ export function parseLeaderboardWisaCSV(csvText: string): LeaderboardWisaData {
   const areasSet = new Set<string>();
   const regionalsSet = new Set<string>();
   let districtCounter = 0;
+  let currentArea = "";
+  let currentRegional = "";
+  let currentDistrict = "";
 
   dataRows.forEach((r) => {
     const no = parseInt(r[0]) || 0;
-    const area = (r[1] || "-").trim();
-    const regional = (r[2] || "-").trim();
-    const district = (r[3] || "-").trim();
+    const rawArea = (r[1] || "").trim();
+    const rawRegional = (r[2] || "").trim();
+    const rawDistrict = (r[3] || "").trim();
     const indikator = (r[4] || "-").trim();
     const target = (r[5] || "-").trim();
     const realisasi = (r[6] || "-").trim();
     const ach = (r[7] || "-").trim();
     const status = (r[8] || "N/A").trim();
+
+    // Propagate / forward-fill District & Regional when merged or omitted in subsequent rows
+    if (no === 1) {
+      currentArea = rawArea;
+      currentRegional = rawRegional;
+      currentDistrict = rawDistrict;
+    } else {
+      if (rawArea) currentArea = rawArea;
+      if (rawRegional) currentRegional = rawRegional;
+      if (rawDistrict) currentDistrict = rawDistrict;
+    }
+
+    const area = currentArea || rawArea || "-";
+    const regional = currentRegional || rawRegional || "-";
+    const district = currentDistrict || rawDistrict;
+
+    if (!district || district === "-") return;
 
     if (area && area !== "-") areasSet.add(area);
     if (regional && regional !== "-") regionalsSet.add(regional);
@@ -111,7 +131,9 @@ export function parseLeaderboardWisaCSV(csvText: string): LeaderboardWisaData {
     });
   });
 
-  const districts = Array.from(districtMap.values()).map((d) => {
+  const districts = Array.from(districtMap.values())
+    .filter((d) => d.indicators.length >= 30)
+    .map((d) => {
     // 1. Compute 50 Racing KPI metrics (Official District Racing WISA)
     const racingIndicators = d.indicators.filter((ind) => ind.isRacing);
     let racingAch = 0;
