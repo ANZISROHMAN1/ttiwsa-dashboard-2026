@@ -25,5 +25,7 @@ export interface AreaAchievementData {
   area: AreaAchievementItem[];
   /** Official WISA Regional Racing KPI values (overrides district aggregation when present) */
   racingRegional?: RegionalAchievementItem[];
+  /** Official WISA Area Racing KPI values */
+  racingArea?: AreaAchievementItem[];
 }
 

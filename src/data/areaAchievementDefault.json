@@ -114,36 +114,36 @@
   ],
   "area": [
     {
-      "rank": 3,
+      "rank": 4,
       "area": "AREA 1",
       "name": "AREA 1 (SUMATERA)",
-      "achRate": 49.32,
-      "kpiAchieved": 109,
-      "totalKpi": 221
+      "achRate": 45.68,
+      "kpiAchieved": 37,
+      "totalKpi": 81
     },
     {
       "rank": 1,
       "area": "AREA 2",
       "name": "AREA 2 (JABOTABEK & JABAR)",
-      "achRate": 71.55,
-      "kpiAchieved": 166,
-      "totalKpi": 232
+      "achRate": 69.32,
+      "kpiAchieved": 61,
+      "totalKpi": 88
     },
     {
       "rank": 2,
       "area": "AREA 3",
       "name": "AREA 3 (JATENG, JATIM, BALINUSRA)",
-      "achRate": 64.91,
-      "kpiAchieved": 148,
-      "totalKpi": 228
+      "achRate": 61.63,
+      "kpiAchieved": 53,
+      "totalKpi": 86
     },
     {
-      "rank": 4,
+      "rank": 3,
       "area": "AREA 4",
       "name": "AREA 4 (KALIMANTAN, SULAWESI, MALPAP)",
-      "achRate": 47.95,
-      "kpiAchieved": 105,
-      "totalKpi": 219
+      "achRate": 47.56,
+      "kpiAchieved": 39,
+      "totalKpi": 82
     }
   ],
   "racingRegional": [
@@ -153,8 +153,8 @@
       "name": "SUMBAGUT",
       "area": "AREA 1",
       "achRate": 50,
-      "kpiAchieved": 35,
-      "totalKpi": 70
+      "kpiAchieved": 34,
+      "totalKpi": 68
     },
     {
       "rank": 12,
@@ -255,6 +255,40 @@
       "achRate": 48.53,
       "kpiAchieved": 33,
       "totalKpi": 68
+    }
+  ],
+  "racingArea": [
+    {
+      "rank": 4,
+      "area": "AREA 1",
+      "name": "AREA 1 (SUMATERA)",
+      "achRate": 45.68,
+      "kpiAchieved": 37,
+      "totalKpi": 81
+    },
+    {
+      "rank": 1,
+      "area": "AREA 2",
+      "name": "AREA 2 (JABOTABEK & JABAR)",
+      "achRate": 68.6,
+      "kpiAchieved": 59,
+      "totalKpi": 86
+    },
+    {
+      "rank": 2,
+      "area": "AREA 3",
+      "name": "AREA 3 (JATENG, JATIM, BALINUSRA)",
+      "achRate": 61.63,
+      "kpiAchieved": 53,
+      "totalKpi": 86
+    },
+    {
+      "rank": 3,
+      "area": "AREA 4",
+      "name": "AREA 4 (KALIMANTAN, SULAWESI, MALPAP)",
+      "achRate": 47.56,
+      "kpiAchieved": 39,
+      "totalKpi": 82
     }
   ]
 }

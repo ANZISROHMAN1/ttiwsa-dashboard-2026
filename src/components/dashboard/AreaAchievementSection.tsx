@@ -127,6 +127,10 @@ export function AreaAchievementSection({
 
   // Racing Area Dataset
   const racingAreaData = useMemo(() => {
+    // Prefer official WISA Area Racing values
+    if (data.racingArea && data.racingArea.length > 0) {
+      return data.racingArea;
+    }
     const areaMap: Record<
       string,
       {
@@ -172,7 +176,7 @@ export function AreaAchievementSection({
       item.rank = idx + 1;
     });
     return list.sort((a, b) => a.area.localeCompare(b.area));
-  }, [racingRegionalData]);
+  }, [racingRegionalData, data.racingArea]);
 
   // Active Datasets based on selected KPI Category (Non-Racing vs Racing)
   const activeRegionalData = kpiCategory === "racing" ? racingRegionalData : data.regional;
